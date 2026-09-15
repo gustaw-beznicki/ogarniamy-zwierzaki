@@ -60,3 +60,4 @@ Umiejętności nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany
 - Przed wykonaniem commita agent ma sprawdzić, czy użytkownik podał numer lekcji w bieżącym zadaniu. Jeśli nie podał, agent musi go o ten numer zapytać i nie może commitować bez odpowiedzi.
 - Commit oznaczaj tagiem w formacie `m<moduł>l<lekcja>`, na przykład `m1l1` dla modułu 1, lekcji 1.
 - Tag lekcji wskazuje commit zawierający efekt pracy wykonanej w ramach tej lekcji.
+- Wiadomość commita musi opisywać faktycznie wykonaną zmianę. Nie może składać się wyłącznie z numeru modułu lub lekcji — do tego służy tag.

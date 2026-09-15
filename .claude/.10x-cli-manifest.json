@@ -1,0 +1,107 @@
+{
+  "package": "@przeprogramowani/10x-cli",
+  "version": "1.22.0",
+  "manifestVersion": 3,
+  "lastApplied": "2026-09-15T12:03:04.737Z",
+  "lessonId": "m1l1",
+  "course": "10xdevs4",
+  "tool": "claude-code",
+  "files": {
+    "skills": {
+      "10x-idea-check": {
+        "files": [
+          "SKILL.md",
+          "references/10xdevs-4-certification.md",
+          "references/10xdevs-4-dates.md",
+          "references/assessment-guide.md",
+          "references/examples.md"
+        ],
+        "contentHashes": {
+          "SKILL.md": "aeb6b11ec10acaa3271e7c9d9848d21475dcc4c34533c64f4cd56e9ddfac037a",
+          "references/10xdevs-4-certification.md": "123c138cb76ecdce082bdeb291991a371b5cd86fac8a66ce3a8bcaaa30866f3f",
+          "references/10xdevs-4-dates.md": "d4eb24be474a149c161cb2e26349ef54220ef5447619bea91ce70116bb3786b4",
+          "references/assessment-guide.md": "2b4f11435261fb65c40f066d109bac818590171de22d908c5e72374f7eb0351a",
+          "references/examples.md": "9646e36fe9106a897534a2ee0323495b40192789ce2198329e52893d13c44450"
+        }
+      },
+      "10x-init": {
+        "files": [
+          "SKILL.md"
+        ],
+        "contentHashes": {
+          "SKILL.md": "b043810ed499dd72ba2da5acaa9ae506ccfc483aa4553f596863b4051b6bc46a"
+        }
+      },
+      "10x-shape": {
+        "files": [
+          "SKILL.md",
+          "references/prd-schema.md"
+        ],
+        "contentHashes": {
+          "SKILL.md": "82ec5146a94f403a1e0e4fd22abc8649c78e8d2c913963d5335320e8a7e5cee0",
+          "references/prd-schema.md": "69e487a419e06fedd9d7761a6be1f375b5290839bdc58eaca1c1f64fe5f3516e"
+        }
+      },
+      "10x-prd": {
+        "files": [
+          "SKILL.md"
+        ],
+        "contentHashes": {
+          "SKILL.md": "008e6c03dd53434b85c9c84d62bc0867045c1cfbb9fe283c1d66a0a43b4ac939"
+        }
+      }
+    },
+    "prompts": [],
+    "configs": [],
+    "promptHashes": {},
+    "configHashes": {}
+  },
+  "lessons": {
+    "m1l1": {
+      "appliedAt": "2026-09-15T12:03:04.737Z",
+      "skills": {
+        "10x-idea-check": {
+          "files": [
+            "SKILL.md",
+            "references/10xdevs-4-certification.md",
+            "references/10xdevs-4-dates.md",
+            "references/assessment-guide.md",
+            "references/examples.md"
+          ]
+        },
+        "10x-init": {
+          "files": [
+            "SKILL.md"
+          ]
+        },
+        "10x-shape": {
+          "files": [
+            "SKILL.md",
+            "references/prd-schema.md"
+          ]
+        },
+        "10x-prd": {
+          "files": [
+            "SKILL.md"
+          ]
+        }
+      },
+      "prompts": [],
+      "configs": [],
+      "representation": {
+        "lang": "pl",
+        "tool": "claude-code",
+        "courseRules": true,
+        "rules": true
+      },
+      "installedReleaseId": "r-01931641e2446d2c391ae2a5580585d7b137173dca2b63b9a85ed32388155a66",
+      "installedManifestHash": "1ec3800cfa5c5d37754debba7e9172f32e71330ee1a29531d6ec8fff1c4bfaaa"
+    }
+  },
+  "managedRules": {
+    "path": "CLAUDE.md",
+    "begin": "<!-- BEGIN @przeprogramowani/10x-cli -->",
+    "end": "<!-- END @przeprogramowani/10x-cli -->",
+    "upstreamHash": "921b11b1922d35c56740b010caced6e294bf2af8849af13aa98890b7403512c9"
+  }
+}

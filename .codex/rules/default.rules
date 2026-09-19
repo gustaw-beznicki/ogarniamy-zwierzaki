@@ -1,0 +1,26 @@
+# Package and JavaScript tooling.
+prefix_rule(pattern = ["npm"], decision = "allow")
+prefix_rule(pattern = ["npx"], decision = "allow")
+prefix_rule(pattern = ["node"], decision = "allow")
+
+# Git commands allowed without an additional prompt.
+prefix_rule(pattern = ["git", "add"], decision = "allow")
+prefix_rule(pattern = ["git", "commit"], decision = "allow")
+prefix_rule(pattern = ["git", "diff"], decision = "allow")
+prefix_rule(pattern = ["git", "log"], decision = "allow")
+prefix_rule(pattern = ["git", "status"], decision = "allow")
+prefix_rule(pattern = ["git", "branch"], decision = "allow")
+prefix_rule(pattern = ["git", "checkout"], decision = "allow")
+prefix_rule(pattern = ["git", "stash"], decision = "allow")
+
+# Network and remote-write commands require confirmation.
+prefix_rule(pattern = ["curl"], decision = "prompt")
+prefix_rule(pattern = ["wget"], decision = "prompt")
+prefix_rule(pattern = ["git", "push"], decision = "prompt")
+
+# Block recursive forced deletion.
+prefix_rule(
+    pattern = ["rm", "-rf"],
+    decision = "forbidden",
+    justification = "Recursive forced deletion is disabled for this project.",
+)

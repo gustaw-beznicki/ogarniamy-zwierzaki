@@ -1,0 +1,6 @@
+@ogarniamy_zwierzaki_api_HostAddress = http://localhost:0
+
+GET {{ogarniamy_zwierzaki_api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

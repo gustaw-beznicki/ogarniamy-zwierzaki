@@ -1,0 +1,367 @@
+[
+  {
+    "id": "sheet-strategy-20260919",
+    "class": "sheet",
+    "title": "1. Mapa strategiczna",
+    "rootTopic": {
+      "id": "root-strategy-20260919",
+      "class": "topic",
+      "title": "🐕 System dla trenerów psów — luka rynkowa",
+      "structureClass": "org.xmind.ui.map.unbalanced",
+      "children": {
+        "attached": [
+          {
+            "id": "strategy-thesis",
+            "title": "🎯 Główna teza",
+            "style": {"id": "style-thesis", "properties": {"svg:fill": "#E84855", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "thesis-1", "title": "Nie brakuje kalendarza ani CRM-u"},
+              {"id": "thesis-2", "title": "Brakuje jednego procesu end-to-end"},
+              {"id": "thesis-3", "title": "Lead → kwalifikacja → program → płatność → trening → postęp → kolejny zakup"},
+              {"id": "thesis-4", "title": "Jednostką jest pies + opiekunowie + program, nie sama wizyta"}
+            ]}
+          },
+          {
+            "id": "strategy-gaps",
+            "title": "🧩 4 luki rynkowe",
+            "style": {"id": "style-gaps", "properties": {"svg:fill": "#F59E0B", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "gap-a", "title": "A. Rezerwacje bez procesu zmiany", "children": {"attached": [
+                {"id": "gap-a1", "title": "Grafik, płatność i przypomnienie"},
+                {"id": "gap-a2", "title": "Brak diagnozy, planu i postępu psa"}
+              ]}},
+              {"id": "gap-b", "title": "B. Trening bez sprzedaży i finansów", "children": {"attached": [
+                {"id": "gap-b1", "title": "Ćwiczenia, raporty i komunikacja"},
+                {"id": "gap-b2", "title": "Brak pakietów, rat, faktur i automatyzacji przychodu"}
+              ]}},
+              {"id": "gap-c", "title": "C. Globalne narzędzia bez polskiej lokalizacji", "children": {"attached": [
+                {"id": "gap-c1", "title": "Brak wykazanych integracji KSeF / polska księgowość"},
+                {"id": "gap-c2", "title": "Język, dokumenty, PLN, BLIK i lokalne zwyczaje"}
+              ]}},
+              {"id": "gap-d", "title": "D. Fragmentaryczny model danych", "children": {"attached": [
+                {"id": "gap-d1", "title": "Jeden płatnik ≠ jeden opiekun ≠ jeden pies"},
+                {"id": "gap-d2", "title": "Historia psa oddzielona od płatności i komunikacji"}
+              ]}}
+            ]}
+          },
+          {
+            "id": "strategy-landscape",
+            "title": "🗺️ Krajobraz konkurencji",
+            "style": {"id": "style-landscape", "properties": {"svg:fill": "#3B82F6", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "landscape-generic", "title": "Systemy biznesowe", "children": {"attached": [
+                {"id": "competitor-booksy", "title": "Booksy / Calendesk / EasyWeek"},
+                {"id": "competitor-bookicorn", "title": "Bookicorn: kursy, płatności, kolejki", "href": "https://www.bookicorn.net/pl"},
+                {"id": "generic-strength", "title": "Mocne: sprzedaż i organizacja"},
+                {"id": "generic-weakness", "title": "Słabe: historia i wynik konkretnego psa"}
+              ]}},
+              {"id": "landscape-polish", "title": "Polskie narzędzia dog-first", "children": {"attached": [
+                {"id": "competitor-petboard", "title": "PetBoard: profile, ćwiczenia, chat", "href": "https://petboard.pl/"},
+                {"id": "competitor-behaivo", "title": "Behaivo: głęboka praca behawioralna — beta", "href": "https://behaivo.com/pl"},
+                {"id": "competitor-merdilo", "title": "Merdilo Pro: konsultacje i praca między sesjami", "href": "https://merdilo.com/pro/"},
+                {"id": "polish-gap", "title": "Brak publicznie potwierdzonego pełnego łańcucha"}
+              ]}},
+              {"id": "landscape-global", "title": "Globalne all-in-one", "children": {"attached": [
+                {"id": "competitor-pupmanager", "title": "PupManager", "href": "https://pupmanager.com/"},
+                {"id": "competitor-dogdesk", "title": "DogDesk", "href": "https://dogdesk.app/"},
+                {"id": "competitor-gingr", "title": "Gingr", "href": "https://www.gingrapp.com/dog-training-software"},
+                {"id": "global-gap", "title": "Mocne funkcjonalnie, słabsze lokalnie dla Polski"}
+              ]}}
+            ]}
+          },
+          {
+            "id": "strategy-icp",
+            "title": "👥 Idealny klient początkowy",
+            "style": {"id": "style-icp", "properties": {"svg:fill": "#14B8A6", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "icp-1", "title": "Mała szkoła / praktyka: 1–5 trenerów"},
+              {"id": "icp-2", "title": "50–250 aktywnych gospodarstw domowych"},
+              {"id": "icp-3", "title": "Treningi 1:1 + grupy + wsparcie między sesjami"},
+              {"id": "icp-4", "title": "Sprzedaż pakietów 4–10 spotkań"},
+              {"id": "icp-5", "title": "Dziś: kalendarz + WhatsApp + arkusz + przelewy + PDF"},
+              {"id": "icp-avoid", "title": "Nie na start: duże hotele, daycare, logistyka boksów"}
+            ]}
+          },
+          {
+            "id": "strategy-positioning",
+            "title": "💡 Pozycjonowanie produktu",
+            "style": {"id": "style-positioning", "properties": {"svg:fill": "#8B5CF6", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "positioning-1", "title": "Nie: kolejny kalendarz dla trenerów"},
+              {"id": "positioning-2", "title": "Tak: system zarządzania programami i wynikami"},
+              {"id": "positioning-3", "title": "Łączy wynik psa z przychodem firmy"},
+              {"id": "positioning-4", "title": "Sprzedaje program osiągnięcia rezultatu, nie tylko godzinę"},
+              {"id": "positioning-promise", "title": "Obietnica: od zapytania do kolejnego zakupu bez Excela i chaosu"}
+            ]}
+          },
+          {
+            "id": "strategy-data",
+            "title": "🧱 Kluczowy model danych",
+            "style": {"id": "style-data", "properties": {"svg:fill": "#64748B", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "data-household", "title": "Gospodarstwo domowe", "children": {"attached": [
+                {"id": "data-payer", "title": "Płatnik"},
+                {"id": "data-guardians", "title": "Wielu opiekunów + role i dostęp"},
+                {"id": "data-dogs", "title": "Wiele psów"}
+              ]}},
+              {"id": "data-dog", "title": "Pies", "children": {"attached": [
+                {"id": "data-case", "title": "Problem / cel / ryzyka"},
+                {"id": "data-program", "title": "Program i pakiet"},
+                {"id": "data-sessions", "title": "Sesje, ćwiczenia, filmy, postęp"}
+              ]}},
+              {"id": "data-business", "title": "Biznes", "children": {"attached": [
+                {"id": "data-payments", "title": "Rezerwacje, płatności, faktury"},
+                {"id": "data-team", "title": "Trenerzy, prowizje, uprawnienia"},
+                {"id": "data-analytics", "title": "Konwersja, retencja i rentowność"}
+              ]}}
+            ]}
+          },
+          {
+            "id": "strategy-sources",
+            "title": "🔗 Ważne źródła",
+            "style": {"id": "style-sources", "properties": {"svg:fill": "#334155", "fo:color": "#FFFFFF", "border-line-width": "0pt"}},
+            "children": {"attached": [
+              {"id": "source-stripe", "title": "Stripe: BLIK w Polsce", "href": "https://stripe.com/en-pl/payment-method/blik"},
+              {"id": "source-ksef", "title": "MF: zakres obowiązkowego KSeF", "href": "https://ksef.podatki.gov.pl/informacje-ogolne-ksef-20/zakres-obowiazkowego-ksef/"},
+              {"id": "source-petboard", "title": "PetBoard", "href": "https://petboard.pl/"},
+              {"id": "source-behaivo", "title": "Behaivo", "href": "https://behaivo.com/pl"},
+              {"id": "source-merdilo", "title": "Merdilo Pro", "href": "https://merdilo.com/pro/"},
+              {"id": "source-pupmanager", "title": "PupManager", "href": "https://pupmanager.com/"}
+            ]}
+          }
+        ]
+      }
+    },
+    "theme": {
+      "id": "theme-dog-business",
+      "centralTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "700", "fo:font-size": "28pt", "fo:color": "#FFFFFF", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#0F172A", "border-line-width": "0pt", "line-class": "org.xmind.branchConnection.curve", "line-width": "3pt"}},
+      "mainTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "600", "fo:font-size": "18pt", "shape-class": "org.xmind.topicShape.roundedRect", "line-class": "org.xmind.branchConnection.curve", "line-width": "2pt", "border-line-width": "0pt"}},
+      "subTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "500", "fo:font-size": "13pt", "fo:color": "#1E293B", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#F8FAFC", "border-line-width": "1pt", "border-line-color": "#CBD5E1", "line-class": "org.xmind.branchConnection.roundedElbow"}},
+      "map": {"type": "map", "properties": {"svg:fill": "#F1F5F9", "multi-line-colors": "#E84855 #F59E0B #3B82F6 #14B8A6 #8B5CF6 #64748B #334155", "line-tapered": "tapered"}}
+    },
+    "topicPositioning": "fixed"
+  },
+  {
+    "id": "sheet-use-cases-20260919",
+    "class": "sheet",
+    "title": "2. Scenariusze biznesowe",
+    "rootTopic": {
+      "id": "root-use-cases-20260919",
+      "class": "topic",
+      "title": "🚀 8 scenariuszy biznesowych",
+      "structureClass": "org.xmind.ui.map.unbalanced",
+      "children": {"attached": [
+        {"id": "uc1", "title": "1️⃣ Kwalifikacja nowego przypadku", "children": {"attached": [
+          {"id": "uc1-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc1-p1", "title": "Lead z Instagrama / telefonu"},
+            {"id": "uc1-p2", "title": "Darmowa diagnoza w wiadomościach"},
+            {"id": "uc1-p3", "title": "Dane rozproszone w formularzu, mailu i kalendarzu"}
+          ]}},
+          {"id": "uc1-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc1-s1", "title": "Dynamiczna ankieta zależna od problemu"},
+            {"id": "uc1-s2", "title": "Reguły ryzyka i rekomendacja właściwej usługi"},
+            {"id": "uc1-s3", "title": "Zgody → termin → płatność → karta przypadku"}
+          ]}},
+          {"id": "uc1-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc1-v1", "title": "Więcej płatnych konsultacji"},
+            {"id": "uc1-v2", "title": "Mniej obsługi leada i błędnej kwalifikacji"}
+          ]}}
+        ]}},
+        {"id": "uc2", "title": "2️⃣ Sprzedaż programu zamiast wizyty", "children": {"attached": [
+          {"id": "uc2-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc2-p1", "title": "Klient płaci osobno za każdą godzinę"},
+            {"id": "uc2-p2", "title": "Trener ręcznie liczy spotkania i raty"}
+          ]}},
+          {"id": "uc2-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc2-s1", "title": "Program 6 tygodni: konsultacja + sesje + zadania + feedback"},
+            {"id": "uc2-s2", "title": "Płatność jednorazowa lub raty"},
+            {"id": "uc2-s3", "title": "Automatyczne saldo, ważność i limity wsparcia"}
+          ]}},
+          {"id": "uc2-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc2-v1", "title": "Wyższy koszyk i przewidywalny przychód"},
+            {"id": "uc2-v2", "title": "Mniej porzuceń po pierwszej sesji"}
+          ]}}
+        ]}},
+        {"id": "uc3", "title": "3️⃣ Zamknięcie sesji bez papierologii", "children": {"attached": [
+          {"id": "uc3-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc3-p1", "title": "Notatki, PDF-y i rozliczenia po godzinach"}
+          ]}},
+          {"id": "uc3-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc3-s1", "title": "60–90 s notatki głosowej"},
+            {"id": "uc3-s2", "title": "AI tworzy szkic prywatnej dokumentacji i podsumowania klienta"},
+            {"id": "uc3-s3", "title": "Trener zatwierdza → zadania → rozliczenie pakietu → kolejny termin"}
+          ]}},
+          {"id": "uc3-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc3-v1", "title": "Minuty administracji na sesję zamiast kilkunastu"},
+            {"id": "uc3-v2", "title": "AI tylko szkic — specjalista podejmuje decyzję"}
+          ]}}
+        ]}},
+        {"id": "uc4", "title": "4️⃣ Praca pomiędzy spotkaniami", "children": {"attached": [
+          {"id": "uc4-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc4-p1", "title": "PDF ginie, klient nie pamięta ćwiczeń"},
+            {"id": "uc4-p2", "title": "Brak wiedzy: zła metoda, złe wykonanie czy brak pracy?"}
+          ]}},
+          {"id": "uc4-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc4-s1", "title": "Zadanie + film + liczba powtórzeń + warunki przerwania"},
+            {"id": "uc4-s2", "title": "Check-in, skala trudności i krótkie nagranie klienta"},
+            {"id": "uc4-s3", "title": "Panel wyjątków dla trenera: gdzie potrzebna reakcja"}
+          ]}},
+          {"id": "uc4-monetization", "title": "Monetyzacja wsparcia", "children": {"attached": [
+            {"id": "uc4-m1", "title": "Limit pytań / analiz wideo w pakiecie"},
+            {"id": "uc4-m2", "title": "Dodatkowy feedback jako płatny produkt"}
+          ]}}
+        ]}},
+        {"id": "uc5", "title": "5️⃣ Kurs grupowy dla szczeniąt", "children": {"attached": [
+          {"id": "uc5-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc5-p1", "title": "Zapisy, szczepienia, płatności i obecność w różnych miejscach"}
+          ]}},
+          {"id": "uc5-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc5-s1", "title": "Kwalifikacja pary pies + przewodnik"},
+            {"id": "uc5-s2", "title": "Płatność za cykl, wszystkie terminy, kolejka i lista obecności"},
+            {"id": "uc5-s3", "title": "Materiały za nieobecność i odrabianie"},
+            {"id": "uc5-s4", "title": "Kompetencje psa → propozycja kolejnego poziomu"}
+          ]}},
+          {"id": "uc5-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc5-v1", "title": "Większe obłożenie grup i automatyczny upsell"}
+          ]}}
+        ]}},
+        {"id": "uc6", "title": "6️⃣ Dom z wieloma psami i opiekunami", "children": {"attached": [
+          {"id": "uc6-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc6-p1", "title": "Płatnik, ćwiczący opiekun i pies to różne role"}
+          ]}},
+          {"id": "uc6-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc6-s1", "title": "Jedno gospodarstwo → wielu opiekunów → wiele psów"},
+            {"id": "uc6-s2", "title": "Osobne programy i historie psów"},
+            {"id": "uc6-s3", "title": "Uprawnienia: instrukcje tak, finanse nie"}
+          ]}},
+          {"id": "uc6-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc6-v1", "title": "Brak duplikatów i pomieszanych historii"}
+          ]}}
+        ]}},
+        {"id": "uc7", "title": "7️⃣ Przekazanie przypadku w zespole", "children": {"attached": [
+          {"id": "uc7-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc7-p1", "title": "Wiedza o psie istnieje tylko w głowie jednego trenera"}
+          ]}},
+          {"id": "uc7-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc7-s1", "title": "Przydział według specjalizacji, miejsca i obciążenia"},
+            {"id": "uc7-s2", "title": "Triggery, bezpieczeństwo i historia pod ręką"},
+            {"id": "uc7-s3", "title": "Uprawnienia, zastępstwa i prowizje"}
+          ]}},
+          {"id": "uc7-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc7-v1", "title": "Skalowanie szkoły bez utraty jakości"}
+          ]}}
+        ]}},
+        {"id": "uc8", "title": "8️⃣ Zakończenie, odnowienie i polecenie", "children": {"attached": [
+          {"id": "uc8-problem", "title": "Problem", "children": {"attached": [
+            {"id": "uc8-p1", "title": "Koniec programu = przypadkowy koniec relacji"}
+          ]}},
+          {"id": "uc8-solution", "title": "Proces docelowy", "children": {"attached": [
+            {"id": "uc8-s1", "title": "Raport: punkt wyjścia → praca → wynik"},
+            {"id": "uc8-s2", "title": "Kolejny poziom / klub utrzymaniowy / kontrola"},
+            {"id": "uc8-s3", "title": "Opinia i program poleceń we właściwym momencie"}
+          ]}},
+          {"id": "uc8-value", "title": "Wartość", "children": {"attached": [
+            {"id": "uc8-v1", "title": "Retencja, ponowny zakup i rekomendacje"}
+          ]}}
+        ]}}
+      ]}
+    },
+    "theme": {
+      "id": "theme-use-cases",
+      "centralTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "700", "fo:font-size": "28pt", "fo:color": "#FFFFFF", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#172554", "border-line-width": "0pt", "line-class": "org.xmind.branchConnection.curve", "line-width": "3pt"}},
+      "mainTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "600", "fo:font-size": "17pt", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#DBEAFE", "fo:color": "#1E3A8A", "border-line-width": "0pt", "line-class": "org.xmind.branchConnection.curve", "line-width": "2pt"}},
+      "subTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "500", "fo:font-size": "13pt", "fo:color": "#1E293B", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#F8FAFC", "border-line-width": "1pt", "border-line-color": "#CBD5E1", "line-class": "org.xmind.branchConnection.roundedElbow"}},
+      "map": {"type": "map", "properties": {"svg:fill": "#EFF6FF", "multi-line-colors": "#2563EB #0EA5E9 #14B8A6 #22C55E #F59E0B #F97316 #EF4444 #8B5CF6", "line-tapered": "tapered"}}
+    },
+    "topicPositioning": "fixed"
+  },
+  {
+    "id": "sheet-mvp-20260919",
+    "class": "sheet",
+    "title": "3. MVP i rozwój",
+    "rootTopic": {
+      "id": "root-mvp-20260919",
+      "class": "topic",
+      "title": "🛠️ Produkt: od MVP do przewagi",
+      "structureClass": "org.xmind.ui.map.unbalanced",
+      "children": {"attached": [
+        {"id": "mvp-core", "title": "✅ MVP — rdzeń", "children": {"attached": [
+          {"id": "mvp-1", "title": "Gospodarstwo, opiekunowie i profile psów"},
+          {"id": "mvp-2", "title": "Dynamiczna ankieta i kwalifikacja"},
+          {"id": "mvp-3", "title": "Rezerwacje 1:1"},
+          {"id": "mvp-4", "title": "Pakiety spotkań i saldo"},
+          {"id": "mvp-5", "title": "BLIK / karta / przelew manualny"},
+          {"id": "mvp-6", "title": "Notatka prywatna + podsumowanie klienta"},
+          {"id": "mvp-7", "title": "Plan, zadania, filmy i check-in"},
+          {"id": "mvp-8", "title": "Mobilny portal klienta przez link / PWA"},
+          {"id": "mvp-9", "title": "Przypomnienia"},
+          {"id": "mvp-10", "title": "Fakturownia / inFakt / przygotowanie pod KSeF"}
+        ]}},
+        {"id": "phase-2", "title": "📈 Etap 2 — szkoła i monetyzacja", "children": {"attached": [
+          {"id": "phase2-1", "title": "Kursy grupowe i kohorty"},
+          {"id": "phase2-2", "title": "Listy oczekujących i odrabianie zajęć"},
+          {"id": "phase2-3", "title": "Płatne analizy wideo i limity komunikacji"},
+          {"id": "phase2-4", "title": "Wielu trenerów, role i prowizje"},
+          {"id": "phase2-5", "title": "Dokumenty, szczepienia, bezpieczeństwo"},
+          {"id": "phase2-6", "title": "Automatyczne odnowienia i white-label"}
+        ]}},
+        {"id": "phase-3", "title": "🧠 Etap 3 — przewaga danych", "children": {"attached": [
+          {"id": "phase3-1", "title": "AI: szkic dokumentacji, nigdy autonomiczna diagnoza"},
+          {"id": "phase3-2", "title": "Benchmarki programów i wyników"},
+          {"id": "phase3-3", "title": "Rekomendacje kolejnego etapu pracy"},
+          {"id": "phase3-4", "title": "Rentowność usług, trenerów i źródeł leadów"}
+        ]}},
+        {"id": "business-model", "title": "💰 Model biznesowy", "children": {"attached": [
+          {"id": "bm-1", "title": "SaaS opłacany przez trenera"},
+          {"id": "bm-2", "title": "Klient końcowy korzysta bezpłatnie"},
+          {"id": "bm-3", "title": "Solo: 79–129 zł / mies."},
+          {"id": "bm-4", "title": "Studio: 249–399 zł / mies."},
+          {"id": "bm-5", "title": "Dodatki: SMS, wideo, AI, white-label"},
+          {"id": "bm-6", "title": "Jedna uratowana nieobecność powinna pokryć abonament"}
+        ]}},
+        {"id": "kpis", "title": "📊 Wskaźniki sukcesu", "children": {"attached": [
+          {"id": "kpi-acquire", "title": "Pozyskanie", "children": {"attached": [
+            {"id": "kpi-1", "title": "Lead → płatna konsultacja"},
+            {"id": "kpi-2", "title": "Czas obsługi nowego leada"}
+          ]}},
+          {"id": "kpi-convert", "title": "Sprzedaż", "children": {"attached": [
+            {"id": "kpi-3", "title": "Konsultacja → zakup programu"},
+            {"id": "kpi-4", "title": "Średni przychód na psa / gospodarstwo"}
+          ]}},
+          {"id": "kpi-deliver", "title": "Realizacja", "children": {"attached": [
+            {"id": "kpi-5", "title": "Minuty administracji na sesję"},
+            {"id": "kpi-6", "title": "Wykonanie zadań i terminowość feedbacku"}
+          ]}},
+          {"id": "kpi-retain", "title": "Retencja", "children": {"attached": [
+            {"id": "kpi-7", "title": "Ukończenie programu"},
+            {"id": "kpi-8", "title": "Odnowienie / następny poziom / polecenie"}
+          ]}},
+          {"id": "kpi-scale", "title": "Skalowanie", "children": {"attached": [
+            {"id": "kpi-9", "title": "Obłożenie grup i trenerów"},
+            {"id": "kpi-10", "title": "Marża na programie"}
+          ]}}
+        ]}},
+        {"id": "validation", "title": "🔬 Walidacja przed budową", "children": {"attached": [
+          {"id": "validation-1", "title": "Wywiady: solo, behawioryści, szkoły grupowe, zespoły"},
+          {"id": "validation-2", "title": "Zmapować realny tydzień pracy, nie listę życzeń"},
+          {"id": "validation-3", "title": "Prototyp: intake → program → zadania → płatność"},
+          {"id": "validation-4", "title": "Pilot z 3–5 firmami"},
+          {"id": "validation-5", "title": "Mierzyć oszczędzony czas i dodatkowy przychód"}
+        ]}},
+        {"id": "north-star", "title": "⭐ Przewaga / North Star", "children": {"attached": [
+          {"id": "north-1", "title": "Nie liczba rezerwacji"},
+          {"id": "north-2", "title": "Liczba aktywnie realizowanych, opłaconych programów"},
+          {"id": "north-3", "title": "Dowód wartości: opiekun ćwiczy, pies robi postęp, firma zarabia"}
+        ]}}
+      ]}
+    },
+    "theme": {
+      "id": "theme-mvp",
+      "centralTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "700", "fo:font-size": "28pt", "fo:color": "#FFFFFF", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#052E16", "border-line-width": "0pt", "line-class": "org.xmind.branchConnection.curve", "line-width": "3pt"}},
+      "mainTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "600", "fo:font-size": "17pt", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#DCFCE7", "fo:color": "#14532D", "border-line-width": "0pt", "line-class": "org.xmind.branchConnection.curve", "line-width": "2pt"}},
+      "subTopic": {"type": "topic", "properties": {"fo:font-family": "NeverMind", "fo:font-weight": "500", "fo:font-size": "13pt", "fo:color": "#1E293B", "shape-class": "org.xmind.topicShape.roundedRect", "svg:fill": "#F8FAFC", "border-line-width": "1pt", "border-line-color": "#CBD5E1", "line-class": "org.xmind.branchConnection.roundedElbow"}},
+      "map": {"type": "map", "properties": {"svg:fill": "#F0FDF4", "multi-line-colors": "#16A34A #22C55E #84CC16 #EAB308 #F59E0B #0EA5E9 #8B5CF6", "line-tapered": "tapered"}}
+    },
+    "topicPositioning": "fixed"
+  }
+]

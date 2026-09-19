@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>System dla trenerów psów — luka rynkowa</title>
+    <dateCreated>Sat, 19 Sep 2026 12:00:00 +0200</dateCreated>
+  </head>
+  <body>
+    <outline text="🐕 System dla trenerów psów — luka rynkowa">
+      <outline text="🎯 Główna teza">
+        <outline text="Nie brakuje kalendarza ani CRM-u"/>
+        <outline text="Brakuje jednego procesu end-to-end"/>
+        <outline text="Lead → kwalifikacja → program → płatność → trening → postęp → kolejny zakup"/>
+        <outline text="Jednostką jest pies + opiekunowie + program, nie sama wizyta"/>
+      </outline>
+      <outline text="🧩 4 luki rynkowe">
+        <outline text="Rezerwacje bez procesu zmiany zachowania"/>
+        <outline text="Trening bez sprzedaży i finansów"/>
+        <outline text="Globalne narzędzia bez polskiej lokalizacji"/>
+        <outline text="Fragmentaryczny model danych"/>
+      </outline>
+      <outline text="🗺️ Krajobraz konkurencji">
+        <outline text="Systemy biznesowe">
+          <outline text="Booksy / Calendesk / EasyWeek"/>
+          <outline text="Bookicorn" type="link" _url="https://www.bookicorn.net/pl"/>
+          <outline text="Mocne: sprzedaż i organizacja"/>
+          <outline text="Słabe: historia i wynik konkretnego psa"/>
+        </outline>
+        <outline text="Polskie narzędzia dog-first">
+          <outline text="PetBoard" type="link" _url="https://petboard.pl/"/>
+          <outline text="Behaivo — beta" type="link" _url="https://behaivo.com/pl"/>
+          <outline text="Merdilo Pro" type="link" _url="https://merdilo.com/pro/"/>
+        </outline>
+        <outline text="Globalne all-in-one">
+          <outline text="PupManager" type="link" _url="https://pupmanager.com/"/>
+          <outline text="DogDesk" type="link" _url="https://dogdesk.app/"/>
+          <outline text="Gingr" type="link" _url="https://www.gingrapp.com/dog-training-software"/>
+        </outline>
+      </outline>
+      <outline text="👥 Idealny klient początkowy">
+        <outline text="Mała szkoła / praktyka: 1–5 trenerów"/>
+        <outline text="50–250 aktywnych gospodarstw domowych"/>
+        <outline text="Treningi 1:1 + grupy + wsparcie między sesjami"/>
+        <outline text="Pakiety 4–10 spotkań"/>
+        <outline text="Obecnie: kalendarz + WhatsApp + arkusz + przelewy + PDF"/>
+      </outline>
+      <outline text="🚀 Scenariusze biznesowe">
+        <outline text="1. Kwalifikacja nowego przypadku">
+          <outline text="Dynamiczna ankieta i reguły ryzyka"/>
+          <outline text="Rekomendacja usługi, zgody, termin i płatność"/>
+          <outline text="Wartość: więcej płatnych konsultacji i mniej ręcznej obsługi"/>
+        </outline>
+        <outline text="2. Sprzedaż programu zamiast wizyty">
+          <outline text="Program 6 tygodni: sesje + zadania + feedback"/>
+          <outline text="Jedna płatność lub raty, saldo i termin ważności"/>
+          <outline text="Wartość: wyższy koszyk i przewidywalny przychód"/>
+        </outline>
+        <outline text="3. Zamknięcie sesji bez papierologii">
+          <outline text="Notatka głosowa → szkic dokumentacji i podsumowania"/>
+          <outline text="Zatwierdzenie → zadania → rozliczenie → następny termin"/>
+          <outline text="Wartość: mniej administracji po godzinach"/>
+        </outline>
+        <outline text="4. Praca pomiędzy spotkaniami">
+          <outline text="Zadania, filmy, check-in i krótkie nagrania klienta"/>
+          <outline text="Limity pytań i analiz wideo w pakiecie"/>
+          <outline text="Wartość: postęp psa i monetyzacja wsparcia"/>
+        </outline>
+        <outline text="5. Kurs grupowy dla szczeniąt">
+          <outline text="Kwalifikacja pary pies + przewodnik"/>
+          <outline text="Cykl terminów, płatność, kolejka, obecność i odrabianie"/>
+          <outline text="Wartość: większe obłożenie i sprzedaż kolejnego poziomu"/>
+        </outline>
+        <outline text="6. Dom z wieloma psami i opiekunami">
+          <outline text="Jedno gospodarstwo, wiele ról, psów i programów"/>
+          <outline text="Wartość: brak duplikatów i pomieszanych historii"/>
+        </outline>
+        <outline text="7. Przekazanie przypadku w zespole">
+          <outline text="Specjalizacja, obciążenie, triggery, bezpieczeństwo i prowizje"/>
+          <outline text="Wartość: skalowanie szkoły bez utraty jakości"/>
+        </outline>
+        <outline text="8. Zakończenie, odnowienie i polecenie">
+          <outline text="Raport wyniku i automatyczna propozycja kolejnego kroku"/>
+          <outline text="Wartość: retencja, ponowny zakup i rekomendacje"/>
+        </outline>
+      </outline>
+      <outline text="🛠️ MVP">
+        <outline text="Gospodarstwo, opiekunowie i profile psów"/>
+        <outline text="Ankieta i kwalifikacja"/>
+        <outline text="Rezerwacje 1:1 i pakiety"/>
+        <outline text="BLIK / karta / przelew manualny"/>
+        <outline text="Notatka prywatna + podsumowanie klienta"/>
+        <outline text="Plan, zadania, filmy i check-in"/>
+        <outline text="Mobilny portal przez link / PWA"/>
+        <outline text="Przypomnienia i integracja fakturowa / KSeF"/>
+      </outline>
+      <outline text="📈 Etap 2">
+        <outline text="Grupy, kohorty, kolejki i odrabianie"/>
+        <outline text="Płatne analizy wideo i limity komunikacji"/>
+        <outline text="Zespół, role, prowizje i white-label"/>
+      </outline>
+      <outline text="💰 Model biznesowy">
+        <outline text="SaaS opłacany przez trenera; klient korzysta bezpłatnie"/>
+        <outline text="Solo: 79–129 zł / mies."/>
+        <outline text="Studio: 249–399 zł / mies."/>
+        <outline text="Dodatki: SMS, wideo, AI, white-label"/>
+      </outline>
+      <outline text="📊 Mierniki sukcesu">
+        <outline text="Lead → płatna konsultacja → zakup programu"/>
+        <outline text="Czas administracji na sesję"/>
+        <outline text="Wykonanie zadań i ukończenie programu"/>
+        <outline text="Przychód na psa / gospodarstwo"/>
+        <outline text="Odnowienie, kolejny poziom i polecenie"/>
+        <outline text="Obłożenie i marża"/>
+      </outline>
+      <outline text="⭐ North Star">
+        <outline text="Liczba aktywnie realizowanych, opłaconych programów"/>
+        <outline text="Opiekun ćwiczy → pies robi postęp → firma zarabia"/>
+      </outline>
+    </outline>
+  </body>
+</opml>

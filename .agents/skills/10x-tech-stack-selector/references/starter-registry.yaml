@@ -1,21 +1,24 @@
 # Starter Registry (canonical source of truth)
 #
 # Owned by: 10x-tech-stack-selector
-# Consumed by: 10x-bootstrapper
-# Validator: scripts/validate-starter-registry-sync.mjs (one-way: bootstrapper-references ⊆ this registry)
+# Consumed by: 10x-tech-stack-selector and 10x-scaffold-adapter (discovery hints only)
+# Execution authority: none. 10x-bootstrapper never executes commands from this file.
 #
 # Two top-level keys:
 #   recommended_defaults — small map naming the lead starter for each (product_type, language_family) cell.
 #                           Cells with no vetted default carry "<none>" — Q0 forces custom path.
 #   starters             — keyed-by-starter_id set of cards. Each card carries narrative fields the LLM
-#                           reasons over plus quality-gate booleans plus CLI execution data plus deployment
+#                           reasons over plus quality-gate booleans, official documentation links and deployment
 #                           defaults plus bootstrapper_confidence.
 #
 # Stars and last_updated are snapshots at registry write date (2026-05-04).
 # bootstrapper_confidence values: verified | first-class | best-effort
-#   verified    — bootstrapper has been run end-to-end on this stack.
-#   first-class — registered with a valid CLI; expected to work but not battle-tested.
-#   best-effort — limited support; manual steps likely.
+#   verified    — this path was previously run end-to-end.
+#   first-class — a valid CLI path was previously known, without end-to-end proof.
+#   best-effort — historical support was limited; manual steps were likely.
+#
+# SECURITY: this registry intentionally contains no executable command templates or installation commands.
+# 10x-scaffold-adapter independently verifies the latest stable official docs and the locally installed CLI.
 
 recommended_defaults:
   web:
@@ -89,7 +92,6 @@ starters:
     toolchain:
       package_manager: npm
       runtime_version: "node 22"
-    cmd_template: "git clone https://github.com/przeprogramowani/10x-astro-starter {name} && cd {name} && {pm} install"
     deployment_defaults: [cloudflare-pages, vercel, fly]
     bootstrapper_confidence: first-class
     alternatives_to_consider: [astro, next, t3]
@@ -119,7 +121,6 @@ starters:
     tags: [react, ssr, popular]
     toolchain:
       package_manager: npm
-    cmd_template: 'npx create-next-app@latest {name} --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --use-{pm}'
     deployment_defaults: [vercel, cloudflare-pages, fly, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [10x-astro-starter, t3, react-router]
@@ -147,7 +148,6 @@ starters:
     tags: [astro, content, islands, fast]
     toolchain:
       package_manager: npm
-    cmd_template: "npm create astro@latest -- {name} --template basics --install --git --yes"
     deployment_defaults: [cloudflare-pages, vercel, netlify]
     bootstrapper_confidence: verified
     alternatives_to_consider: [10x-astro-starter, next]
@@ -176,7 +176,6 @@ starters:
     tags: [react, spa, lightweight]
     toolchain:
       package_manager: npm
-    cmd_template: "npm create vite@latest {name} -- --template react-ts"
     deployment_defaults: [cloudflare-pages, vercel, netlify, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [vite-vue, next]
@@ -202,7 +201,6 @@ starters:
     tags: [vue, spa]
     toolchain:
       package_manager: npm
-    cmd_template: "npm create vite@latest {name} -- --template vue-ts"
     deployment_defaults: [cloudflare-pages, vercel, netlify, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [nuxt, vite-react]
@@ -230,7 +228,6 @@ starters:
     tags: [svelte, ssr, performant]
     toolchain:
       package_manager: npm
-    cmd_template: "npx sv create {name} --template minimal --types ts --no-add-ons --install {pm}"
     deployment_defaults: [vercel, cloudflare-pages, netlify, fly]
     bootstrapper_confidence: first-class
     alternatives_to_consider: [next, nuxt]
@@ -257,7 +254,6 @@ starters:
     tags: [vue, ssr]
     toolchain:
       package_manager: npm
-    cmd_template: "npx nuxi init {name} --packageManager {pm} --install --gitInit"
     deployment_defaults: [vercel, cloudflare-pages, netlify, fly]
     bootstrapper_confidence: verified
     alternatives_to_consider: [vite-vue, next]
@@ -284,7 +280,6 @@ starters:
     tags: [react, ssr, routing]
     toolchain:
       package_manager: npm
-    cmd_template: "npx create-react-router@latest {name} --yes --package-manager {pm}"
     deployment_defaults: [cloudflare-pages, vercel, fly, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [10x-astro-starter, next, t3]
@@ -312,7 +307,6 @@ starters:
     tags: [react, trpc, typesafe, opinionated]
     toolchain:
       package_manager: npm
-    cmd_template: "npx create-t3-app@latest {name} --CI --tailwind --trpc --drizzle --appRouter --biome --dbProvider sqlite"
     deployment_defaults: [vercel, cloudflare-pages, fly]
     bootstrapper_confidence: verified
     alternatives_to_consider: [10x-astro-starter, next]
@@ -340,7 +334,6 @@ starters:
     tags: [react-native, mobile]
     toolchain:
       package_manager: npm
-    cmd_template: "npx create-expo-app {name} --yes --template default"
     deployment_defaults: [appstore-via-eas, testflight, expo-go]
     bootstrapper_confidence: verified
     alternatives_to_consider: [flutter]
@@ -368,7 +361,6 @@ starters:
     tags: [angular, enterprise]
     toolchain:
       package_manager: npm
-    cmd_template: "npx @angular/cli new {name} --defaults --routing --style scss --skip-tests --ssr false"
     deployment_defaults: [self-host, vercel, cloudflare-pages]
     bootstrapper_confidence: verified
     alternatives_to_consider: [next, vite-react]
@@ -396,7 +388,6 @@ starters:
     tags: [node, enterprise, decorators]
     toolchain:
       package_manager: npm
-    cmd_template: "npx @nestjs/cli new {name} -p {pm} --strict --skip-git"
     deployment_defaults: [fly, railway, render, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [hono, fastify]
@@ -424,7 +415,6 @@ starters:
     tags: [lightweight, multi-runtime, fast]
     toolchain:
       package_manager: npm
-    cmd_template: "npm create hono@latest {name} -- --template nodejs --pm {pm} --install"
     deployment_defaults: [cloudflare-workers, fly, railway, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [fastify, nestjs]
@@ -451,7 +441,6 @@ starters:
     tags: [node, performant]
     toolchain:
       package_manager: npm
-    cmd_template: "npx fastify-cli generate {name} --lang=ts --esm"
     deployment_defaults: [fly, railway, render, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [hono, nestjs]
@@ -480,7 +469,6 @@ starters:
     tags: [node, minimal, classic]
     toolchain:
       package_manager: npm
-    cmd_template: "npx express-generator {name} --git"
     deployment_defaults: [fly, railway, render, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [hono, fastify]
@@ -511,8 +499,6 @@ starters:
     tags: [python, batteries-included]
     toolchain:
       package_manager: uv
-    pre: "pip install django"
-    cmd_template: "django-admin startproject {name} ."
     deployment_defaults: [fly, railway, render, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [fastapi]
@@ -541,8 +527,6 @@ starters:
     tags: [python, async, typed]
     toolchain:
       package_manager: uv
-    pre: "uv pip install fastapi uvicorn"
-    cmd_template: "uv init {name} && uv add fastapi uvicorn"
     deployment_defaults: [fly, railway, render, self-host]
     bootstrapper_confidence: first-class
     alternatives_to_consider: [django]
@@ -572,8 +556,6 @@ starters:
     tags: [ruby, convention-over-config]
     toolchain:
       package_manager: bundle
-    pre: "gem install rails"
-    cmd_template: "rails new {name} --database postgresql --skip-bundle --skip-test"
     deployment_defaults: [fly, render, heroku, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [rails-api]
@@ -601,8 +583,6 @@ starters:
     tags: [ruby, api-only]
     toolchain:
       package_manager: bundle
-    pre: "gem install rails"
-    cmd_template: "rails new {name} --api --database postgresql --skip-bundle --skip-test"
     deployment_defaults: [fly, render, heroku, self-host]
     bootstrapper_confidence: first-class
     alternatives_to_consider: [rails]
@@ -632,7 +612,6 @@ starters:
     tags: [java, enterprise]
     toolchain:
       package_manager: maven
-    cmd_template: "curl -s https://start.spring.io/starter.tgz -d dependencies=web,devtools -d type=maven-project -d javaVersion=21 -d groupId=com.example -d artifactId={name} | tar -xzf -"
     deployment_defaults: [fly, render, aws-ecs, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: []
@@ -662,7 +641,6 @@ starters:
     tags: [php, elegant]
     toolchain:
       package_manager: composer
-    cmd_template: "composer create-project laravel/laravel {name} --no-interaction --prefer-dist"
     deployment_defaults: [fly, render, forge, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: []
@@ -692,7 +670,6 @@ starters:
     for: [api, backend, cli-tool, microservice, web-app]
     tags: [go, minimal, performant]
     toolchain: {}
-    cmd_template: "mkdir {name} && cd {name} && go mod init github.com/user/{name}"
     deployment_defaults: [self-host, fly, aws-ecs, google-cloud-run]
     bootstrapper_confidence: first-class
     alternatives_to_consider: []
@@ -722,7 +699,6 @@ starters:
     tags: [rust, performant, safe]
     toolchain:
       package_manager: cargo
-    cmd_template: "cargo new {name} --bin --edition 2024"
     deployment_defaults: [self-host, fly, aws-ecs]
     bootstrapper_confidence: verified
     alternatives_to_consider: [axum]
@@ -750,7 +726,6 @@ starters:
     tags: [rust, async, performant]
     toolchain:
       package_manager: cargo
-    cmd_template: "cargo new {name} --bin --edition 2024 && cd {name} && cargo add axum tokio --features tokio/full"
     deployment_defaults: [self-host, fly, aws-ecs]
     bootstrapper_confidence: first-class
     alternatives_to_consider: [rust]
@@ -779,7 +754,6 @@ starters:
     tags: [monorepo, vercel]
     toolchain:
       package_manager: npm
-    cmd_template: "npx create-turbo@latest {name} --package-manager {pm} --skip-install"
     deployment_defaults: [vercel, cloudflare-pages, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [nx]
@@ -807,7 +781,6 @@ starters:
     tags: [monorepo, enterprise, ai-mode]
     toolchain:
       package_manager: npm
-    cmd_template: "npx create-nx-workspace {name} --preset react-monorepo --interactive=false --packageManager {pm} --nxCloud skip"
     deployment_defaults: [self-host, vercel, cloudflare-pages]
     bootstrapper_confidence: verified
     alternatives_to_consider: [turborepo]
@@ -837,7 +810,6 @@ starters:
     tags: [rust, lightweight, desktop]
     toolchain:
       package_manager: cargo
-    cmd_template: "npm create tauri-app@latest {name} -- --template react-ts --manager {pm} --yes"
     deployment_defaults: [self-host, github-releases]
     bootstrapper_confidence: verified
     alternatives_to_consider: []
@@ -865,7 +837,6 @@ starters:
     tags: [dart, cross-platform]
     toolchain:
       package_manager: pub
-    cmd_template: "flutter create -e {name} --org com.example --platforms android,ios,web"
     deployment_defaults: [appstore, playstore, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: [expo]
@@ -893,7 +864,6 @@ starters:
     tags: [csharp, enterprise, microsoft]
     toolchain:
       package_manager: dotnet
-    cmd_template: "dotnet new webapi -n {name} --no-restore"
     deployment_defaults: [azure-app-service, fly, self-host]
     bootstrapper_confidence: verified
     alternatives_to_consider: []

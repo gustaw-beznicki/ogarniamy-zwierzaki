@@ -212,4 +212,4 @@ expected_socratic_moments: []
 expected_bootstrapper_confidence_surfaced: first-class  # registry says first-class until promoted
 ```
 
-Verifies Step E surfaces the `bootstrapper_confidence: first-class` value verbatim in conversation: "Bootstrapper has this stack registered with a valid CLI but hasn't been battle-tested. Expect mostly-smooth scaffolding with occasional manual steps." The user proceeds knowingly. Note the `10x-astro-starter` card stays at `first-class` until verified end-to-end through bootstrapper, at which point promote to `verified`.
+Verifies Step E surfaces `bootstrapper_confidence: first-class` as historical provenance: "A valid CLI path was previously known, but it was not verified end-to-end. The adapter step will establish current evidence." The user proceeds knowingly. Promote the registry value only after a separately reviewed end-to-end verification; every project still gets fresh adapter evidence.

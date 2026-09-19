@@ -1,15 +1,15 @@
 # Hand-off schema
 
-`context/foundation/tech-stack.md` is the file `/10x-tech-stack-selector` writes and `/10x-bootstrapper` reads. This doc is the contract for its shape. Both skills load this file by relative path; renames or restructurings here are load-bearing.
+`context/foundation/tech-stack.md` is the file `/10x-tech-stack-selector` writes and `/10x-scaffold-adapter` reads. This doc is the contract for its shape. `/10x-bootstrapper` sees the handoff only to verify its hash against the adapter manifest; it never derives commands from it.
 
 Two contracts live in this doc:
 
-1. **Frontmatter** — 4 required top-level keys (`starter_id`, `package_manager`, `project_name`, `hints`) plus a fixed `hints` subfield set.
+1. **Frontmatter** — 3 required top-level keys (`starter_id`, `project_name`, `hints`), optional `package_manager`, and optional `components` (required for `language_family: multi`).
 2. **Body** — exactly one `## Why this stack` heading with one paragraph (≤ 200 words). Nothing else.
 
 The schema is **language-agnostic**. `package_manager` is an open string drawn from whatever the chosen starter's `toolchain.package_manager` field prescribes. `hints.deployment_target` is starter-prescribed (whatever appears in the card's `deployment_defaults` array).
 
-Rich rationale stays in conversation. The body paragraph is a one-paragraph summary — bootstrapper does not parse it, it exists for human readers (the user, future maintainers, code reviewers) who open the file later and want the why.
+Rich rationale stays in conversation. The body paragraph is a one-paragraph summary — downstream skills do not parse it; it exists for human readers.
 
 # Frontmatter fields
 
@@ -18,6 +18,13 @@ Rich rationale stays in conversation. The body paragraph is a one-paragraph summ
 starter_id: <string>            # required; key from references/starter-registry.yaml
 package_manager: <string>       # optional; open string per chosen card; may be omitted entirely
 project_name: <string>          # required; kebab-case
+components:                     # optional; required and >=2 items for language_family: multi
+  - id: <string>                # stable kebab-case identifier, unique in this list
+    starter_id: <string>        # key from references/starter-registry.yaml
+    package_manager: <string>   # optional; open string per component card
+    project_name: <string>      # kebab-case name passed to that component's scaffold CLI
+    target_dir: <string>        # safe relative destination in the repository
+    language_family: <enum>     # concrete family; never multi
 hints:                          # required object; subfields below
   language_family: <enum>
   team_size: <enum>
@@ -40,7 +47,7 @@ hints:                          # required object; subfields below
 
 ### `starter_id` (string, required)
 
-The key from `references/starter-registry.yaml` `starters:` map. The validator (`scripts/validate-starter-registry-sync.mjs`) ensures bootstrapper only references keys present in this registry; tech-stack-selector is the source of truth.
+The key from the `starters:` map in `references/starter-registry.yaml`. For a single-component handoff, this is the chosen starter. For a multi-component handoff, it mirrors the primary component for backward compatibility.
 
 Examples: `10x-astro-starter`, `next`, `t3`, `fastapi`, `django`, `rails`, `spring`, `laravel`, `go`, `rust`, `expo`, `flutter`, `dotnet`.
 
@@ -58,17 +65,32 @@ Open string. Whatever the chosen starter's `toolchain.package_manager` prescribe
 - .NET: `dotnet`, `nuget`
 - Dart: `pub`
 
-The field MAY be omitted from frontmatter for ecosystems where there's no external choice — Go is the canonical example. When omitted, bootstrapper uses the chosen card's default tooling without prompting.
+The field MAY be omitted from frontmatter for ecosystems where there's no external choice — Go is the canonical example. For a multi-component handoff, it mirrors the primary component and each component records its own value when applicable.
 
-Do NOT add ecosystem-incompatible values here. The value must match the chosen starter's `toolchain.package_manager`. If the starter card prescribes `npm` and the user wanted `pnpm`, the override happens in conversation rationale (not in this field) — the file always reflects the card's prescribed value, since bootstrapper uses this field to invoke the right CLI.
+Do NOT add ecosystem-incompatible values here. The value must match the chosen starter's `toolchain.package_manager`. This is selection metadata, not an executable instruction; `/10x-scaffold-adapter` still verifies the current toolchain from official sources.
 
 ### `project_name` (string, required)
 
-Kebab-case. Drawn from PRD's `project` field unless the user overrode it during the project-name confirmation step. This is the directory name `/10x-bootstrapper` will scaffold.
+Kebab-case. Drawn from PRD's `project` field unless the user overrode it during the project-name confirmation step. For a multi-component handoff, it mirrors the primary component's project name.
+
+### `components` (list, conditionally required)
+
+Omit for a normal single-component project. It is required when `hints.language_family: multi`, must contain at least two items, and becomes the authoritative component breakdown for `/10x-scaffold-adapter`.
+
+Each item must contain:
+
+- `id` — unique kebab-case identifier used in adapter filenames.
+- `starter_id` — a key present in this registry.
+- `project_name` — kebab-case name intended for that component's official scaffold tool.
+- `target_dir` — relative POSIX-style destination such as `apps/web` or `services/api`.
+- `language_family` — one concrete permitted family; never `multi`.
+- `package_manager` — optional open string, with the same rules as the top-level field.
+
+`target_dir` must not be absolute, empty, `.`, contain `.` or `..` path segments, or begin with `.git`, `context/archive`, or `.bootstrap-scaffold`. Component destinations must be unique, non-overlapping, and non-nested. The selector must reject ambiguous layouts rather than asking the adapter or bootstrapper to infer one.
 
 ### `hints` (object, required)
 
-Subfields below. The set is intentionally minimal — only fields bootstrapper consumes today. New subfields require a schema bump (this doc) and updates to both this skill's writer and bootstrapper's reader.
+Subfields below. The set is intentionally minimal. New subfields require a schema bump and coordinated updates to the selector, adapter, and bootstrapper contracts.
 
 ## Permitted `hints` subfields
 
@@ -76,7 +98,7 @@ Subfields below. The set is intentionally minimal — only fields bootstrapper c
 
 Enum: `js | python | ruby | java | go | rust | php | dotnet | dart | multi`
 
-Drawn from Q0 of the residual interview. (PRD frontmatter does not carry tech_preferences, so `language_family` is typically Q0-derived.) `multi` is reserved for genuinely polyglot starters (e.g., a project that ships a Rust binary plus a JS web client); it should not be used for "I'm not sure".
+Drawn from Q0 of the residual interview. (PRD frontmatter does not carry tech_preferences, so `language_family` is typically Q0-derived.) `multi` is reserved for a concrete handoff with at least two independently scaffolded components; it must not mean "I'm not sure" or a single full-stack starter.
 
 ### `team_size`
 
@@ -88,7 +110,7 @@ Standard path skips Q2; in that case, default to `solo` (the recommended-default
 
 ### `deployment_target`
 
-Open string drawn from the chosen starter's `deployment_defaults` array. Bootstrapper consumes this to decide deployment-specific scaffolding (e.g., adding `wrangler.toml` for Cloudflare, a `Dockerfile` for self-host, `fly.toml` for Fly).
+Open string drawn from the chosen starter's `deployment_defaults` array. It describes the deployment decision; neither downstream skill may invent deployment files solely from this value.
 
 If the user picked "I don't know yet" at Q4, this lands as the card's first `deployment_default` value (NOT the literal string `unspecified`). Bootstrapper does not need to handle a missing or unspecified value.
 
@@ -110,13 +132,13 @@ Drawn from Q5b. Default `auto-deploy-on-merge`.
 
 Enum: `verified | first-class | best-effort`
 
-Copied verbatim from the chosen card's `bootstrapper_confidence` field. Bootstrapper consumes this to decide how aggressive to be with automatic scaffolding vs. how many manual steps to surface.
+Copied verbatim from the chosen card's `bootstrapper_confidence` field. For a multi-component handoff, store the weakest component value (`best-effort` < `first-class` < `verified`). This is a historical selection signal only. The live evidence status written by `/10x-scaffold-adapter` controls whether execution can proceed.
 
 Semantics:
 
-- `verified` — bootstrapper has been run end-to-end on this starter; safe for full automation.
-- `first-class` — registered with a valid CLI but not battle-tested; expect occasional hiccups.
-- `best-effort` — limited support; manual steps likely; bootstrapper surfaces the friction explicitly.
+- `verified` — registry authors previously ran the path end-to-end.
+- `first-class` — registry authors knew a valid CLI path, without end-to-end proof.
+- `best-effort` — historical support was limited; expect additional adapter review.
 
 ### `path_taken`
 
@@ -128,7 +150,7 @@ Records which Q0 branch the user chose. `standard` means the recommended-default
 
 Bool. `true` only when the user proceeded with a starter that failed ≥1 of the four agent-friendly quality gates (typed / convention-based / popular_in_training / well_documented), against the skill's Socratic challenge. `false` otherwise.
 
-`true` is informational, not blocking — bootstrapper uses it to know whether to add ecosystem-specific compensation in the generated instruction file (`AGENTS.md` / `CLAUDE.md`, per `references/agent-friendly-criteria.md` § Compensation path).
+`true` is informational, not blocking. Any ecosystem-specific compensation belongs in the selection rationale or later project planning; downstream skills must not synthesize an `AGENTS.md` from this flag.
 
 ### `self_check_answers`
 
@@ -163,7 +185,7 @@ The set is intentionally fixed. Free-text features the user names beyond these f
 
 Exactly one heading: `## Why this stack`.
 
-One paragraph, ≤ 200 words, summarizing how PRD priors + residual answers led to the chosen starter. Cite 2–3 load-bearing factors (e.g., "solo + short timeline + has_auth → battle-tested + popular community → Astro+Supabase+Cloudflare wins on agent-friendly + bootstrapper-verified"). No bulleted lists, no subsections, no code blocks — bootstrapper does not parse this paragraph; it exists for human readers.
+One paragraph, ≤ 200 words, summarizing how PRD priors + residual answers led to the chosen starter. Cite 2–3 load-bearing factors (e.g., "solo + short timeline + has_auth → battle-tested + popular community → Astro+Supabase+Cloudflare wins on agent-friendly criteria"). No bulleted lists, no subsections, no code blocks — downstream skills do not parse this paragraph; it exists for human readers.
 
 Rich rationale (alternatives considered, Socratic moments, quality gate analysis) stays in the conversation transcript only. The file is intentionally lean.
 
@@ -197,7 +219,7 @@ A solo learner shipping a recipe-matching MVP in 1 week with auth and an LLM
 suggestion step needs a battle-tested, agent-friendly starter that handles
 auth + database + edge deploy out of the box. Astro+Supabase+Cloudflare is the
 recommended default for `(web, js)` and clears all four agent-friendly gates;
-its bootstrapper confidence is verified, so scaffolding will be smooth. Auth
+its registry confidence is verified; the adapter will still re-check the live CLI. Auth
 and AI feature flags are set; payments and realtime are out of scope per PRD
 non-goals. CI runs on GitHub Actions with auto-deploy-on-merge — what the
 starter ships with.
@@ -273,4 +295,55 @@ recommended default for `(api, go)`. Go modules are part of the toolchain, so
 package_manager is omitted from frontmatter (no external choice to record).
 Deployment defaults to self-host per the Go card; CI on GitHub Actions with
 auto-deploy is the starter's standard shape.
+```
+
+# Example (multi-component)
+
+```yaml
+---
+starter_id: next
+package_manager: pnpm
+project_name: control-room-web
+components:
+  - id: web
+    starter_id: next
+    package_manager: pnpm
+    project_name: control-room-web
+    target_dir: apps/web
+    language_family: js
+  - id: api
+    starter_id: fastapi
+    package_manager: uv
+    project_name: control-room-api
+    target_dir: services/api
+    language_family: python
+hints:
+  language_family: multi
+  team_size: small
+  deployment_target: self-host
+  ci_provider: github-actions
+  ci_default_flow: manual-promotion
+  bootstrapper_confidence: first-class
+  path_taken: custom
+  quality_override: false
+  self_check_answers:
+    typed: true
+    from_official_starter: true
+    conventions: true
+    docs_current: true
+    can_judge_agent: true
+  has_auth: true
+  has_payments: false
+  has_realtime: true
+  has_ai: false
+  has_background_jobs: true
+---
+
+## Why this stack
+
+The web UI and Python API have separate release and runtime boundaries, so the
+handoff names both scaffold units explicitly. Next.js is the primary component
+and is mirrored by the top-level compatibility fields; FastAPI owns the API.
+Their non-overlapping target directories let downstream staging and merge
+checks treat each component independently.
 ```

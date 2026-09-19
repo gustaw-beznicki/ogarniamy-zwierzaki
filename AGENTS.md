@@ -5,25 +5,27 @@
 Wybierz starter i stos dla PRD napisanego w Lekcji 1, z **łańcuchem stosu**:
 
 ```
-(/10x-init  →  /10x-shape  →  /10x-prd)  →  /10x-tech-stack-selector  →  (bootstrapper)
+(/10x-init  →  /10x-shape  →  /10x-prd)  →  /10x-tech-stack-selector  →  /10x-scaffold-adapter  →  /10x-bootstrapper
 ```
 
-Łańcuch PRD jest dostarczany z Lekcji 1 (ponownie uwzględniony w tej lekcji, aby można było poprawić PRD w trakcie pracy). `/10x-tech-stack-selector` jest głównym tematem lekcji; `/10x-bootstrapper` to następne ogniwo, omawiane w Lekcji 3.
+Łańcuch PRD jest dostarczany z Lekcji 1 (ponownie uwzględniony w tej lekcji, aby można było poprawić PRD w trakcie pracy). `/10x-tech-stack-selector` jest głównym tematem lekcji; przed bootstrapem `/10x-scaffold-adapter` tworzy aktualną instrukcję na podstawie oficjalnej dokumentacji i lokalnego CLI.
 
 ### Router zadań — Od czego zacząć
 
 | Umiejętność | Użyj jej, gdy |
 | --- | --- |
 | **Wybór stosu (temat lekcji)** | |
-| `/10x-tech-stack-selector` | Masz PRD w `context/foundation/prd.md` i musisz wybrać starter. Rozpoczyna się od wyraźnego wyboru (przyjmij zalecaną domyślną opcję dla swojej komórki `(product_type, language_family)` albo zaprojektuj własną), przechodzi przez zestaw pytań uzupełniających, gdy projektujesz własną opcję, stosuje cztery przyjazne agentom bramki jakości, analizuje rejestr starterów uwzględniający język i zapisuje `context/foundation/tech-stack.md`. Opcjonalny argument `[path-to-prd]` pozwala wskazać niestandardową lokalizację PRD (np. `/10x-tech-stack-selector @context/foundation/prd-v2.md`); bez niego umiejętność domyślnie używa `context/foundation/prd.md`. Użyj PO `/10x-prd`, PRZED `/10x-bootstrapper`. |
+| `/10x-tech-stack-selector` | Masz PRD w `context/foundation/prd.md` i musisz wybrać starter. Rozpoczyna się od wyraźnego wyboru (przyjmij zalecaną domyślną opcję dla swojej komórki `(product_type, language_family)` albo zaprojektuj własną), przechodzi przez zestaw pytań uzupełniających, gdy projektujesz własną opcję, stosuje cztery przyjazne agentom bramki jakości, analizuje rejestr starterów uwzględniający język i zapisuje `context/foundation/tech-stack.md`. Opcjonalny argument `[path-to-prd]` pozwala wskazać niestandardową lokalizację PRD (np. `/10x-tech-stack-selector @context/foundation/prd-v2.md`); bez niego umiejętność domyślnie używa `context/foundation/prd.md`. Użyj PO `/10x-prd`, PRZED `/10x-scaffold-adapter`. |
+| `/10x-scaffold-adapter` | Masz `tech-stack.md` i potrzebujesz świeżej, projektowej instrukcji scaffoldingu. Skill sprawdza najnowszą stabilną oficjalną dokumentację oraz lokalne `--version`/`--help`, zapisuje niewykonywalny adapter Markdown dla każdego komponentu i przekazuje pracę do `/10x-bootstrapper`. |
 | **W razie potrzeby uruchom ponownie wcześniejsze kroki** | |
 | `/10x-init` / `/10x-shape` / `/10x-prd` | Zgrupowane, aby można było poprawić PRD w trakcie pracy. Jeśli `/10x-tech-stack-selector` ujawni lukę (np. Wymaganie funkcjonalne wymuszające funkcję, której nie obsługuje zalecany starter), uruchom ponownie `/10x-prd`, aby zmienić PRD przed wyborem stosu. |
 
 ### Jak łańcuch przekazuje pracę dalej
 
 - `/10x-tech-stack-selector` odczytuje frontmatter `context/foundation/prd.md` (`product_type`, `target_scale`, `timeline_budget`) jako założenia wstępne. Jeśli PRD nie istnieje, odmawia działania z jednoliniowym przekierowaniem do `/10x-shape` — bez wbudowanego awaryjnego mini-PRD.
-- Umiejętność zapisuje `context/foundation/tech-stack.md` z frontmatterem zawierającym 4 klucze (`starter_id`, `package_manager`, `project_name`, `hints`) oraz jednoakapitową treścią `## Why this stack`. Przekazanie jest celowo minimalne — bootstrapper nie analizuje uzasadnienia, tylko pola.
-- `/10x-bootstrapper` (Lekcja 3) odczytuje `tech-stack.md` i rejestr, aby utworzyć szkielet projektu.
+- Umiejętność zapisuje `context/foundation/tech-stack.md` z minimalnym frontmatterem. Dla architektury wielokomponentowej dodaje jawną listę `components`; dla pojedynczego komponentu zachowuje prosty kontrakt.
+- `/10x-scaffold-adapter` traktuje rejestr jedynie jako wskazówkę odkrywania, a aktualny sposób użycia CLI potwierdza w oficjalnych źródłach i lokalnym `--help`.
+- `/10x-bootstrapper` wykonuje osobne, zatwierdzone procesy opisane w adapterach, najpierw w stagingu. Nie wykonuje `cmd_template` z rejestru ani dowolnego `argv` przekazanego do ogólnego skryptu.
 
 ### Co przechwytuje tech-stack-selector (i czego NIE przechwytuje)
 
@@ -48,17 +50,17 @@ Każda karta startera zawiera cztery wartości logiczne, według których LLM fi
 3. **Popular in training data** — oceniane *dla każdej rodziny językowej*, a nie globalnie (Django jest popularne w danych treningowych Pythona; Spring w Javie; itd.).
 4. **Well-documented** — aktualna, przypięta do wersji dokumentacja, do której można podać link.
 
-Kandydaci, którzy nie przejdą którejkolwiek bramki, są wykluczani ze zbioru rekomendacji bez dodatkowego pytania. Jeśli wyraźnie wskażesz nieprzechodzący starter jako swoją preferencję, umiejętność zakwestionuje ten wybór — przedstawiając najsilniejszą alternatywę spełniającą wyższe kryteria ORAZ ścieżkę kompensacji (instrukcje w pliku konfiguracji AI projektu (AGENTS.md), które uzupełniają luki) — i poprosi o potwierdzenie albo zmianę kierunku. Potwierdzenie wyboru ze znanymi utrudnieniami zapisuje nadpisanie w przekazaniu, aby bootstrapper mógł się dostosować.
+Kandydaci, którzy nie przejdą którejkolwiek bramki, są wykluczani ze zbioru rekomendacji bez dodatkowego pytania. Jeśli wyraźnie wskażesz nieprzechodzący starter jako swoją preferencję, umiejętność zakwestionuje ten wybór — przedstawiając najsilniejszą alternatywę spełniającą wyższe kryteria ORAZ ścieżkę kompensacji — i poprosi o potwierdzenie albo zmianę kierunku. Potwierdzenie zapisuje nadpisanie w przekazaniu; utworzenie reguł projektu pozostaje osobnym, jawnym zadaniem, a scaffold nie generuje ich automatycznie.
 
 ### Pewność bootstrappera
 
 Każda rekomendacja wyświetla `bootstrapper_confidence` dosłownie — nigdy nie jest ona po cichu pomijana:
 
-- **`verified`** — bootstrapper został uruchomiony kompleksowo na tym stosie; tworzenie szkieletu będzie płynne.
-- **`first-class`** — zarejestrowany z prawidłowym CLI, powinien działać, ale nie został sprawdzony bojowo; oczekuj w większości płynnego tworzenia szkieletu z okazjonalnymi krokami ręcznymi.
-- **`best-effort`** — ograniczone wsparcie; kroki ręczne są prawdopodobne; spodziewaj się trudności (a generowanie pliku konfiguracji AI projektu (AGENTS.md) przez bootstrapper kompensuje je dodatkowym kontekstem specyficznym dla ekosystemu).
+- **`verified`** — ścieżka była wcześniej sprawdzona end-to-end; adapter i tak ponownie weryfikuje bieżące CLI.
+- **`first-class`** — wcześniej znano prawidłową ścieżkę CLI, ale bez pełnej weryfikacji end-to-end.
+- **`best-effort`** — historyczne wsparcie jest ograniczone; adapter wymaga uważniejszego przeglądu.
 
-To uprzedzenie przed uruchomieniem `/10x-bootstrapper`, aby było wiadomo, czego się spodziewać.
+To historyczny sygnał przed uruchomieniem `/10x-scaffold-adapter`; dopiero świeże dowody adaptera określają gotowość do wykonania.
 
 ### Ścieżki foundation używane przez tę lekcję
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "10x Scaffold Adapter"
+  short_description: "Build a fresh, verified CLI adapter before scaffolding"
+  default_prompt: "Use $10x-scaffold-adapter to create a current adapter from official docs and the local CLI."

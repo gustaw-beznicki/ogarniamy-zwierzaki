@@ -1,55 +1,85 @@
-<!-- BEGIN @przeprogramowani/10x-cli -->
+# Ogarniamy Zwierzaki
 
-## Zestaw narzędzi AI 10xDevs — Moduł 1, Lekcja 1
+Ogarniamy Zwierzaki is an early-stage application for privately storing and semantically searching veterinary documents. Read `AGENTS.md` before editing; it contains the complete repository-wide contract and course commit rules.
 
-Zainicjuj projekt greenfield kompleksowo za pomocą **łańcucha kształtowania**:
+## Current state
 
-```
-/10x-init  →  /10x-shape  →  /10x-prd  →  (10x-tech-stack-selector)  →  (bootstrapper)
-```
+The repository contains a verified scaffold, not the completed MVP:
 
-Pierwsze trzy umiejętności są dostępne w tej lekcji; dwie ostatnie to kolejne ogniwa łańcucha.
+- `apps/web/`: Astro 7 frontend with strict TypeScript and npm.
+- `services/api/`: ASP.NET Core 10 API with nullable reference types and implicit usings enabled.
+- `context/`: product, stack, and scaffold documentation.
 
-### Router zadań — Od czego zacząć
+Authentication, frontend/API integration, private document storage, OCR, PostgreSQL/pgvector, background indexing, Azure resources, and CI are planned but not implemented. Never describe them as working features.
 
-| Umiejętność | Użyj jej, gdy |
+## Commands
+
+| Command | Purpose |
 | --- | --- |
-| **Konfiguracja projektu** | |
-| `/10x-init` | Katalog projektu jest świeży. Tworzy szkielety `context/foundation/lessons.md` i `docs/reference/contract-surfaces.md`, aby reszta przepływu pracy miała miejsce do zapisu. Uruchom to raz na projekt. |
-| **Odkrywanie** | |
-| `/10x-shape` | Masz pomysł i musisz przekształcić go w ustrukturyzowane notatki kształtu PRZED napisaniem PRD. Tylko greenfield. Prowadzi przez: wizję → personę/dostęp → MVP → FR-y (z sokratejskim kwestionowaniem) → logikę biznesową i dane → szkic otwartości stosu. Wprost wskazuje antywzorce pustego CRUD i zbyt dużego MVP. Wynik: `context/foundation/shape-notes.md` ze wznawialnym blokiem `checkpoint:`. |
-| **Generowanie dokumentu** | |
-| `/10x-prd` | Masz notatki kształtu (lub surowe notatki) i chcesz uzyskać zgodny ze schematem plik `context/foundation/prd.md`. Generuje na podstawie zablokowanego schematu, przekazuje każdą lukę dosłownie do `## Otwarte pytania` i odmawia wymyślania decyzji domenowych. W przypadku kolizji pyta o nadpisanie lub zapis wersjonowany (`prd-vN.md`). |
+| `npm ci --prefix apps/web` | Install locked frontend dependencies |
+| `npm run dev --prefix apps/web` | Start Astro development server on port 4321 by default |
+| `npm run build --prefix apps/web` | Build the frontend into `apps/web/dist/` |
+| `npm run preview --prefix apps/web` | Preview the built frontend |
+| `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` | Restore API packages |
+| `dotnet run --project services/api/ogarniamy-zwierzaki-api.csproj` | Start the API using dynamic development ports |
+| `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore` | Build the restored API |
 
-### Jak następuje przekazanie w łańcuchu
+There are no application tests, lint scripts, deployment commands, or CI workflows yet. Do not claim those checks ran.
 
-- `/10x-init` tworzy szkielet workflow v2 (`context/foundation/`, `lessons.md`, `contract-surfaces.md`). `/10x-shape` wymaga tego i zaproponuje delegowanie do `/10x-init`, jeśli tego brakuje.
-- `/10x-shape` zapisuje `context/foundation/shape-notes.md` z frontmatterem `checkpoint:` (current_phase, phases_completed, frs_drafted, quality_check_status). Przy ponownym wejściu wznawia od następnej nieukończonej fazy.
-- `/10x-prd` odczytuje `shape-notes.md` (domyślnie) lub dowolną podaną ścieżkę, ocenia dane wejściowe według heurystyki 4 sygnałów, ostrzega przy zbyt skąpych danych wejściowych i zapisuje `context/foundation/prd.md` zgodnie ze schematem w `skills/10x-shape/references/prd-schema.md` (frontmatter wyrównany 1:1 z Q1–Q7 narzędzia 10x-tech-stack-selector).
+## Architecture
 
-### Co PRD zawiera (a czego NIE zawiera)
+```text
+apps/web/src/pages/index.astro         Astro entry page
+                 |
+                 |  integration not implemented
+                 v
+services/api/Program.cs                ASP.NET Core entry point
+                 |
+                 +-- storage/OCR/vector search/background jobs [planned]
+```
 
-- **Zawiera**: wizję, personę, kryteria sukcesu, historie użytkownika (Given/When/Then), FR-y (FR-NNN), NFR-y, logikę biznesową (najpierw reguła w jednym zdaniu), model danych, kontrolę dostępu, trwałe decyzje implementacyjne, strategię testowania, strategię wdrożeń i CI/CD, elementy poza zakresem, otwarte pytania.
-- **NIE zawiera (celowo)**: wyborów frameworków, wyborów baz danych, ścieżek plików, platformy wdrożeniowej. Otwartość stosu jest wiążąca — tylko `product_type` oraz `tech_preferences.language_family` zapisują intencję związaną ze stosem. Frameworki są zadaniem 10x-tech-stack-selector.
+Keep browser/UI concerns in `apps/web` and application/API logic in `services/api`.
 
-### Antywzorce wykrywane podczas kształtowania
+## Authoritative files
 
-- **Pusty CRUD**: logika biznesowa sprowadzająca się do „użytkownicy dodają i usuwają rekordy” bez żadnej reguły domenowej. `/10x-shape` nazywa to wprost i prosi o kształt rzeczywistej reguły (rekomendacja, priorytetyzacja, klasyfikacja, walidacja, punktacja, przepływ pracy, obliczenie).
-- **Zbyt duże MVP**: szacowany pierwszy przepływ przekracza ~1 tydzień pracy po godzinach albo obejmuje > 4 odrębne działania użytkownika przed uzyskaniem widocznej dla użytkownika wartości, albo wymaga wielu integracji przed osiągnięciem korzyści. Umiejętność wskazuje kosztowne elementy i oferuje konkretne sposoby ograniczenia zakresu.
+- `README.md`: public status and local setup.
+- `context/foundation/prd.md`: product requirements, scope, and guardrails.
+- `context/foundation/tech-stack.md`: selected architecture and deployment direction.
+- `context/foundation/shape-notes.md`: discovery history and the OCR validation premise.
+- `context/changes/bootstrap-verification/verification.md`: scaffold and dependency-audit evidence.
+- `context/foundation/scaffold-adapters/`: researched scaffold commands.
 
-Oba są **miękkimi bramkami**: ostrzegają, ale pozwalają na nadpisanie. Nadpisania są rejestrowane w punkcie kontrolnym i ujawniane w `## Otwarte pytania` PRD.
+Foundation documents evolve in place. Put change-specific material in `context/changes/<change-id>/`.
 
-### Ścieżki foundation używane przez tę lekcję
+## Product guardrails
 
-- `context/foundation/shape-notes.md` — wynik `/10x-shape`
-- `context/foundation/prd.md` (lub `prd-vN.md`) — wynik `/10x-prd`
-- `context/foundation/lessons.md` — powtarzające się reguły i pułapki (tworzone przez `/10x-init`)
-- `docs/reference/contract-surfaces.md` — rejestr nazw o kluczowym znaczeniu (tworzony przez `/10x-init`)
+- Original documents remain retrievable even when extraction or search fails.
+- Owner isolation applies to every list and semantic-search query; cross-account results are a critical failure.
+- Search returns documents and matching source fragments, never generated medical advice or conclusions.
+- The MVP does not delete documents or animal profiles; animals may be marked inactive.
+- Event date and upload date are different concepts. The event-date default is a documented limitation.
 
-### Uniwersalny język
+## Project workflow
 
-Dostarczone umiejętności nie zawierają odniesień do 10xDevs / kohorty / certyfikacji. Mechanizmy (sokratejskie kwestionowanie, odkrywanie szarych stref, łagodzenie zmęczenia zalecanymi odpowiedziami, miękka bramka jakości) są uniwersalnymi wskaźnikami dobrze określonego projektu greenfield.
+- Preserve unrelated working-tree and untracked files.
+- Keep generated output untracked: `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/.astro/`, `services/api/bin/`, and `services/api/obj/`.
+- Never edit `context/archive/`. If asked, instruct the user to open a new change with `/10x-new`.
+- Preserve Astro strict TypeScript and the API nullable-reference configuration unless an intentional migration requires otherwise.
+- Keep secrets out of tracked files. `.claude/settings.json` controls local command permissions; do not weaken it during unrelated work.
 
-Umiejętności nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozstrzygnięta ścieżka docelowa zaczyna się od `context/archive/`, przerwij z komunikatem: „Ta zmiana jest zarchiwizowana. Zamiast tego otwórz nową zmianę za pomocą `/10x-new`.”
+The completed 10xDevs foundation chain is:
 
-<!-- END @przeprogramowani/10x-cli -->
+```text
+/10x-init -> /10x-shape -> /10x-prd -> /10x-tech-stack-selector -> /10x-scaffold-adapter -> /10x-bootstrapper
+```
+
+Re-run a stage only when its source artifact needs revision. Course skill copies and manifests under `.claude/` are managed by the 10x CLI; do not hand-edit them.
+
+For a course-related commit, require the current module/lesson number, create tag `m<module>l<lesson>`, and use a descriptive commit message. Lesson-agnostic maintenance may use a normal commit only when the user explicitly identifies it that way.
+
+## Gotchas
+
+- API launch profiles use port `0`; copy the actual URL printed by `dotnet run`.
+- The only API route is the scaffold `GET /weatherforecast`; OpenAPI is development-only.
+- A NuGet vulnerability lookup that cannot reach `https://api.nuget.org/v3/index.json` is inconclusive, not a clean audit.
+- The first product-risk check is OCR quality on real veterinary-document photos; do not build semantic-search assumptions on unvalidated OCR output.

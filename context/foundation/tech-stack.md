@@ -1,7 +1,20 @@
 ---
 starter_id: dotnet
 package_manager: dotnet
-project_name: ogarniamy-zwierzaki
+project_name: ogarniamy-zwierzaki-api
+components:
+  - id: api
+    starter_id: dotnet
+    package_manager: dotnet
+    project_name: ogarniamy-zwierzaki-api
+    target_dir: services/api
+    language_family: dotnet
+  - id: web
+    starter_id: astro
+    package_manager: npm
+    project_name: ogarniamy-zwierzaki-web
+    target_dir: apps/web
+    language_family: js
 hints:
   language_family: multi
   team_size: solo
@@ -26,4 +39,4 @@ hints:
 
 ## Why this stack
 
-The project combines an Astro and TypeScript frontend on Azure Static Web Apps Standard with an ASP.NET Core Web API on Azure App Service. This keeps the core in the developer's strongest ecosystem while supporting private Blob Storage, Queue Storage with a WebJob for OCR and embeddings, PostgreSQL with pgvector, and Azure AI services. The .NET starter passes all four agent-friendly quality gates and has verified bootstrapper support, which reduces risk for a solo, after-hours seven-week MVP. GitHub Actions will deploy automatically after merges to main. Azure resources and deployment configuration will be defined in Bicep, the simplest native infrastructure-as-code option for this Azure-only architecture.
+Ogarniamy zwierzaki is split into an Astro and TypeScript frontend in `apps/web` and an ASP.NET Core API in `services/api`, with .NET retained as the primary component and Azure App Service as the recorded deployment target. This keeps authentication, private document storage, PostgreSQL with vector search, OCR, embeddings, and background processing in the developer's strongest ecosystem while giving the mobile-first interface a lightweight frontend. Astro passes all four agent-friendly gates, but its content-first bias is an accepted tradeoff for this application-shaped UI; the separate .NET API owns application logic. Both registered paths have verified historical scaffolding confidence, which the scaffold-adapter will re-check against current official CLI documentation. GitHub Actions remains configured for automatic deployment after merges.

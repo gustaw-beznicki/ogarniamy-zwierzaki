@@ -1,62 +1,155 @@
-# Bootstrapper refusal and confirmation protocol
+# Refusal protocol
 
-## Missing hand-off — hard refusal
+This doc enumerates every condition under which bootstrapper refuses to scaffold, what each refusal prints, and what next-step command lands on the clipboard. Single source for refusal copy so the strings stay consistent across `SKILL.md`, the lesson rule, and any future tooling that checks user-facing output.
 
-Copy `/10x-tech-stack-selector`, print:
+Two semantic categories:
 
-```text
-Bootstrapper requires a tech-stack hand-off at `<handoff-path>`. Run `/10x-tech-stack-selector` first, then re-invoke.
+- **HARD REFUSAL** — skill prints the message, copies a clipboard pointer, and stops. No scaffold. No further interaction.
+- **WARN-AND-CONFIRM** — skill prints the warning and uses `AskUserQuestion` to give the user an explicit choice (continue / abort). Scaffold proceeds only on explicit confirm.
+
+## (a) Missing hand-off — HARD REFUSAL
+
+**Trigger**: `test -f context/foundation/tech-stack.md` returns non-zero at Step 0.
+
+**Clipboard**:
+
+```bash
+echo -n "/10x-tech-stack-selector" | pbcopy 2>/dev/null || echo -n "/10x-tech-stack-selector" | clip.exe 2>/dev/null || echo -n "/10x-tech-stack-selector" | xclip -selection clipboard 2>/dev/null || true
 ```
 
-and stop.
+**Print verbatim**:
 
-## Missing adapter manifest — hard refusal
-
-Copy `/10x-scaffold-adapter`, print:
-
-```text
-Bootstrapper requires fresh scaffold adapters at `context/foundation/scaffold-adapters/manifest.md`. Run `/10x-scaffold-adapter` first, then re-invoke.
+```
+Bootstrapper requires a tech-stack hand-off at `context/foundation/tech-stack.md`. Run `/10x-tech-stack-selector` first, then re-invoke.
 ```
 
-and stop without reading registry `cmd_template` as fallback.
+**Exit**: stop immediately. No fallback interview. No inline mini-handoff. The conversation transcript is not a substitute — the contract is the file on disk.
 
-## Stale, inconsistent or blocked adapter — hard refusal
+## (b) `starter_id` not in registry — HARD REFUSAL
 
-Copy `/10x-scaffold-adapter`, print the exact failed check, then:
+**Trigger**: hand-off frontmatter `starter_id` does not match any key under `starters:` in `/skills/10x-tech-stack-selector/references/starter-registry.yaml`. In chain-mode this should be unreachable (tech-stack-selector refuses to write a hand-off whose `starter_id` it can't resolve); this is a defensive check against hand-edited hand-offs.
 
-```text
-The scaffold adapter cannot be executed safely. Re-run `/10x-scaffold-adapter` to research and verify the current official CLI instructions.
+**Clipboard**:
+
+```bash
+echo -n "/10x-tech-stack-selector" | pbcopy 2>/dev/null || echo -n "/10x-tech-stack-selector" | clip.exe 2>/dev/null || echo -n "/10x-tech-stack-selector" | xclip -selection clipboard 2>/dev/null || true
 ```
 
-Do not offer an inline correction or override for `blocked`, `docs-only`, hash mismatch, expired evidence, CLI path/version/help mismatch, invalid target paths or malformed command blocks.
+**Print verbatim** (substitute `<id>`):
 
-## Existing `.bootstrap-scaffold/` — hard refusal
+```
+Registry drift detected: `<id>` is not in the tech-stack-selector registry. Either the hand-off was hand-edited, or the registry was modified after the hand-off was written. Re-run `/10x-tech-stack-selector` to regenerate `context/foundation/tech-stack.md` against the current registry.
 
-Print:
-
-```text
-Bootstrapper found an existing `.bootstrap-scaffold/` working directory and will not overwrite it. Inspect it first, then rename or remove it explicitly and re-invoke `/10x-bootstrapper`.
+(If you believe `<id>` should exist, add it to `/skills/10x-tech-stack-selector/references/starter-registry.yaml` first — bootstrapper consumes that registry; it does not own it.)
 ```
 
-Do not delete it automatically.
+**Exit**: stop immediately. Do not attempt to resolve the `starter_id` to anything else.
 
-## Populated target — warn and confirm
+## (c) Empty cwd — HARD REFUSAL
 
-Detect common manifests in each target (`package.json`, `*.csproj`, `Cargo.toml`, `pyproject.toml`, `requirements.txt`, `Gemfile`, `go.mod`, `pom.xml`, `build.gradle`, `composer.json`, `pubspec.yaml`). Show component id and exact files.
+**Trigger**: bootstrapper requires the current working directory (the user's invocation directory) to exist before scaffolding. Bootstrapper does NOT create a parent directory for the project — the user is expected to `mkdir my-project && cd my-project` before invoking, then run `/10x-tech-stack-selector` (which writes `context/foundation/tech-stack.md` into that cwd), then `/10x-bootstrapper`.
 
-Ask whether to continue with strict conflict handling or abort. Existing files always win; generated conflicts become adjacent `.scaffold` files; `context/` is preserved; `.gitignore` is append-merged.
+In practice this refusal almost never fires in chain-mode — if the user got here, `context/foundation/tech-stack.md` already exists, which means cwd is non-empty. Defensive check only.
 
-## Weak adapter evidence — warn and confirm
+**Clipboard**:
 
-If any adapter is `local-cli-confirmed`, explain exactly which smoke-test evidence is missing. Offer:
+```bash
+echo -n "" | pbcopy 2>/dev/null || echo -n "" | clip.exe 2>/dev/null || echo -n "" | xclip -selection clipboard 2>/dev/null || true
+```
 
-- **Proceed with caution** — execute the shown instructions with normal sandbox/approvals.
-- **Stop and smoke-test** — route to `/10x-scaffold-adapter`.
+**Print verbatim**:
 
-Never present the caution path as recommended.
+```
+Bootstrapper expects to scaffold INTO the current working directory, not to create a new one. Create the project directory first (`mkdir my-project && cd my-project`), then re-invoke.
+```
 
-`docs-only` follows the hard-refusal path above; it is documentation, not an executable plan.
+**Exit**: stop immediately.
 
-## Runtime hard stop
+## (d) Re-run on populated cwd — WARN-AND-CONFIRM
 
-Non-zero scaffold/build exit, missing required identity, forbidden staging token, unexpected writes outside staging or ambiguous generated root all stop the run before merge. Preserve staging, write a partial verification log, copy `/10x-bootstrapper` and report the failing component and invariant.
+**Trigger**: cwd already contains a scaffold-shaped fingerprint. Detect by checking for any of:
+
+- `package.json` (JS family)
+- `Cargo.toml` (Rust)
+- `Gemfile` (Ruby)
+- `pyproject.toml` or `requirements.txt` (Python)
+- `go.mod` (Go)
+- `pom.xml` or `build.gradle` (Java)
+- `composer.json` (PHP)
+- `*.csproj` (anywhere in cwd, .NET)
+- `pubspec.yaml` (Dart)
+
+This guard runs after the Step 0 confirm-or-correct summary, before scaffolding. The presence of any of these fingerprints means the cwd is likely already scaffolded (or partially so).
+
+`context/foundation/tech-stack.md` itself does NOT count as a scaffold fingerprint — it is the precondition for being here at all.
+
+**Print** (substitute `<files>` for the comma-separated list of detected fingerprint files):
+
+```
+Heads-up: this directory already contains scaffold-shaped files: <files>. Bootstrapper will apply the strict conflict policy (existing files become `.scaffold` siblings; `context/` is preserved; `.gitignore` is append-merged), but this is your last chance to abort if the cwd state is unexpected.
+```
+
+**Then ask**:
+
+AskUserQuestion:
+- question: "Continue scaffolding into this populated directory?"
+  header: "Populated cwd"
+  options:
+  - label: "Continue (Recommended)"
+    description: "Apply the strict conflict policy. Existing files become `.scaffold` siblings; `context/` is preserved."
+  - label: "Abort"
+    description: "Stop the skill. No files written, no scaffold attempted."
+  multiSelect: false
+
+The recommended default is "Continue" because the most common path here is a user who legitimately re-runs bootstrapper after fixing a tech-stack pick (e.g., re-ran `/10x-tech-stack-selector` to swap the starter). The conflict policy itself is the safety net — abort is the escape hatch for genuinely unexpected cwd state.
+
+**On Continue**: proceed to Step 1.
+**On Abort**: stop immediately. No clipboard set. No verification log written.
+
+## (e) `verification.md` already exists — WARN-AND-CONFIRM
+
+**Trigger**: at Step 4, `context/changes/bootstrap-verification/verification.md` already exists from a prior run.
+
+**Print**:
+
+```
+A prior verification log exists at `context/changes/bootstrap-verification/verification.md`. Continuing will overwrite it.
+```
+
+**Then ask**:
+
+AskUserQuestion:
+- question: "Overwrite the existing verification log?"
+  header: "Log collision"
+  options:
+  - label: "Overwrite (Recommended)"
+    description: "Replace with this run's log. The prior log is lost unless committed."
+  - label: "Save as verification-v2.md"
+    description: "Preserve the prior log. New log lands at the next available verification-vN.md slot."
+  - label: "Abort"
+    description: "Skill exits without writing the log. Scaffold already happened (this guard runs at Step 4); rerun from a clean cwd if you need a fresh log."
+  multiSelect: false
+
+The recommended default is "Overwrite" — bootstrapper is a one-shot per project; multiple log versions are usually a sign the user re-ran the whole flow, in which case the prior log is stale.
+
+**Note**: this guard runs in Phase 4. Phase 1 places the policy here for completeness; the actual emit step lands when Phase 4 ships.
+
+## CLI failure (Phase 3) is HARD-STOP, not refusal
+
+When the scaffold CLI exits with non-zero in Step 2, bootstrapper halts but this is a **hard-stop**, not a "refusal" in the protocol sense. The conditions above are pre-scaffold gates; CLI failure is a runtime failure mid-scaffold. The hard-stop:
+
+- Leaves `.bootstrap-scaffold/` in place for inspection.
+- Writes a partial `verification.md` marking `phase_3_status: failed` with the captured CLI output.
+- Sets the clipboard to `/10x-bootstrapper` for retry.
+
+Detail in `scaffold-merge.md` (Phase 3).
+
+## Why these are the only refusals
+
+The skill deliberately runs WARN-AND-CONTINUE on every other surface:
+
+- Stale starter (pre-scaffold verification): warn, scaffold proceeds.
+- CRITICAL audit findings: warn, scaffold proceeds (the user, not bootstrapper, decides what to do about vulnerabilities in their freshly-scaffolded project).
+- Audit tool unavailable for this language family (`java`, `php`, `dart`, `multi`): log a "no built-in audit" note, scaffold proceeds.
+
+The principle: refuse only when bootstrapper genuinely cannot do its job (no hand-off, unknown stack, no cwd). Once the prerequisites are met, bootstrapper informs and leaves judgment to the user.

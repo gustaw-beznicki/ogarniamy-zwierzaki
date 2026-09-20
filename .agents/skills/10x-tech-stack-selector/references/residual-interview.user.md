@@ -193,7 +193,7 @@ The card's `testing_options` field (if present) drives the question. If the fiel
 
 Ask the user: "`<starter_name>` supports multiple testing setups. Which fits your project?" with these options: one option per `testing_options` entry, with a one-line tradeoff.
 
-Captured as a free-text bag in conversation rationale. Does NOT land in the hand-off frontmatter today (the schema's `hints` set is intentionally minimal — testing-runner choice is informational and bootstrapper picks it up from conversation context if needed).
+Captured as a free-text bag in conversation rationale. It does NOT land in handoff frontmatter and downstream skills must not depend on conversation context. The scaffold adapter derives only the starter's current documented build/smoke commands; strategic test-runner setup remains a later explicit task.
 
 ---
 
@@ -251,7 +251,7 @@ Pre-step: kebab-case the PRD's `project` field (e.g., "Recipe Fridge" → `recip
 
 **Project-name prompt**:
 
-Ask the user: "Project name for the hand-off (will be the directory name `/10x-bootstrapper` scaffolds)?" with these options:
+Ask the user: "Project name for the hand-off (used by the scaffold adapter; multi-component designs will confirm a separate name and target directory for each component)?" with these options:
 - "`<kebab-cased project>` (Recommended — from PRD)" — Use what's already in PRD.
 - "Override with a different name" — Capture a free-text replacement.
 

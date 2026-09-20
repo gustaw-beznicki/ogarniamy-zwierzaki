@@ -71,12 +71,12 @@ Gaps in the four criteria are NOT absolute disqualifications — they can be pat
 What `quality_override = true` and `bootstrapper_confidence: best-effort` represent in practice:
 
 - The user has accepted a known-friction stack.
-- Bootstrapper's instruction-file generation (Phase 4 of bootstrapper, written to `AGENTS.md` / `CLAUDE.md` per the active tool) MUST carry extra ecosystem-specific context to compensate. For Express: explicit middleware order conventions, error-handling pattern, request-validation pattern. For untyped Django: type-hint-everywhere convention, Pydantic-at-boundaries, mypy in CI. For raw Rails: Sorbet stubs at API boundaries, conventions doc.
+- The selector names the required compensation in conversation and records the override. Creating or changing project instruction files is a separate, explicit planning task; neither scaffold adapter nor bootstrapper may synthesize them from this flag.
 - The user takes ownership of ongoing care: as the codebase grows, the agent will need more steering, not less, until the project's instruction files cover the gap.
 
 Compensation does NOT erase the gap; it makes the gap legible. An agent reading a well-written instruction file (`AGENTS.md` / `CLAUDE.md`) can still pattern-match on it, even if the framework itself doesn't carry the conventions in code.
 
-When a Socratic challenge fires (decision-flow `### Socratic moments`) and the user picks the failing-stack option, the conversation should explicitly name the compensation path: "OK, you've picked Express despite its `typed: false` and `convention_based: false` gates. Here's what bootstrapper will add to the project's instruction file (`AGENTS.md` / `CLAUDE.md`) to compensate: <list of conventions>. Plan to revisit and tighten as the codebase grows."
+When a Socratic challenge fires (decision-flow `### Socratic moments`) and the user picks the failing-stack option, the conversation should explicitly name the compensation path: "OK, you've picked Express despite its `typed: false` and `convention_based: false` gates. Before implementation, document middleware order, error handling, and request validation in the project's agent instructions. Scaffolding will not invent those policies for you."
 
 ---
 

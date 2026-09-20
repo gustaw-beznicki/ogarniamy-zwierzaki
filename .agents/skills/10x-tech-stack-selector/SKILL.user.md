@@ -6,15 +6,16 @@ description: >
   registry with four agent-friendly quality gates, and writes the
   context/foundation/tech-stack.md hand-off. Use when the user asks "what
   stack should I use", "pick a stack", "choose framework",
-  "co wybrać do projektu". Use AFTER /10x-prd, BEFORE /10x-bootstrapper.
+  "co wybrać do projektu". Use AFTER /10x-prd, BEFORE
+  /10x-scaffold-adapter.
 ---
 # Selektor stosu technologicznego: od PRD do startera
 
-Ta umiejętność jest trzecim ogniwem w łańcuchu bootstrap (`/10x-shape → /10x-prd → 10x-tech-stack-selector → /10x-bootstrapper`). Jej jedyne zadanie: przekształcić zapisany PRD w rekomendowany starter oraz niewielkie, czytelne dla maszyn przekazanie, które `/10x-bootstrapper` może odczytać, aby wygenerować szkielet projektu.
+Ta umiejętność jest trzecim ogniwem w łańcuchu bootstrap (`/10x-shape → /10x-prd → /10x-tech-stack-selector → /10x-scaffold-adapter → /10x-bootstrapper`). Jej jedyne zadanie: przekształcić zapisany PRD w rekomendowany starter lub zestaw starterów oraz niewielkie, czytelne dla maszyn przekazanie. `/10x-scaffold-adapter` zamienia ten wybór na świeże, oparte na oficjalnej dokumentacji instrukcje CLI; dopiero `/10x-bootstrapper` je wykonuje.
 
 Umiejętność jest **facylitatorem decyzji działającym na podstawie wyselekcjonowanego rejestru**, a nie silnikiem rekomendacji opartym na pierwszych zasadach. Odczytuje priory z PRD, zadaje najwyżej ~6 pozostałych pytań na ścieżce niestandardowej (lub przechodzi bezpośrednio do zweryfikowanej rekomendacji na ścieżce standardowej), analizuje karty starterów uwzględniające język w `references/starter-registry.yaml` oraz stosuje cztery bramki jakości z twardym filtrowaniem. Rozbudowane uzasadnienie pozostaje w rozmowie; przekazanie do pliku jest minimalne.
 
-Rejestr starterów w `references/starter-registry.yaml` jest **jedynym źródłem prawdy** o dostępnych starterach. `/10x-bootstrapper` go odczytuje; walidator CI (`scripts/validate-starter-registry-sync.mjs`) zapobiega temu, aby bootstrapper odwoływał się do nieistniejącego tutaj `starter_id`.
+Rejestr starterów w `references/starter-registry.yaml` jest **jedynym źródłem prawdy o wyborach dostępnych w selektorze**. Celowo nie zawiera komend ani instrukcji instalacji. `/10x-scaffold-adapter` musi potwierdzić bieżący sposób użycia w najnowszej oficjalnej dokumentacji i lokalnym `--help`; `/10x-bootstrapper` nie czyta rejestru.
 
 ## Kiedy używać, kiedy pomijać
 
@@ -26,7 +27,8 @@ Rejestr starterów w `references/starter-registry.yaml` jest **jedynym źródłe
 
 - `/10x-shape` — tworzy `shape-notes.md`, poprzednik PRD. Jest dwa etapy przed tą umiejętnością.
 - `/10x-prd` — tworzy `context/foundation/prd.md`, kanoniczne dane wejściowe. Zawsze jest upstream.
-- `/10x-bootstrapper` — konsument downstream. Odczytuje frontmatter `context/foundation/tech-stack.md` oraz rejestr; generuje szkielet projektu.
+- `/10x-scaffold-adapter` — bezpośredni konsument downstream. Odczytuje `context/foundation/tech-stack.md`, sprawdza aktualną oficjalną dokumentację i lokalne CLI, po czym zapisuje deklaratywny adapter dla każdego komponentu.
+- `/10x-bootstrapper` — wykonuje wyłącznie zatwierdzone instrukcje z adapterów i scala zweryfikowany staging z projektem. Nie odkrywa CLI samodzielnie.
 
 ## Wymagane dane wejściowe
 
@@ -136,6 +138,8 @@ Wykonaj proces decyzyjny:
 - **Ścieżka standardowa** — wybór recommended_defaults jest już liderem; przejdź do kroku E (pokaż `bootstrapper_confidence`) i pomiń filtrowanie/ocenianie.
 - **Ścieżka niestandardowa** — wykonaj krok A (filtruj według language_family + product_type + funkcji must-have + zgodności wdrożeniowej), krok B (odrzuć wpisy niespełniające dowolnego kryterium `agent_friendly.*`, z zastrzeżeniem dotyczącym rodziny językowej), krok C (analizuj pozostałe karty, ważąc team_profile + tech_preferences + timeline_budget), krok D (lider + 1–2 alternatywy z `alternatives_to_consider`), krok E (pokaż bootstrapper_confidence).
 
+Jeżeli decyzja jest rzeczywiście wielokomponentowa, nie próbuj kodować całej architektury w pojedynczym `starter_id`. Zdefiniuj osobny komponent dla każdego niezależnie scaffoldowanego artefaktu, wybierz kartę startera dla każdego z nich i nadaj każdemu stabilne `id`, `project_name` oraz względny `target_dir`. Katalogi docelowe nie mogą się pokrywać ani zagnieżdżać. Ustaw `hints.language_family: multi`; top-level `starter_id`, `package_manager` i `project_name` pozostają lustrzanym opisem komponentu głównego dla kompatybilności wstecznej. Jeśli nie da się wskazać co najmniej dwóch konkretnych komponentów, nie używaj wartości `multi`.
+
 Przedstaw wyzwania sokratejskie tam, gdzie wskazuje proces decyzyjny: wariant frameworka Q6 na ścieżce niestandardowej, `tech_preferences` wskazuje starter, który nie przechodzi ≥1 bramki jakości, starter rekomendowany domyślnie nie zawiera funkcji wskazanej przez użytkownika w FR-ach PRD lub wybrany starter ma `bootstrapper_confidence: best-effort` ORAZ użytkownik działa solo (dodatkowe ostrzeżenie).
 
 Format odpowiedzi w rozmowie:
@@ -166,6 +170,8 @@ Rozwiąż `hints.deployment_target` z Q4. Jeśli użytkownik wybrał "I don't kn
 
 Ustaw `hints.path_taken`: `standard` lub `custom`. Wypełnij `hints.self_check_answers` 5 wartościami boolowskimi z Q8, jeśli uruchomiono ścieżkę niestandardową; wypisz `null`, jeśli wybrano ścieżkę standardową.
 
+Jeśli stos ma wiele komponentów, dodaj top-level `components` zgodnie z `references/handoff-schema.md`. Każdy `starter_id` musi istnieć w rejestrze. `target_dir` ma być jawną, względną ścieżką bez `.`/`..`, katalogów zastrzeżonych i nakładania się na inny komponent. Ustaw top-level `hints.bootstrapper_confidence` na najsłabszy poziom spośród komponentów (`best-effort` < `first-class` < `verified`).
+
 Sprawdź kolizję:
 
 ```bash
@@ -188,12 +194,12 @@ Rekomendowaną opcją domyślną jest tutaj "Overwrite", ponieważ tech-stack-se
 Po zapisaniu skopiuj polecenie następnego kroku i ogłoś:
 
 ```bash
-echo -n "/10x-bootstrapper" | pbcopy 2>/dev/null || echo -n "/10x-bootstrapper" | clip.exe 2>/dev/null || echo -n "/10x-bootstrapper" | xclip -selection clipboard 2>/dev/null || true
+echo -n "/10x-scaffold-adapter" | pbcopy 2>/dev/null || echo -n "/10x-scaffold-adapter" | clip.exe 2>/dev/null || echo -n "/10x-scaffold-adapter" | xclip -selection clipboard 2>/dev/null || true
 ```
 
 ```powershell
 # PowerShell (Windows)
-Set-Clipboard "/10x-bootstrapper"
+Set-Clipboard "/10x-scaffold-adapter"
 ```
 
 Wypisz:
@@ -208,11 +214,11 @@ Wypisz:
   Confidence:     <verified | first-class | best-effort>
 
   ► Hand-off:  context/foundation/tech-stack.md
-  ► Next:      /10x-bootstrapper  (✓ copied to clipboard)
+  ► Next:      /10x-scaffold-adapter  (✓ copied to clipboard)
 ═══════════════════════════════════════════════════════════
 ```
 
-ZATRZYMAJ SIĘ. Nie przechodź automatycznie do `/10x-bootstrapper` — użytkownik uruchamia go, gdy jest gotowy.
+ZATRZYMAJ SIĘ. Nie przechodź automatycznie do `/10x-scaffold-adapter` — użytkownik uruchamia go, gdy jest gotowy.
 
 ## Output
 
@@ -225,6 +231,7 @@ Frontmatter zgodny ze schematem w `references/handoff-schema.md`:
 starter_id: <key from registry>
 package_manager: <card-prescribed string; may be omitted for some ecosystems>
 project_name: <kebab-case>
+components: <optional list; required when hints.language_family is multi>
 hints:
   language_family: js | python | ruby | java | go | rust | php | dotnet | dart | multi
   team_size: solo | small | mixed
@@ -263,9 +270,9 @@ hints:
 
 3. **Ścieżka standardowa kontra niestandardowa jest wiążąca.** Standardowa przechodzi bezpośrednio do rekomendacji + Q4/Q5/nazwy projektu. Niestandardowa wykonuje pełne przejście wraz z samokontrolą Q8. Nie mieszaj ich — ścieżka wybrana przez użytkownika w Q0 jest tym, co rejestruje `hints.path_taken`.
 
-4. **`bootstrapper_confidence` ma charakter informacyjny, nigdy blokujący.** Pewność `best-effort` NIE wyklucza startera z rekomendacji; pojawia się w rozmowie jako ostrzeżenie i trafia do `hints.bootstrapper_confidence`, aby bootstrapper mógł się dostosować.
+4. **`bootstrapper_confidence` ma charakter informacyjny, nigdy blokujący.** Pewność `best-effort` NIE wyklucza startera z rekomendacji. Jest historycznym sygnałem do selekcji; świeży status dowodów utworzony przez `/10x-scaffold-adapter` ma pierwszeństwo przy wykonaniu.
 
-5. **Walidator jednokierunkowy.** Bootstrapper nie może odwoływać się do `starter_id`, którego nie ma w rejestrze tej umiejętności; tech-stack-selector może zawierać startery, których bootstrapper jeszcze nie obsługuje (te startery mają `bootstrapper_confidence: best-effort`, dopóki nie zostaną zweryfikowane end-to-end).
+5. **Rejestr nie jest kodem wykonawczym.** Każdy `starter_id` w handoffie musi istnieć w rejestrze, ale żadna komenda z rejestru nie może trafić bezpośrednio do wykonania. Aktualny kontrakt CLI powstaje dopiero w `/10x-scaffold-adapter` na podstawie oficjalnych źródeł i lokalnego `--help`.
 
 6. **Wyłącznie uniwersalny język.** Brak prywatnych ścieżek vault lub brandingu specyficznego dla organizacji w publikowanej zawartości. `pnpm validate:no-vault-paths` wymusza to w CI. Rejestr recommended-defaults jest z założenia wielojęzyczny; żaden pojedynczy starter nie jest „tą” rekomendowaną ścieżką.
 

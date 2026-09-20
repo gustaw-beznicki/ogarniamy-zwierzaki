@@ -77,13 +77,13 @@ If a Socratic moment fires during this step (the user named a failing starter at
 
 For the lead recommendation (both paths — standard and custom), state the `bootstrapper_confidence` value in conversation **always**. Never silently elide.
 
-Wording per value:
+Wording per value (describe it explicitly as registry history, not current CLI proof):
 
-- **`verified`**: "Bootstrapper has been run end-to-end on this stack — scaffolding will be smooth."
-- **`first-class`**: "Bootstrapper has this stack registered with a valid CLI but hasn't been battle-tested. Expect mostly-smooth scaffolding with occasional manual steps."
-- **`best-effort`**: "Bootstrapper has limited support for this stack — manual steps are likely; expect friction. We'll surface the rough spots as you go."
+- **`verified`**: "This path was previously verified end-to-end. The adapter step will still re-check the current official CLI before anything runs."
+- **`first-class`**: "A valid CLI path was previously known, but it was not verified end-to-end. The adapter step will establish current evidence."
+- **`best-effort`**: "Historical support is limited. Expect additional review when the adapter checks the current CLI."
 
-This is the heads-up the user needs before running `/10x-bootstrapper`. It also lands in `hints.bootstrapper_confidence` so bootstrapper itself can adjust its scaffolding behavior.
+This is the heads-up the user needs before running `/10x-scaffold-adapter`. It lands in `hints.bootstrapper_confidence` as provenance only; the adapter's current evidence status controls execution.
 
 ---
 
@@ -131,10 +131,11 @@ Solo + best-effort is a concerning combination — the user will be the only one
 
 ```
 The lead recommendation `<starter_id>` has limited scaffolding support —
-bootstrapper hasn't been battle-tested on this stack — and you're working
-solo. The compensation is real but you'll be the one absorbing the manual
-steps. Here's what to expect: <list of likely friction points from card's
-gotchas>. Continue, or switch to a smoother alternative?
+the registry has no strong end-to-end history for this stack — and you're
+working solo. The scaffold adapter will verify the current CLI, but you may
+still be the one absorbing manual steps. Here's what to expect:
+<list of likely friction points from card's gotchas>. Continue, or switch to
+an alternative with stronger historical evidence?
 ```
 
 Then ask the user: "Continue with `<starter_id>`" or "Switch to `<alternative_with_higher_confidence>`".

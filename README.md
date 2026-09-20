@@ -124,6 +124,7 @@ Automated application tests have not been added yet.
 - [Technology stack decision](context/foundation/tech-stack.md)
 - [Scaffold adapter manifest](context/foundation/scaffold-adapters/manifest.md)
 - [Bootstrap verification log](context/changes/bootstrap-verification/verification.md)
+- [AI agent and 10xDevs workflow](docs/10xdevs-agent-workflow.md)
 
 ## Course history
 

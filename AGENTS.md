@@ -49,5 +49,6 @@ Generated outputs such as `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/
 
 - Inspect `git status` before editing and before committing. Do not overwrite unrelated changes.
 - Every course-related commit requires a module/lesson identifier supplied for the current task.
+- Commits that are not tied to a specific lesson may omit the module/lesson identifier and are considered lesson-agnostic.
 - Use the tag format `m<module>l<lesson>`, for example `m1l1`, on the commit containing that lesson’s result.
 - The commit message must describe the actual change; the lesson number alone is not a valid message.

@@ -1,10 +1,10 @@
 ---
 change_id: whole-app-ui-mockup
 title: Whole app ui mockup
-status: implemented
+status: archived
 created: 2026-09-26
 updated: 2026-09-26
-archived_at: null
+archived_at: 2026-09-26T21:11:22Z
 ---
 
 ## Notes

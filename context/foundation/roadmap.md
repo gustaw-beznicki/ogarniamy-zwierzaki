@@ -42,7 +42,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | ID   | Change ID                            | Outcome (user can …)                                                                 | Prerequisites | PRD refs                                    | Status   |
 | ---- | ------------------------------------ | ------------------------------------------------------------------------------------ | ------------- | ------------------------------------------- | -------- |
 | F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | ready    |
-| F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | in-progress |
+| F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | proposed |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | proposed |
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | proposed |
@@ -99,7 +99,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Added at the owner's request (2026-09-25) to see the whole UI before building parts of it. Given the time pressure, the risk is polishing the mockup into a pixel-perfect design and delaying S-04. Keep it low-fidelity and do the detailed refinement inside each slice.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -219,3 +219,5 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 ## Milestone History
 
 ## Done
+
+- **F-02: (foundation) a low-fidelity mockup of every screen on the primary flow exists as the shared visual reference for all slices, at both phone and desktop widths. The screens are sign-in/registration, first-animal onboarding, document capture, search with results and fragments, and the animal profile with its document list. No components are implemented.** — Archived 2026-09-26 → `context/archive/2026-09-26-whole-app-ui-mockup/`. Lesson: —.

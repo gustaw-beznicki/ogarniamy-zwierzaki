@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-09-25
+updated: 2026-09-26
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -42,7 +42,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | ID   | Change ID                            | Outcome (user can …)                                                                 | Prerequisites | PRD refs                                    | Status   |
 | ---- | ------------------------------------ | ------------------------------------------------------------------------------------ | ------------- | ------------------------------------------- | -------- |
 | F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | ready    |
-| F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | ready    |
+| F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | in-progress |
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | proposed |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | proposed |
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | proposed |
@@ -99,7 +99,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Added at the owner's request (2026-09-25) to see the whole UI before building parts of it. Given the time pressure, the risk is polishing the mockup into a pixel-perfect design and delaying S-04. Keep it low-fidelity and do the detailed refinement inside each slice.
-- **Status:** ready
+- **Status:** in-progress
 
 ## Slices
 
@@ -201,7 +201,7 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 2. **Bulk-loading the old binder will produce wrong event dates.** FR-008 keeps today's date as the default and accepts this risk deliberately. The consequence lands on S-06's ordering. — Owner: user. Block: no; revisit if the secondary success criterion is pursued.
 3. **Is the premise that owners now want to keep their animals' medical records sound?** Recorded as the user's premise, not a verified finding. — Owner: user. Block: no.
 4. **When is the secondary success criterion (several dozen of Czarek's and Sonia's real documents uploaded and searchable) exercised?** It is the real-volume check for S-03 and S-04 and the input for tuning Question 1. — Owner: user. Block: no; roadmap-wide.
-5. **How is the F-02 mockup kept current as slices refine their screens?** It could be updated per slice, or treated as a starting point only. — Owner: user. Block: no; roadmap-wide.
+5. **How is the F-02 mockup kept current as slices refine their screens?** It could be updated per slice, or treated as a starting point only. — Owner: user. Block: no; roadmap-wide. **Resolved (2026-09-26):** starting point only; slices refine screens in their own plans. Index: `context/foundation/ui-mockup/README.md`.
 
 ## Parked
 

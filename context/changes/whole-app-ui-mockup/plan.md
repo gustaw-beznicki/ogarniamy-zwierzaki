@@ -203,15 +203,15 @@ Not applicable. There is no data or existing UI.
 
 #### Automated
 
-- [x] 1.1 The index exists
-- [x] 1.2 The index lists every screen and state ID
-- [x] 1.3 The index has a token section and the "starting point" rule
-- [x] 1.4 Roadmap question 5 points to the index
+- [x] 1.1 The index exists — 998b9a5
+- [x] 1.2 The index lists every screen and state ID — 998b9a5
+- [x] 1.3 The index has a token section and the "starting point" rule — 998b9a5
+- [x] 1.4 Roadmap question 5 points to the index — 998b9a5
 
 #### Manual
 
-- [x] 1.5 The owner confirms the screen and state list is complete for M-1
-- [x] 1.6 The owner approves the copy glossary, the sample data and the tokens
+- [x] 1.5 The owner confirms the screen and state list is complete for M-1 — 998b9a5
+- [x] 1.6 The owner approves the copy glossary, the sample data and the tokens — 998b9a5
 
 ### Phase 2: Mockup canvas
 

@@ -217,14 +217,14 @@ Not applicable. There is no data or existing UI.
 
 #### Automated
 
-- [ ] 2.1 The canvas source exists
-- [ ] 2.2 The canvas has phone and desktop artboards for every screen
-- [ ] 2.3 The canvas has every state
-- [ ] 2.4 There is no delete action in the mockup
-- [ ] 2.5 The index has the Artifact link and no placeholder
+- [x] 2.1 The canvas source exists
+- [x] 2.2 The canvas has phone and desktop artboards for every screen
+- [x] 2.3 The canvas has every state
+- [x] 2.4 There is no delete action in the mockup
+- [x] 2.5 The index has the Artifact link and no placeholder
 
 #### Manual
 
-- [ ] 2.6 The owner walks the E01 → E07 flow on phone and desktop in the Artifact
-- [ ] 2.7 The states read unambiguously
-- [ ] 2.8 The owner confirms the mockup is low-fi and not polished
+- [x] 2.6 The owner walks the E01 → E07 flow on phone and desktop in the Artifact
+- [x] 2.7 The states read unambiguously
+- [x] 2.8 The owner confirms the mockup is low-fi and not polished

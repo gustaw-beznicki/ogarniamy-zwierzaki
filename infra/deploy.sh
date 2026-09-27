@@ -22,7 +22,9 @@ case "$1" in
     az bicep lint --file "${INFRA_DIR}/bootstrap/main.bicep"
     ;;
   what-if)
+    # ProviderNoRbac: full validation that needs only read permission, so the read-only PR identity can run it.
     az deployment sub what-if \
+      --validation-level ProviderNoRbac \
       --location "${DEPLOYMENT_LOCATION}" \
       --name "${DEPLOYMENT_NAME}" \
       --template-file "${TEMPLATE_FILE}" \

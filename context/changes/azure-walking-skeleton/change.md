@@ -26,3 +26,14 @@ Decisions:
 
 - **GitHub immutable OIDC subject.** The repository issues `repo:gustaw-beznicki@132839973/ogarniamy-zwierzaki@1372210399:<context>` (`use_immutable_subject: true`), not `repo:owner/name:<context>`. The legacy subject failed with `AADSTS700213`. `bootstrap.bicepparam` `githubRepo` now holds the ID-qualified prefix, and the bootstrap was re-applied; the client IDs did not change.
 - **The read-only what-if needs `ProviderNoRbac`.** The default what-if (`Provider`) checks write permission on every resource, so the PR identity failed with `AuthorizationFailed` on `resourceGroups/write`, `deployments/write`, `sites/write` and more. `infra/deploy.sh what-if` now passes `--validation-level ProviderNoRbac`, which runs full validation with read permission only. `apply` keeps the default. This replaces the plan's Migration Note "add the missing action to the custom role", which would have given the PR identity write access.
+
+### Phase 3 manual verification (Progress 3.5–3.9): done 2026-09-27
+
+- 3.5: PR #1 was merged with a merge commit (`3906912`), so the Progress SHAs are ancestors of `main`. `deploy` run 36344948052 was approved and every step passed, including the smoke test.
+- 3.6: `https://mango-bush-08ef40b0f.5.azurestaticapps.net/` shows `API: ok` on phone and desktop (confirmed by the user).
+- 3.7: the direct `https://app-ogarniamy-api-3jhak2vhze7d2.azurewebsites.net/api/health` returns `401`, which is what smoke check 3 now requires (401/403).
+- 3.8: `budget-ogarniamy-monthly` is 20 per month from 2026-09-01, with 4 notifications.
+- 3.9: the second `deploy` (run 36348050946, from PR #2 merge `d623fb0`, which moved the actions to Node 24) re-applied the linked backend without errors, the smoke test passed, and the lock held (401). A later `infra/deploy.sh what-if` reports only noise, which a reviewer should not mistake for drift:
+  - App Service `siteConfig` values: the live values match the template;
+  - SWA `provider`, `branch` and `repositoryUrl`: written by the upload action;
+  - SWA `stableInboundIP` and linked backend `managedServiceIdentityType`: set by the service.

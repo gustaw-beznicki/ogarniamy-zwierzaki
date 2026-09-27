@@ -481,15 +481,15 @@ Review-driven hardening (see `reviews/impl-review.md` F1 and F4): the `productio
 
 #### Automated
 
-- [x] 3.1 Smoke script is syntactically valid
-- [x] 3.2 Workflows parse as YAML
-- [x] 3.3 PR ci.yml run is green with create-only what-if
-- [x] 3.4 Web and API builds still pass locally
+- [x] 3.1 Smoke script is syntactically valid — fc47daf
+- [x] 3.2 Workflows parse as YAML — fc47daf
+- [x] 3.3 PR ci.yml run is green with create-only what-if — fc47daf
+- [x] 3.4 Web and API builds still pass locally — fc47daf
 
 #### Manual
 
-- [ ] 3.5 Approved deploy run completes with passing smoke step
-- [ ] 3.6 Deployed page shows "API: ok" on phone and desktop
-- [ ] 3.7 Direct API URL is refused
-- [ ] 3.8 Budget with four notifications visible in Cost Management
-- [ ] 3.9 Repeat deploy run is idempotent and keeps the link lock
+- [x] 3.5 Approved deploy run completes with passing smoke step — fc47daf
+- [x] 3.6 Deployed page shows "API: ok" on phone and desktop — fc47daf
+- [x] 3.7 Direct API URL is refused — fc47daf
+- [x] 3.8 Budget with four notifications visible in Cost Management — fc47daf
+- [x] 3.9 Repeat deploy run is idempotent and keeps the link lock — fc47daf

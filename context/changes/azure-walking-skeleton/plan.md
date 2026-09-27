@@ -454,17 +454,17 @@ F1 has no Always On. The first request after idle can take several seconds, so t
 
 #### Automated
 
-- [x] 2.1 Bicep CLI available
-- [x] 2.2 Both templates lint clean
-- [x] 2.3 Parameter file compiles
-- [x] 2.4 Deploy script is syntactically valid
-- [x] 2.5 No email address or credential in tracked infra files
+- [x] 2.1 Bicep CLI available — b9940dd
+- [x] 2.2 Both templates lint clean — b9940dd
+- [x] 2.3 Parameter file compiles — b9940dd
+- [x] 2.4 Deploy script is syntactically valid — b9940dd
+- [x] 2.5 No email address or credential in tracked infra files — b9940dd
 
 #### Manual
 
-- [ ] 2.6 Bootstrap identity applied once and clientId recorded
-- [ ] 2.7 Repository variables and production environment configured
-- [ ] 2.8 Local what-if lists only expected creates
+- [x] 2.6 Bootstrap identity applied once and clientId recorded
+- [x] 2.7 Repository variables and production environment configured
+- [x] 2.8 Local what-if lists only expected creates
 
 ### Phase 3: CI/CD pipeline, smoke test and documentation
 

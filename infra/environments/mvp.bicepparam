@@ -1,5 +1,5 @@
 using '../main.bicep'
 
 param location = 'swedencentral'
-param swaLocation = 'westeurope'
+param swaLocation = 'eastus2'
 param appServiceSku = 'F1'

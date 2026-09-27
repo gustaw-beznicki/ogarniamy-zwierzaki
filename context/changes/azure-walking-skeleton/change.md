@@ -11,35 +11,13 @@ archived_at: null
 
 <!-- Free-form notes for this change: links, ad-hoc context, decisions that don't belong in research/frame/plan. -->
 
-### Deferred manual verification — Phase 2 (Progress 2.6–2.8)
+### Phase 2 manual verification (Progress 2.6–2.8) — done 2026-09-27
 
-Deferred on 2026-09-27 and still pending. Phase 3 depends on 2.6 and 2.7: the `ci.yml` and `deploy.yml` runs need the identities and repository variables.
+- 2.6: The bootstrap was applied as deployment `ogarniamy-bootstrap`. It created `rg-ogarniamy-cicd`, both identities with their federated credentials, the `Ogarniamy What-If` role with its three role assignments, and `budget-ogarniamy-monthly`. The alert email was set only in the shell.
+- 2.7: Repository variables `AZURE_CLIENT_ID`, `AZURE_PR_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` are set. The `production` environment exists and requires review by `gustaw-beznicki`.
+- 2.8: `infra/deploy.sh what-if` lists 5 creates and nothing else: `rg-ogarniamy-mvp`, `asp-ogarniamy-mvp`, `app-ogarniamy-api-3jhak2vhze7d2`, `swa-ogarniamy-web` and `linkedBackends/api`.
 
-**2.6 Apply the bootstrap once** (set `BUDGET_ALERT_EMAIL` only in your shell, never in a tracked file):
-
-```bash
-BUDGET_ALERT_EMAIL=<address> az deployment sub create --location swedencentral \
-  --template-file infra/bootstrap/main.bicep \
-  --parameters infra/bootstrap/bootstrap.bicepparam --confirm-with-what-if
-```
-
-Record the `clientId`, `prClientId` and `tenantId` outputs.
-
-**2.7 Repository variables and the `production` environment:**
-
-```bash
-gh variable set AZURE_CLIENT_ID --body <clientId>
-gh variable set AZURE_PR_CLIENT_ID --body <prClientId>
-gh variable set AZURE_TENANT_ID --body <tenantId>
-gh variable set AZURE_SUBSCRIPTION_ID --body "$(az account show --query id -o tsv)"
-gh api -X PUT repos/gustaw-beznicki/ogarniamy-zwierzaki/environments/production \
-  -F "reviewers[][type]=User" -F "reviewers[][id]=$(gh api user --jq .id)"
-```
-
-**2.8 Local what-if:** `infra/deploy.sh what-if` lists only creates (resource group, plan, site, static site, linked backend), with no deletes or modifications.
-
-Notes:
+Decisions:
+- `swaLocation` moved from `westeurope` to `eastus2`. The westeurope what-if failed with `RequestDisallowedByAzure` ("not accepting new customers"), and this is the fallback from the plan's Migration Notes. Phase 3 docs (README, `infrastructure.md`) must say eastus2.
 - `infra/bootstrap/identities.bicep` is not in the plan's file list. It was added because a subscription-scope template can create the identities in `rg-ogarniamy-cicd` only through a module scoped to that resource group.
-- Not yet proven against Azure: whether Reader plus the `Ogarniamy What-If` custom role is enough for the PR what-if. If it fails with `AuthorizationFailed`, see the plan's Migration Notes.
-
-After each step is confirmed, tick its row in the plan's `## Progress` section.
+- Not yet proven: whether Reader plus `Ogarniamy What-If` is enough for the PR what-if. Phase 3 gate 3.3 will show it. If it fails with `AuthorizationFailed`, see the plan's Migration Notes.

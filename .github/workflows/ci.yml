@@ -1,0 +1,71 @@
+# Pull-request validation: builds, Bicep lint and a read-only subscription what-if.
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet restore services/api/ogarniamy-zwierzaki-api.csproj
+
+      - run: dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore
+
+  infra:
+    name: infra
+    runs-on: ubuntu-latest
+    # No environment: the OIDC subject is repo:<owner>/<name>:pull_request, trusted only by the read-only PR identity.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Lint Bicep
+        run: infra/deploy.sh lint
+
+      # Fork pull requests receive no OIDC token, so the Azure steps run only for same-repository branches.
+      - name: Azure login (read-only PR identity)
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_PR_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: infra/deploy.sh what-if

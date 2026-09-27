@@ -462,18 +462,18 @@ F1 has no Always On. The first request after idle can take several seconds, so t
 
 #### Manual
 
-- [x] 2.6 Bootstrap identity applied once and clientId recorded
-- [x] 2.7 Repository variables and production environment configured
-- [x] 2.8 Local what-if lists only expected creates
+- [x] 2.6 Bootstrap identity applied once and clientId recorded — 5aa7749
+- [x] 2.7 Repository variables and production environment configured — 5aa7749
+- [x] 2.8 Local what-if lists only expected creates — 5aa7749
 
 ### Phase 3: CI/CD pipeline, smoke test and documentation
 
 #### Automated
 
-- [ ] 3.1 Smoke script is syntactically valid
-- [ ] 3.2 Workflows parse as YAML
+- [x] 3.1 Smoke script is syntactically valid
+- [x] 3.2 Workflows parse as YAML
 - [ ] 3.3 PR ci.yml run is green with create-only what-if
-- [ ] 3.4 Web and API builds still pass locally
+- [x] 3.4 Web and API builds still pass locally
 
 #### Manual
 

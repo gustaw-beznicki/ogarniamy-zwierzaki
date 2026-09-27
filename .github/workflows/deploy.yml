@@ -1,0 +1,105 @@
+# Gated deployment: after approval in the production environment, apply Bicep,
+# release the API and the web app, then run the end-to-end smoke test.
+name: deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    # The environment gate is required: only its OIDC subject is trusted by the Contributor deploy identity.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Build web
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish and package API
+        id: api-package
+        run: |
+          publish_dir="${RUNNER_TEMP}/api-publish"
+          zip_path="${RUNNER_TEMP}/api.zip"
+          dotnet publish services/api/ogarniamy-zwierzaki-api.csproj -c Release -o "${publish_dir}"
+          # The publish output must sit at the zip root.
+          (cd "${publish_dir}" && zip -r -q "${zip_path}" .)
+          echo "zip-path=${zip_path}" >> "${GITHUB_OUTPUT}"
+
+      - name: Azure login (deploy identity)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Apply infrastructure
+        id: infra
+        run: |
+          outputs="$(infra/deploy.sh apply)"
+          {
+            echo "resource-group=$(jq -er '.resourceGroupName.value' <<<"${outputs}")"
+            echo "api-app=$(jq -er '.apiAppName.value' <<<"${outputs}")"
+            echo "api-host=$(jq -er '.apiDefaultHostName.value' <<<"${outputs}")"
+            echo "swa-name=$(jq -er '.staticWebAppName.value' <<<"${outputs}")"
+            echo "swa-host=$(jq -er '.staticWebAppDefaultHostName.value' <<<"${outputs}")"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Deploy API
+        run: |
+          az webapp deploy \
+            --resource-group "${{ steps.infra.outputs.resource-group }}" \
+            --name "${{ steps.infra.outputs.api-app }}" \
+            --type zip \
+            --src-path "${{ steps.api-package.outputs.zip-path }}"
+
+      - name: Fetch Static Web Apps deployment token
+        id: swa-token
+        run: |
+          token="$(az staticwebapp secrets list \
+            --resource-group "${{ steps.infra.outputs.resource-group }}" \
+            --name "${{ steps.infra.outputs.swa-name }}" \
+            --query properties.apiKey \
+            --output tsv)"
+          echo "::add-mask::${token}"
+          echo "token=${token}" >> "${GITHUB_OUTPUT}"
+
+      - name: Deploy web
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa-token.outputs.token }}
+          action: upload
+          app_location: apps/web/dist
+          skip_app_build: true
+          api_location: ''
+
+      - name: Smoke test
+        run: scripts/smoke.sh "${{ steps.infra.outputs.swa-host }}" "${{ steps.infra.outputs.api-host }}"

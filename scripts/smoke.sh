@@ -26,7 +26,7 @@ fail() {
 # Prints the HTTP status code ("000" on connection failure) and writes the body to BODY_FILE.
 fetch() {
   local status
-  status="$(curl --silent --show-error --max-time 60 --output "${BODY_FILE}" --write-out '%{http_code}' "$1" 2>/dev/null)" || true
+  status="$(curl --silent --show-error --max-time 60 --output "${BODY_FILE}" --write-out '%{http_code}' "$1")" || true
   echo "${status:-000}"
 }
 
@@ -56,5 +56,6 @@ done
 # Check 3: the App Service refuses direct traffic because it is a linked backend.
 url="https://${API_HOST}/api/health"
 status="$(fetch "${url}")"
-[[ "${status}" != "200" ]] || fail "check 3: ${url} returned 200, expected direct access to be refused"
-echo "PASS: check 3: ${url} refused direct access with status ${status} (000 means connection failure)"
+# Only an authorization refusal proves the lock; 000, 404 and 5xx mean the backend is broken, not locked.
+[[ "${status}" == "401" || "${status}" == "403" ]] || fail "check 3: ${url} returned ${status}, expected 401 or 403 (direct access refused)"
+echo "PASS: check 3: ${url} refused direct access with status ${status}"

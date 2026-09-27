@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   web:
@@ -47,7 +46,11 @@ jobs:
   infra:
     name: infra
     runs-on: ubuntu-latest
-    # No environment: the OIDC subject is repo:<owner>/<name>:pull_request, trusted only by the read-only PR identity.
+    # Only this job may mint an OIDC token; web and api run PR code without it.
+    permissions:
+      contents: read
+      id-token: write
+    # No environment: the OIDC subject is repo:<owner>@<owner-id>/<name>@<repo-id>:pull_request, trusted only by the read-only PR identity.
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +63,7 @@ jobs:
       # Fork pull requests receive no OIDC token, so the Azure steps run only for same-repository branches.
       - name: Azure login (read-only PR identity)
         if: github.event.pull_request.head.repo.full_name == github.repository
-        uses: azure/login@v2
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           client-id: ${{ vars.AZURE_PR_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}

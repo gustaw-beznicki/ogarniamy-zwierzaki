@@ -14,6 +14,7 @@ param budgetAmount int
 param budgetStartDate string
 
 @description('Recipient of budget alerts. Supplied from the local environment only.')
+@secure()
 param budgetContactEmail string
 
 var cicdResourceGroupName = 'rg-ogarniamy-cicd'

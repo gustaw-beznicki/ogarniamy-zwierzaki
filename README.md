@@ -154,6 +154,8 @@ Browser -> Azure Static Web Apps, Standard (eastus2; static content served globa
 - **PR identity** (`id-ogarniamy-github-pr`): Reader plus the `Ogarniamy What-If` custom role; its federated credential trusts only `pull_request` jobs, so it can preview changes but not make them.
 - **Budget** (`budget-ogarniamy-monthly`): 20 per month in the billing currency, alerting at 50 %, 80 % and 100 % actual and 100 % forecasted spend.
 
+The federated credentials trust GitHub's immutable subject (`owner@id/name@id`), because this repository issues immutable OIDC subject claims. The PR `what-if` runs with `--validation-level ProviderNoRbac`, so the PR identity stays read-only; do not "fix" a `what-if` authorization error by adding write actions to the `Ogarniamy What-If` role.
+
 The repository is public, so the alert recipient is never written to a tracked file or to GitHub. Set it only in your local shell when applying the bootstrap:
 
 ```bash
@@ -170,7 +172,7 @@ The budget start date (`budgetStartDate`) cannot be changed after the budget is 
 ### GitHub configuration
 
 - Repository variables: `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`. Their values come from the bootstrap outputs and the subscription.
-- Environment `production` with a required reviewer. The deploy job runs in this environment, and the deploy identity trusts no other subject.
+- Environment `production` with a required reviewer, restricted to deployments from `main` (custom deployment branch policy). The deploy job runs in this environment, and the deploy identity trusts no other subject.
 
 ### Workflows
 

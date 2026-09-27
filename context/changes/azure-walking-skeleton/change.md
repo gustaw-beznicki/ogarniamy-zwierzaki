@@ -1,7 +1,7 @@
 ---
 change_id: azure-walking-skeleton
 title: Azure walking skeleton
-status: implementing
+status: impl_reviewed
 created: 2026-09-27
 updated: 2026-09-27
 archived_at: null

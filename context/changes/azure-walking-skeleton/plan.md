@@ -11,7 +11,7 @@ Deliver roadmap foundation F-01: the empty Astro front end and the ASP.NET Core 
 - `apps/web` is the Astro 7 minimal starter: `astro.config.mjs` is empty and `src/pages/index.astro` is a placeholder "Astro" page.
 - There is no `infra/`, no `.github/workflows/`, no `scripts/`.
 - `context/foundation/infrastructure.md` prescribes Bicep as the sole IaC source, lint + `what-if` before every mutation, human approval, GitHub OIDC with no stored secrets, App Service for the API and Static Web Apps for Astro. Its layout (`infra/main.bicep`, `infra/modules/*`, `infra/environments/mvp.bicepparam`) is adopted here, limited to the modules F-01 needs.
-- Live subscription checks (2026-09-27, `az` as `gustaw.beznicki@gmail.com`, subscription `Basic subscription`):
+- Live subscription checks (2026-09-27, with the signed-in `az` account, subscription `Basic subscription`):
   - Offer is `PayAsYouGo_2014-09-01` with spending limit **Off**, not a Free Trial. The budget alert is the only spend guard.
   - No `sys.blockwesteurope` or allowed-locations policy assignment (only `SecurityCenterBuiltIn`).
   - `Microsoft.Web/staticSites` locations: Central US, East US 2, West US 2, West Europe, East Asia.
@@ -432,6 +432,17 @@ F1 has no Always On. The first request after idle can take several seconds, so t
 - Region access errors: https://learn.microsoft.com/azure/azure-resource-manager/troubleshooting/error-region-access-policy
 - Current API template: `services/api/Program.cs:17-35`
 
+## Implementation Addendum (2026-09-27)
+
+What was built differs from the phase blocks above in four places. This addendum supersedes the plan's westeurope SWA region, the `owner/name` OIDC subject, the default-level PR `what-if`, and the Migration Note "If the PR `what-if` fails with `AuthorizationFailed`, add the missing action…". The phase blocks and Migration Notes are left as written.
+
+1. **SWA region**: the plan set `swaLocation = 'westeurope'`. `infra/environments/mvp.bicepparam` has `swaLocation = 'eastus2'`, because westeurope rejected creation with `RequestDisallowedByAzure` ("not accepting new customers").
+2. **Bootstrap helper module**: the plan listed only `infra/bootstrap/main.bicep`. `infra/bootstrap/identities.bicep` is an RG-scoped module that holds the two identities and their federated credentials, because a subscription-scope template cannot declare RG resources directly.
+3. **OIDC subject**: the plan used `githubRepo` as `owner/name`. The repo issues immutable subject claims (`use_immutable_subject: true`), so `githubRepo` in `infra/bootstrap/bootstrap.bicepparam` is `owner@owner-id/name@repo-id` and the subjects are `repo:<owner>@<owner-id>/<name>@<repo-id>:pull_request` and `…:environment:production`. The legacy subject failed with AADSTS700213.
+4. **PR `what-if` validation level**: `infra/deploy.sh what-if` passes `--validation-level ProviderNoRbac`, because the default `Provider` level checks write permission on every resource and the read-only PR identity failed with `AuthorizationFailed`. `apply` keeps the default level. Never fix a PR `what-if` `AuthorizationFailed` by adding write actions to the `Ogarniamy What-If` role, which would give the PR identity write access; add read-level actions only if a read is genuinely missing.
+
+Review-driven hardening (see `reviews/impl-review.md` F1 and F4): the `production` environment requires a reviewer and allows deployments only from `main`, and `budgetContactEmail` is `@secure()`.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
@@ -472,7 +483,7 @@ F1 has no Always On. The first request after idle can take several seconds, so t
 
 - [x] 3.1 Smoke script is syntactically valid
 - [x] 3.2 Workflows parse as YAML
-- [ ] 3.3 PR ci.yml run is green with create-only what-if
+- [x] 3.3 PR ci.yml run is green with create-only what-if
 - [x] 3.4 Web and API builds still pass locally
 
 #### Manual

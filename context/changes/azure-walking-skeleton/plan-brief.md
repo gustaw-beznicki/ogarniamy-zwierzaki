@@ -1,6 +1,7 @@
 # Azure Walking Skeleton — Plan Brief
 
 > Full plan: `context/changes/azure-walking-skeleton/plan.md`
+> What was built differs in a few places; see the plan's `## Implementation Addendum (2026-09-27)`.
 
 ## What & Why
 
@@ -20,7 +21,7 @@ Opening the Static Web Apps URL on a phone or desktop shows the app page with `A
 | --- | --- | --- |
 | API hosting tier | Linux App Service **F1**, SKU as parameter (B1 fallback) | Zero cost for a skeleton; `alwaysOn` follows the SKU, so moving to B1 for S-03's worker is one line. |
 | Front-end hosting | **SWA Standard + linked backend** (`/api/*` proxied) | One origin, no CORS, simpler cookie auth in S-01; about 9 USD/month is accepted. |
-| Regions | Backend + future data/AI in **swedencentral**; SWA in **westeurope** (eastus2 fallback) | Live checks: only swedencentral has F1, PG B1ms, Document Intelligence and regional embeddings together; polandcentral lacks OCR; SWA cannot be created in swedencentral. |
+| Regions | Backend + future data/AI in **swedencentral**; SWA in **eastus2** | Live checks: only swedencentral has F1, PG B1ms, Document Intelligence and regional embeddings together; polandcentral lacks OCR; SWA cannot be created in swedencentral, and westeurope rejected it with `RequestDisallowedByAzure` (not accepting new customers). |
 | Who applies infra | **CI**: `what-if` on PR, apply after merge behind the `production` environment reviewer | Fully automated from day one; human approval is kept as the environment gate. |
 | CI identities | Two user-assigned managed identities + GitHub OIDC, created by a one-time local bootstrap: deploy identity with **Contributor** (trusts only the `production` environment), PR identity with **Reader + what-if custom role** (trusts only `pull_request`) | CI cannot create its own identity; no secrets are stored in GitHub; a branch PR cannot bypass the approval gate. |
 | Smoke test | Page + `/api/health` via SWA, and the direct API URL must be refused | Proves the whole browser → proxy → API path S-01 will use, plus the linked-backend lock. |
@@ -50,7 +51,7 @@ Opening the Static Web Apps URL on a phone or desktop shows the app page with `A
 ## Architecture / Approach
 
 ```
-Browser ──▶ SWA Standard (westeurope, global static) ──/api/*──▶ App Service F1 Linux .NET 10 (swedencentral)
+Browser ──▶ SWA Standard (eastus2, global static) ──/api/*──▶ App Service F1 Linux .NET 10 (swedencentral)
 GitHub PR ──▶ ci.yml: build web+api, bicep lint, what-if (OIDC)
 merge main ──▶ deploy.yml [env: production, reviewer] : bicep apply → az webapp deploy → SWA upload → smoke.sh
 bootstrap (once, local): rg-ogarniamy-cicd / id-ogarniamy-github (production, Contributor) + id-ogarniamy-github-pr (pull_request, Reader + what-if) + budget
@@ -61,7 +62,7 @@ bootstrap (once, local): rg-ogarniamy-cicd / id-ogarniamy-github (production, Co
 | Phase | What it delivers | Key risk |
 | --- | --- | --- |
 | 1. Health endpoint and API status page | `/api/health`, a page that shows API status, local proxy on port 5180 | Low; only the dev-port change touches existing config |
-| 2. Bicep infrastructure and bootstrap identity | Linted templates, local `what-if`, OIDC identities + budget + GitHub variables/environment | F1 quota or westeurope SWA restrictions only show at create time |
+| 2. Bicep infrastructure and bootstrap identity | Linted templates, local `what-if`, OIDC identities + budget + GitHub variables/environment | F1 quota or SWA region restrictions only show at create time (westeurope was rejected; eastus2 used) |
 | 3. CI/CD pipeline, smoke test and documentation | PR validation, gated deploy with smoke test, updated docs | Linked-backend propagation delay; link lock surviving re-applies |
 
 **Prerequisites:**
@@ -74,8 +75,8 @@ bootstrap (once, local): rg-ogarniamy-cicd / id-ogarniamy-github (production, Co
 ## Open Risks & Assumptions
 
 - The F1 quota in swedencentral could not be read in advance. If creation fails with `SubscriptionIsOverQuotaForSku`, switch to B1 (about 13 USD/month).
-- West Europe may refuse new customers only at create time. The fallback is `swaLocation = 'eastus2'`. It is unverified whether the SWA → backend proxy hops through the SWA resource region.
-- The deploy identity holds subscription Contributor, reachable only from the `production` environment behind the reviewer. The PR identity is read-only plus `what-if`; if `what-if` needs an extra action, it is added to the custom role, never Contributor. Later slices that need RBAC will require an explicit permission expansion.
+- West Europe refused new SWA customers at create time, so `swaLocation = 'eastus2'` is used. It is unverified whether the SWA → backend proxy hops through the SWA resource region.
+- The deploy identity holds subscription Contributor, reachable only from the `production` environment behind the reviewer. The PR identity is read-only plus `what-if`; the PR `what-if` runs with `--validation-level ProviderNoRbac`, so it needs no write permission. Never add write actions to the `Ogarniamy What-If` role or give the PR identity Contributor; add read-level actions only if a read is genuinely missing. Later slices that need RBAC will require an explicit permission expansion.
 - Re-applying `linkedBackends` on every deploy is not confirmed idempotent; step 3.9 checks it and the plan's Migration Notes give the fallback.
 - The roadmap assumed trial credits, but the subscription is PAYG. Real charges (about 9 USD/month for SWA Standard) start immediately.
 

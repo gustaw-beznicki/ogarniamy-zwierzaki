@@ -8,6 +8,7 @@ param budgetAmount int
 param budgetStartDate string
 
 @description('Recipient of budget alerts.')
+@secure()
 param budgetContactEmail string
 
 resource budget 'Microsoft.Consumption/budgets@2024-08-01' = {

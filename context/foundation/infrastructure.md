@@ -15,7 +15,7 @@ tech_stack:
 
 **Deploy on Azure App Service, with Azure Static Web Apps for the Astro frontend and Azure managed data services.**
 
-Azure is the best fit for the .NET-first stack, the required continuously running background processing, and the requirement to keep original documents private and durable. It tied with Render on the agent-friendly criteria, then won on the existing Azure direction in `tech-stack.md`, the developer's Azure experience, and the explicit decision to use free trial credits as a low-cost learning window; costs must be reassessed before those credits expire. All Azure resources and RBAC assignments will be declared in Bicep so agents can inspect, preview, and modify infrastructure from the repository and CLI.
+Azure is the best fit for the .NET-first stack, the required continuously running background processing, and the requirement to keep original documents private and durable. It tied with Render on the agent-friendly criteria, then won on the existing Azure direction in `tech-stack.md`, the developer's Azure experience, and the explicit decision to treat the MVP as a low-cost learning window; the subscription is Pay-As-You-Go with no spending limit, so the budget alert is the spend guard and costs must be reassessed from measured spend. All Azure resources and RBAC assignments will be declared in Bicep so agents can inspect, preview, and modify infrastructure from the repository and CLI.
 
 ### Decisions recorded while planning F-01 (azure-walking-skeleton, 2026-09-27)
 
@@ -23,6 +23,9 @@ Azure is the best fit for the .NET-first stack, the required continuously runnin
 - **API tier**: the walking skeleton runs on App Service Linux **F1**, set by the `appServiceSku` parameter. F1 has no Always On (cold starts) and a daily CPU quota. Switch the parameter to **B1** when S-03 introduces background work that needs Always On; `alwaysOn` follows the SKU automatically.
 - **Frontend**: Static Web Apps **Standard** with the App Service API as its **linked backend**. The page and `/api/*` share one origin, so no CORS is configured, and the linked App Service rejects direct traffic. SWA pull-request preview environments are disabled, because linked backends do not work there, so there are no PR backends.
 - **Regions**: `swedencentral` for the backend and for future data and AI resources (Poland Central lacks Document Intelligence). The Static Web App resource is in **`eastus2`**: `westeurope` was attempted first and rejected with `RequestDisallowedByAzure` (not accepting new customers), so the planned fallback was applied. The SWA region only affects resource metadata; static content is served globally.
+- **Deploy identity scope (accepted risk, F-01 review F3)**: `id-ogarniamy-github` is Contributor on the whole subscription, because `main.bicep` creates `rg-ogarniamy-mvp` at subscription scope. That scope includes `rg-ogarniamy-cicd`, so a compromised deploy job could add federated credentials to either identity, change or delete the budget, or create resources anywhere. Accepted for the walking skeleton: every use goes through the `production` reviewer and main-only branch policy. Follow-up for S-01, when RBAC is first needed: create the application resource group in the bootstrap, scope Contributor to it, and keep only a deployment-only custom role at subscription scope.
+- **OIDC subject**: the repository issues immutable OIDC subject claims (`use_immutable_subject: true`), so the federated credentials trust `repo:<owner>@<owner-id>/<name>@<repo-id>:pull_request` and `…:environment:production`, and `githubRepo` in `infra/bootstrap/bootstrap.bicepparam` holds the `owner@id/name@id` form. The legacy `owner/name` subject failed with AADSTS700213.
+- **PR `what-if` validation level**: `infra/deploy.sh what-if` passes `--validation-level ProviderNoRbac`, because the default `Provider` level checks write permission on every resource and the read-only PR identity failed with `AuthorizationFailed`; `apply` keeps the default level. Never fix a PR `what-if` `AuthorizationFailed` by granting write actions to the `Ogarniamy What-If` role, because that gives the PR identity write access; add read-level actions only if a read is genuinely missing.
 
 ## Research Constraints
 
@@ -65,11 +68,11 @@ Scores use Pass = 2, Partial = 1, and Fail = 0. Hard stack compatibility is eval
 
 #### 1. Azure App Service (Recommended)
 
-Azure covers the ASP.NET Core API, continuous background work, managed PostgreSQL with vector extensions, private Blob Storage, queues, identity, and observability without introducing a second infrastructure provider. Existing Azure familiarity breaks the criteria tie with Render, and trial credits make the learning cost acceptable for the MVP. The selection is conditional on a cost review and downsizing plan before the credits expire.
+Azure covers the ASP.NET Core API, continuous background work, managed PostgreSQL with vector extensions, private Blob Storage, queues, identity, and observability without introducing a second infrastructure provider. Existing Azure familiarity breaks the criteria tie with Render, and the learning cost is acceptable for the MVP under a budget alert. The subscription is Pay-As-You-Go with no spending limit, so the selection is conditional on a regular cost review from measured spend and a downsizing plan.
 
 #### 2. Render
 
-Render is the clearest fallback if Azure's operational surface or post-credit cost becomes unacceptable. It provides a simpler service model and managed PostgreSQL, but it requires Docker for .NET and a separate private object-storage provider, weakening the end-to-end operational story for original documents.
+Render is the clearest fallback if Azure's operational surface or steady-state cost becomes unacceptable. It provides a simpler service model and managed PostgreSQL, but it requires Docker for .NET and a separate private object-storage provider, weakening the end-to-end operational story for original documents.
 
 #### 3. Railway
 
@@ -79,17 +82,17 @@ Railway offers attractive developer experience and co-located buckets, but its P
 
 ### Devil's Advocate — Weaknesses
 
-1. The inexpensive B1 plan provides Always On for the worker but not deployment slots. Safe staging and instant swap-back require Standard or higher, materially increasing post-credit cost.
+1. The inexpensive B1 plan provides Always On for the worker but not deployment slots. Safe staging and instant swap-back require Standard or higher, materially increasing steady-state cost.
 2. Co-locating the API and continuous WebJob on a small App Service plan makes them compete for CPU and memory. A burst of OCR work can increase API and search latency.
 3. The application spans App Service, Static Web Apps, PostgreSQL, Blob and Queue Storage, identity, Key Vault, and monitoring. Misaligned regions, RBAC, or configuration can break the flow even when each individual service is healthy.
 4. Application rollback does not reverse PostgreSQL migrations, queue messages, generated embeddings, or Blob state. An incompatible data migration can make a successful code rollback unusable.
-5. Trial credits hide the steady-state price. App Service tier, database compute and storage, Application Insights, OCR, embeddings, and egress can produce a cost cliff when the trial ends.
+5. The skeleton's low price hides the steady-state price. On a Pay-As-You-Go subscription with no spending limit, App Service tier, database compute and storage, Application Insights, OCR, embeddings, and egress can produce a cost cliff that only the budget alert catches.
 
 ### Pre-Mortem — How This Could Fail
 
-The team assumed that Azure familiarity and native .NET support removed most operational risk. To save credits, the API and OCR worker shared a small plan, and releases went directly to production because the selected tier had no deployment slots. Small test files worked, but a bulk archive upload saturated CPU and memory. API latency rose above the two-second search target, worker restarts left jobs half-processed, and retrying non-idempotent work created duplicate embeddings.
+The team assumed that Azure familiarity and native .NET support removed most operational risk. To save money, the API and OCR worker shared a small plan, and releases went directly to production because the selected tier had no deployment slots. Small test files worked, but a bulk archive upload saturated CPU and memory. API latency rose above the two-second search target, worker restarts left jobs half-processed, and retrying non-idempotent work created duplicate embeddings.
 
-A later release changed both the database schema and embedding format. The application package was rolled back, but the database and already-processed records were not, so the old build could no longer read part of the archive. At the same time, broad storage credentials had replaced managed identity during debugging, weakening owner isolation. Monitoring showed high consumption but did not connect cost and failures to individual documents. When trial credits expired, the team discovered that the safer tier, database, telemetry, OCR, and embeddings cost much more than the initial B1 estimate. Azure remained technically capable, but unsafe release practices, shared resource contention, non-reversible migrations, and missing cost controls made every change slow and risky.
+A later release changed both the database schema and embedding format. The application package was rolled back, but the database and already-processed records were not, so the old build could no longer read part of the archive. At the same time, broad storage credentials had replaced managed identity during debugging, weakening owner isolation. Monitoring showed high consumption but did not connect cost and failures to individual documents. When real usage grew, the team discovered that the safer tier, database, telemetry, OCR, and embeddings cost much more than the initial B1 estimate. Azure remained technically capable, but unsafe release practices, shared resource contention, non-reversible migrations, and missing cost controls made every change slow and risky.
 
 ### Unknown Unknowns
 
@@ -114,7 +117,8 @@ infra/
 │   ├── postgres.bicep               # Flexible Server and configuration
 │   ├── storage.bicep                # private Blob container and Queue Storage
 │   ├── key-vault.bicep              # secret references and access policy/RBAC surface
-│   ├── monitoring.bicep             # Application Insights, logs, budgets, and alerts
+│   ├── budget.bicep                 # subscription budget, called only from infra/bootstrap
+│   ├── monitoring.bicep             # Application Insights, logs, and alerts
 │   └── rbac.bicep                   # least-privilege role assignments
 └── environments/
     └── mvp.bicepparam               # non-secret names, region, SKUs, and feature switches
@@ -138,14 +142,14 @@ Terraform will not manage the same resources in parallel. It can be reconsidered
 
 | Risk | Source | Likelihood | Impact | Mitigation |
 |---|---|---:|---:|---|
-| Trial-credit expiry creates an unexpected recurring bill | Research finding | H | H | Add budgets and alerts on day one; record the credit expiry date; review measured monthly cost 30 days before expiry and compare Azure against Render again. |
+| Pay-As-You-Go with no spending limit creates an unexpected recurring bill | Research finding | H | H | The subscription budget alert (bootstrap only) is the spend guard from day one; review measured monthly cost regularly and before each tier change, and compare Azure against Render again. |
 | API and worker contend on a shared App Service plan | Devil's advocate | M | H | Measure CPU, memory, queue delay, and search latency with a real binder-sized import; move the worker to a separate plan or job service if thresholds are exceeded. |
 | Code rollback is incompatible with migrated data | Pre-mortem | M | H | Use expand-and-contract migrations, version embedding formats, keep old readers compatible for one release, and test rollback before production. |
 | Duplicate or lost OCR/embedding work after restart | Pre-mortem | M | H | Make jobs idempotent, persist job state, use visibility timeouts, and acknowledge queue messages only after all derived records are committed. |
 | Blob access exposes another owner's original | Devil's advocate | L | H | Keep containers private, authorize through managed identity, issue short-lived user-scoped download URLs only after owner checks, and test cross-account denial. |
 | Stored original becomes unreachable while derived data remains | Research finding | L | H | Treat Blob Storage as the system of record, store immutable blob identifiers in PostgreSQL, enable redundancy appropriate to the region, and continuously test retrieval independently of OCR/search. |
 | Secrets or deployment identity receive excessive permissions | Devil's advocate | M | H | Use resource-scoped RBAC and GitHub OIDC; prohibit subscription-owner credentials in CI; review role assignments before production. |
-| B1 lacks deployment slots and encourages direct production deploys | Unknown unknowns | H | M | Use Standard during the credit-funded learning period or provision a separate staging app; never represent B1 as having slot rollback. |
+| B1 lacks deployment slots and encourages direct production deploys | Unknown unknowns | H | M | Use Standard when the budget allows or provision a separate staging app; never represent B1 as having slot rollback. |
 | `pgvector` or B1ms memory is insufficient for the real archive | Research finding | M | M | Benchmark with several dozen real documents, capture query plans and latency, and resize only from measured evidence. |
 | OCR, embedding, and telemetry usage dominate infrastructure cost | Research finding | M | M | Tag resources, set per-service budgets, record cost per processed document, sample verbose telemetry, and cap retry counts. |
 | Runtime or CLI behavior changes between planning and deployment | Unknown unknowns | M | M | Pin tool versions in the deployment plan, query supported runtimes immediately before provisioning, and use explicit create/deploy commands instead of deprecated `az webapp up`. |
@@ -167,25 +171,25 @@ These commands were checked against the repository's .NET SDK `10.0.112`, Node.j
    az webapp list-runtimes --os-type linux --runtime dotnet --support supported --output table
    ```
 
-2. Authenticate, select the trial subscription explicitly, install or update the Bicep CLI through Azure CLI, and verify it:
+2. Authenticate, select the subscription explicitly, install or update the Bicep CLI through Azure CLI, and verify it:
 
    ```bash
    az login
-   az account set --subscription <trial-subscription-id>
+   az account set --subscription <subscription-id>
    az bicep install
    az bicep version
    ```
 
-3. Implement the planned `infra/` layout. The subscription-scope `main.bicep` creates the regional resource group and calls modules for App Service, Static Web Apps, PostgreSQL, Storage, Key Vault, monitoring, budgets, alerts, and RBAC. Use B1 for cost-oriented validation or S1 when staging slots are required; model that choice as a parameter rather than editing resource definitions.
+3. Implement the planned `infra/` layout. The subscription-scope `main.bicep` creates the regional resource group and calls modules for App Service, Static Web Apps, PostgreSQL, Storage, Key Vault, monitoring, and alerts. It contains no budget and, for F-01, no RBAC: the budget lives in `infra/modules/budget.bicep`, called only from the one-time `infra/bootstrap` template, and role assignments are added only when a later slice needs them. Use B1 for cost-oriented validation or S1 when staging slots are required; model that choice as a parameter rather than editing resource definitions.
 
-4. Validate locally and preview the exact Azure changes. Save the machine-readable `what-if` result as deployment evidence; do not deploy when it contains an unexplained delete, replacement, RBAC expansion, or paid-tier change:
+4. Validate locally and preview the exact Azure changes with `infra/deploy.sh lint` and `infra/deploy.sh what-if` (equivalent to the commands below). Save the machine-readable `what-if` result as deployment evidence; do not deploy when it contains an unexplained delete, replacement, RBAC expansion, or paid-tier change:
 
    ```bash
    az bicep lint --file infra/main.bicep
    az deployment sub what-if --location <region> --template-file infra/main.bicep --parameters infra/environments/mvp.bicepparam --no-pretty-print
    ```
 
-5. After human review, provision or update infrastructure through Bicep, then deploy immutable application artifacts separately. Bicep owns resources and configuration; `az webapp deploy` and the Static Web Apps workflow own application releases:
+5. After human review, provision or update infrastructure through Bicep, then deploy immutable application artifacts separately. Bicep owns resources and configuration; `az webapp deploy` and the Static Web Apps workflow own application releases. **Replaced for F-01:** the local apply below is no longer used; `.github/workflows/deploy.yml` runs `infra/deploy.sh apply` and the releases behind the `production` environment reviewer. The commands are kept for reference:
 
    ```bash
    az deployment sub create --location <region> --template-file infra/main.bicep --parameters infra/environments/mvp.bicepparam --confirm-with-what-if
@@ -200,5 +204,5 @@ These commands were checked against the repository's .NET SDK `10.0.112`, Node.j
 The following were not evaluated or implemented in this research:
 
 - Docker image configuration
-- CI/CD pipeline setup
+- CI/CD pipeline setup (since implemented by F-01: `.github/workflows/ci.yml` and `.github/workflows/deploy.yml`)
 - Production-scale architecture such as multi-region availability, high availability, or disaster recovery

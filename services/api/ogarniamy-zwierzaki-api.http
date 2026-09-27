@@ -1,6 +1,6 @@
-@ogarniamy_zwierzaki_api_HostAddress = http://localhost:0
+@ogarniamy_zwierzaki_api_HostAddress = http://localhost:5180
 
-GET {{ogarniamy_zwierzaki_api_HostAddress}}/weatherforecast/
+GET {{ogarniamy_zwierzaki_api_HostAddress}}/api/health
 Accept: application/json
 
 ###

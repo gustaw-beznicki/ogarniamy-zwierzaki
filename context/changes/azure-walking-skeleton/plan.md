@@ -440,25 +440,25 @@ F1 has no Always On. The first request after idle can take several seconds, so t
 
 #### Automated
 
-- [x] 1.1 Web build passes
-- [x] 1.2 API build passes
-- [x] 1.3 Local API returns 200 on /api/health and 404 on /weatherforecast
-- [x] 1.4 Built page contains the status element
+- [x] 1.1 Web build passes — 866c034
+- [x] 1.2 API build passes — 866c034
+- [x] 1.3 Local API returns 200 on /api/health and 404 on /weatherforecast — 866c034
+- [x] 1.4 Built page contains the status element — 866c034
 
 #### Manual
 
-- [x] 1.5 Local page shows "API: ok" with API running
-- [x] 1.6 Local page shows "API: unavailable" with API stopped
+- [x] 1.5 Local page shows "API: ok" with API running — 866c034
+- [x] 1.6 Local page shows "API: unavailable" with API stopped — 866c034
 
 ### Phase 2: Bicep infrastructure and bootstrap identity
 
 #### Automated
 
-- [ ] 2.1 Bicep CLI available
-- [ ] 2.2 Both templates lint clean
-- [ ] 2.3 Parameter file compiles
-- [ ] 2.4 Deploy script is syntactically valid
-- [ ] 2.5 No email address or credential in tracked infra files
+- [x] 2.1 Bicep CLI available
+- [x] 2.2 Both templates lint clean
+- [x] 2.3 Parameter file compiles
+- [x] 2.4 Deploy script is syntactically valid
+- [x] 2.5 No email address or credential in tracked infra files
 
 #### Manual
 

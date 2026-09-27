@@ -54,54 +54,44 @@ Generated outputs such as `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/
 - The commit message must describe the actual change; the lesson number alone is not a valid message.
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
-## Zestaw narzędzi AI 10xDevs — Moduł 2, Lekcja 2
+## Zestaw narzędzi AI 10xDevs — Moduł 2, Lekcja 3
 
-Przekształć jeden element roadmapy w pierwszy cykl implementacji za pomocą **łańcucha planowania zmian**:
+Przed scaleniem przejrzyj kod wygenerowany przez AI za pomocą **łańcucha przeglądu implementacji**:
 
 ```
-/10x-roadmap -> /10x-new -> /10x-plan -> /10x-plan-review -> /10x-implement
+/10x-implement -> /10x-impl-review -> triage -> (/10x-lesson | fix | skip | disagree)
 ```
 
-`/10x-new`, `/10x-plan`, `/10x-plan-review` i `/10x-implement` są przedmiotem tej lekcji. `/10x-frame` i `/10x-research` nie są tutaj wymaganymi rytuałami; są ścieżkami eskalacji wprowadzanymi w następnej lekcji.
+`/10x-impl-review` jest głównym tematem lekcji. Przegląd jest bramką jakości, a nie poleceniem naprawienia każdego znaleziska.
 
 ### Router zadań — od czego zacząć
 
 | Umiejętność | Użyj jej, gdy |
 | --- | --- |
-| **Przygotowanie zmiany (temat lekcji)** | |
-| `/10x-new <change-id>` | Wybrano element roadmapy i potrzebujesz stabilnego folderu zmiany. Tworzy `context/changes/<change-id>/change.md`, aby planowanie, implementacja, postęp, commity i późniejszy przegląd współdzieliły jedną tożsamość. Użyj PO wyborze roadmapy, PRZED `/10x-plan`. |
-| **Planowanie (temat lekcji)** | |
-| `/10x-plan <change-id>` | Masz folder zmiany i potrzebujesz planu implementacji możliwego do przeglądu. Odczytuje kontekst roadmapy, dokumenty bazowe, dowody z codebase oraz wszelkie istniejące notatki o zmianie; zapisuje `plan.md` i `plan-brief.md` z fazami, kontraktami plików, kryteriami sukcesu i `## Progress`. |
-| **Gotowość planu (temat lekcji)** | |
-| `/10x-plan-review <change-id>` | Masz `plan.md` i potrzebujesz lekkiej kontroli gotowości przed kodowaniem. Użyj go, aby wychwycić brakujący stan końcowy, słabe kontrakty, niepoprawnie sformatowany postęp, dryf zakresu lub martwe punkty przed rozpoczęciem zmian w kodzie. |
-| **Implementacja (temat lekcji)** | |
-| `/10x-implement <change-id> phase <n>` | Masz zatwierdzony plan i chcesz wykonać jedną fazę wraz z weryfikacją, ręczną bramką, rytuałem commitu i zapisem SHA w `## Progress`. |
-| **Zamknięcie cyklu życia** | |
-| `/10x-archive <change-id>` | Zmiana została scalona lub celowo zamknięta. Przenieś ją z aktywnego `context/changes/` do stanu archiwalnego. |
+| **Przegląd kodu (główny temat lekcji)** | |
+| `/10x-impl-review <change-id>` | Zaimplementowałeś kod i chcesz przeprowadzić ustrukturyzowany przegląd przed scaleniem. Umiejętność sprawdza zgodność z planem, dyscyplinę zakresu, bezpieczeństwo i jakość, architekturę, spójność wzorców oraz kryteria sukcesu, a następnie przedstawia znaleziska do triage. |
+| **Rezultat powtarzającej się lekcji** | |
+| `/10x-lesson` | Znalezisko ujawnia powtarzającą się regułę projektu lub wzorzec błędów agenta. Zapisz je w `context/foundation/lessons.md` zamiast traktować jako jednorazową notatkę. |
 
-### Jak następuje przekazanie w łańcuchu
+### Dyscyplina triage
 
-- `/10x-new` tworzy trwałą tożsamość zmiany.
-- `/10x-plan` przekształca tę tożsamość w kontrakt implementacyjny.
-- `/10x-plan-review` sprawdza plan, zanim agent zmodyfikuje kod.
-- `/10x-implement` wykonuje jedną zaplanowaną fazę, weryfikuje ją, prosi o ręczne potwierdzenie, gdy jest potrzebne, wykonuje commit i zapisuje postęp.
+- Severity określa, jak poważne jest znalezisko. Impact określa, jak duże znaczenie ma teraz decyzja.
+- Prawidłowe rezultaty: napraw teraz, napraw inaczej, pomiń, zaakceptuj jako ryzyko, zapisz jako powtarzającą się regułę (`/10x-lesson`), nie zgódź się.
+- Napraw krytyczne znaleziska. Nie poświęcaj godzin na obserwacje o niskim wpływie tylko dlatego, że agent je znalazł.
+- Świadome pomijanie znalezisk o niskim wpływie jest prawidłowym wynikiem przeglądu, a nie zaniedbaniem.
+- Jeśli nie zgadzasz się ze znaleziskiem, zapisz dlaczego. Błędne rozumowanie agenta również jest sygnałem.
 
-### Granice lekcji
+### Granice przeglądu
 
-- Plan jest domyślnym routerem po wyborze roadmapy. Zacznij od `/10x-plan`, chyba że problem jest niejasny lub blokują Cię zewnętrzne dowody.
-- Nie uruchamiaj `/10x-frame + /10x-research` jako ceremonii dla każdej zmiany.
-- Nie przekształcaj tej lekcji w kompletny, end-to-endowy build produktu. Punkt kontrolny z zaplanowanym i częściowo lub w pełni zaimplementowanym strumieniem jest prawidłowy.
-- Przegląd kodu zaimplementowanego diffu należy do Lekcji 3 przez `/10x-impl-review`.
-- Zamknięcie cyklu życia przez `/10x-archive` po scaleniu zmiany lub jej celowym zamknięciu.
+- Ta lekcja dotyczy przeglądu zaimplementowanego kodu. Nie tworzy planu, nie wykonuje nowych faz ani nie uczy przeglądu CI.
+- Strategia testowania i bramki jakości są wprowadzane w Module 3.
+- W tej lekcji nie używaj `/10x-contract` jako wyniku triage.
 
 ### Ścieżki używane przez tę lekcję
 
-- `context/foundation/roadmap.md` - nadrzędna roadmapa
-- `context/changes/<change-id>/change.md` - tożsamość zmiany
-- `context/changes/<change-id>/plan.md` - kontrakt implementacyjny
-- `context/changes/<change-id>/plan-brief.md` - skompresowane przekazanie
-- `context/foundation/lessons.md` - powtarzające się zasady i pułapki
-- `docs/reference/contract-surfaces.md` - rejestr nazw mających kluczowe znaczenie
+- `context/changes/<change-id>/plan.md` — oczekiwany kontrakt implementacji
+- `context/changes/<change-id>/reviews/` — wynik przeglądu
+- `context/foundation/lessons.md` — powtarzające się lekcje
 
 Umiejętności nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozwiązana ścieżka docelowa zaczyna się od `context/archive/`, przerwij z komunikatem: „Ta zmiana jest zarchiwizowana. Zamiast tego otwórz nową zmianę za pomocą `/10x-new`.”
 

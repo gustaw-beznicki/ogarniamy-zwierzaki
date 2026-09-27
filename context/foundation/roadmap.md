@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-09-26
+updated: 2026-09-27
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -41,7 +41,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 
 | ID   | Change ID                            | Outcome (user can …)                                                                 | Prerequisites | PRD refs                                    | Status   |
 | ---- | ------------------------------------ | ------------------------------------------------------------------------------------ | ------------- | ------------------------------------------- | -------- |
-| F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | ready    |
+| F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | in-progress |
 | F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | proposed |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | proposed |
@@ -86,7 +86,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - App Service tier for the MVP: B1 has no staging slots, while Standard has slots but costs more. — Owner: user. Block: no.
 - **Risk:** Sequenced first because the owner explicitly wants to deploy before the pipeline exists. The risk is letting it grow into full infrastructure up front. Database, private storage and queues belong in the slices that first need them (S-01, S-02, S-03).
-- **Status:** ready
+- **Status:** in-progress
 
 ### F-02: Whole-app UI mockup
 

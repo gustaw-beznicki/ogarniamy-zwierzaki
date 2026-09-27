@@ -7,11 +7,56 @@
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>Ogarniamy Zwierzaki</title>
 	</head>
 	<body>
-		<h1>Astro</h1>
+		<h1>Ogarniamy Zwierzaki</h1>
+		<p id="api-status" data-state="loading">API: checking…</p>
 	</body>
 </html>
+
+<script>
+	const HEALTH_TIMEOUT_MS = 10_000;
+
+	type ApiState = 'loading' | 'ok' | 'unavailable';
+
+	const labels: Record<ApiState, string> = {
+		loading: 'API: checking…',
+		ok: 'API: ok',
+		unavailable: 'API: unavailable',
+	};
+
+	function setState(element: HTMLElement, state: ApiState): void {
+		element.dataset.state = state;
+		element.textContent = labels[state];
+	}
+
+	async function checkHealth(): Promise<ApiState> {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
+		try {
+			const response = await fetch('/api/health', { signal: controller.signal });
+			if (response.status !== 200) {
+				return 'unavailable';
+			}
+			const body: unknown = await response.json();
+			const isOk =
+				typeof body === 'object' &&
+				body !== null &&
+				(body as { status?: unknown }).status === 'ok';
+			return isOk ? 'ok' : 'unavailable';
+		} catch {
+			return 'unavailable';
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	const statusElement = document.getElementById('api-status');
+	if (statusElement) {
+		setState(statusElement, 'loading');
+		void checkHealth().then((state) => setState(statusElement, state));
+	}
+</script>

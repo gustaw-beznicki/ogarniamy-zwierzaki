@@ -5,7 +5,7 @@
 @description('Region of the identities.')
 param location string
 
-@description('GitHub repository in owner/name form.')
+@description('GitHub OIDC repository subject prefix (immutable form owner@ownerId/name@repoId).')
 param githubRepo string
 
 @description('Name of the deploy-path identity.')

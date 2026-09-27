@@ -1,7 +1,8 @@
 using './main.bicep'
 
 param location = 'swedencentral'
-param githubRepo = 'gustaw-beznicki/ogarniamy-zwierzaki'
+// GitHub immutable OIDC subject prefix: owner@ownerId/name@repoId (the repository uses use_immutable_subject).
+param githubRepo = 'gustaw-beznicki@132839973/ogarniamy-zwierzaki@1372210399'
 param budgetAmount = 20
 param budgetStartDate = '2026-09-01'
 // The repository is public: the alert recipient comes from the local environment only.

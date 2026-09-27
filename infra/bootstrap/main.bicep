@@ -4,7 +4,7 @@ targetScope = 'subscription'
 @description('Region of the CI/CD resource group and identities.')
 param location string
 
-@description('GitHub repository in owner/name form, trusted by the federated credentials.')
+@description('GitHub OIDC repository subject prefix without "repo:" (immutable form owner@ownerId/name@repoId), trusted by the federated credentials.')
 param githubRepo string
 
 @description('Monthly budget amount in the billing currency.')

@@ -15,3 +15,10 @@
 - **Problem**: AI agents are not good at writing correct Polish. They use too many literal calques from English, which makes the Polish sound odd; their English is more correct.
 - **Rule**: Always write context and code files in English, including UI copy in mockups and components. Never write Polish outside translation files; Polish UI text belongs only in locale/translation files.
 - **Applies to**: all
+
+## Keep README as documentation; put owner notes under the change's notes folder
+
+- **Context**: Any change that edits `README.md` or needs to hand notes, instructions or runbook steps to the owner.
+- **Problem**: One-off owner steps and change history end up in the README (for example "owner steps before merging…", "westeurope was tried first"), so it stops being useful documentation for a new user.
+- **Rule**: Keep README.md as project documentation for a new user; never add change-specific notes, one-time steps or messages to the owner. Put those under `context/changes/<change-id>/notes/`.
+- **Applies to**: plan, implement, impl-review

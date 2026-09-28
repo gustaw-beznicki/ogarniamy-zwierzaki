@@ -4,231 +4,203 @@
 
 [![Astro](https://img.shields.io/badge/Astro-7-BC52EE?logo=astro&logoColor=white)](https://astro.build/)
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Project status](https://img.shields.io/badge/status-early_development-orange)](#current-status)
+[![Project status](https://img.shields.io/badge/status-early_development-orange)](#status)
 
-Ogarniamy Zwierzaki helps pet owners keep veterinary records from different clinics in one place and find the right document by meaning, not only by filename or exact wording. The planned MVP accepts photos and PDFs, keeps each original as the source of truth, and returns matching source fragments instead of generating medical advice.
+Ogarniamy Zwierzaki helps pet owners keep veterinary records from different clinics in one place and find the right document by meaning, not only by filename or exact wording. Owners upload photos and PDFs; the original always stays the source of truth, and search returns the matching source fragments, never generated medical advice.
 
-> [!IMPORTANT]
-> The repository currently contains a verified frontend and API scaffold, wired into an Azure walking skeleton (a health check end to end) with automated CI/CD. Authentication, document storage, OCR, semantic search, and the remaining product flows described below are planned but not implemented yet.
+## Status
 
-## Planned MVP
+The project is in early development. What runs today:
+
+- An Astro frontend and an ASP.NET Core API, deployed to Azure by CI/CD.
+- A PostgreSQL database that the API migrates at startup; `GET /api/health` is healthy only when the database is reachable.
+- An integration test suite that runs against a real PostgreSQL container.
+
+Everything else in the MVP is planned, not built yet:
 
 - Owner accounts with strict isolation between users.
-- Multiple animal profiles and per-animal document views.
-- Photo and PDF upload with an editable veterinary-event date.
-- Private storage of the original document.
-- Text extraction from digital PDFs and OCR for scans or photos.
-- Semantic search across document content, optionally filtered by animal.
-- Search results that show the matching fragment and open the original.
+- Animal profiles and per-animal document views.
+- Photo and PDF upload with an editable veterinary-event date, stored privately.
+- Text extraction from PDFs and OCR for scans and photos.
+- Semantic search across document content, optionally filtered by animal, showing the matching fragment and opening the original.
 
-The product deliberately returns documents and quoted source fragments—not generated diagnoses, summaries, or other medical conclusions.
-
-## Current status
-
-| Area | Location | State |
-| --- | --- | --- |
-| Web | [`apps/web`](apps/web) | Astro 7 page with strict TypeScript that calls `/api/health` and shows the API status |
-| API | [`services/api`](services/api) | ASP.NET Core 10 Web API exposing `GET /api/health`, with development OpenAPI output |
-| Infrastructure | [`infra`](infra) | Bicep for the Azure walking skeleton (App Service F1, Static Web Apps Standard with a linked backend) and a one-time bootstrap for CI identities and the budget |
-| CI/CD | [`.github/workflows`](.github/workflows) | Pull-request builds, Bicep lint and `what-if`; gated deployment on merge to `main`, ending with a smoke test ([`scripts/smoke.sh`](scripts/smoke.sh)) |
-| Product definition | [`context/foundation/prd.md`](context/foundation/prd.md) | MVP requirements, guardrails, non-goals, and open questions documented |
-| Technical direction | [`context/foundation/tech-stack.md`](context/foundation/tech-stack.md) | Astro + ASP.NET Core split, with Azure App Service recorded as the deployment target |
-| Scaffold verification | [`context/changes/bootstrap-verification/verification.md`](context/changes/bootstrap-verification/verification.md) | Both components scaffolded and build-verified |
-
-The frontend reaches the API through the Static Web Apps `/api` proxy (and the Astro dev proxy locally). No database, document storage, authentication, or product feature is present yet.
+The requirements, guardrails and non-goals are in the [PRD](context/foundation/prd.md); the delivery order is in the [roadmap](context/foundation/roadmap.md).
 
 ## Architecture
 
-The current source layout establishes two independently runnable components. The downstream services are the planned direction from the project documents.
-
 ```text
-apps/web (Astro + TypeScript)        -> Azure Static Web Apps (Standard)
-              |  /api/* (same-origin proxy, linked backend)
-              v
-services/api (ASP.NET Core)          -> Azure App Service (Linux)
-              |
-              +-- private original-document storage    [planned]
-              +-- PDF text extraction / OCR            [planned]
-              +-- PostgreSQL + pgvector                 [planned]
-              +-- background indexing                  [planned]
+Browser
+   |
+   v
+Azure Static Web Apps (Standard)        apps/web      Astro, static output
+   |  /api/*  same-origin proxy (linked backend)
+   v
+Azure App Service (Linux)               services/api  ASP.NET Core 10
+   |  Entra token of the App Service managed identity
+   v
+Azure Database for PostgreSQL           Flexible Server 17, Entra-only auth
 ```
 
-## Repository structure
+- The page and `/api/*` share one origin, so there is no CORS configuration. The App Service accepts traffic only through the Static Web App.
+- The API never stores a database password in Azure: it signs in with its managed identity. Locally and in tests it uses an ordinary password connection string.
+- Planned additions: private blob storage for originals, OCR, pgvector search, and background indexing.
+
+## Repository layout
 
 ```text
-.
-├── apps/
-│   └── web/                         # Astro frontend
-├── services/
-│   └── api/                         # ASP.NET Core API
-├── infra/
-│   ├── main.bicep                   # Resource-group-scope entry point (API, web) for rg-ogarniamy-mvp
-│   ├── modules/                     # App Service, Static Web App, and budget modules
-│   ├── environments/mvp.bicepparam  # Non-secret region and SKU parameters
-│   ├── bootstrap/                   # One-time, hand-applied CI identities, app resource group and budget
-│   └── deploy.sh                    # lint / what-if / apply, shared by local runs and CI
-├── .github/
-│   └── workflows/                   # ci.yml (pull requests) and deploy.yml (main)
-├── scripts/
-│   └── smoke.sh                     # End-to-end smoke test of the deployed skeleton
-├── context/
-│   ├── foundation/                  # PRD, stack decisions, and scaffold adapters
-│   └── changes/                     # Change-scoped plans and verification records
-├── AGENTS.md                        # Repository guidance for coding agents
-├── CLAUDE.md                        # Claude-specific project guidance
-└── README.md
+apps/web/            Astro frontend (strict TypeScript)
+services/api/        ASP.NET Core API; EF Core model and migrations in Data/
+services/api.Tests/  xUnit integration tests (WebApplicationFactory + Testcontainers)
+infra/               Bicep templates and deploy.sh (lint / what-if / apply)
+  bootstrap/         One-time, hand-applied setup: CI identities, resource group, budget
+scripts/smoke.sh     End-to-end check of a deployed environment
+compose.yaml         Local PostgreSQL
+context/             Product and planning documents (PRD, stack, roadmap, change plans)
+.github/workflows/   ci.yml (pull requests), deploy.yml (main)
 ```
 
-## Getting started
+## Local development
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 22.12 or newer and npm
+- [Node.js](https://nodejs.org/) 22.12 or newer, with npm
 - [.NET SDK](https://dotnet.microsoft.com/download) 10
-- [Git](https://git-scm.com/)
+- [Docker](https://docs.docker.com/get-docker/) with Compose (local database and tests)
+- EF Core CLI, only for creating migrations: `dotnet tool install --global dotnet-ef`
 
-Clone the repository:
+### 1. Start PostgreSQL
 
 ```bash
-git clone git@github.com:gustaw-beznicki/ogarniamy-zwierzaki.git
-cd ogarniamy-zwierzaki
+cp .env.example .env          # then set POSTGRES_PASSWORD to any local password
+docker compose up -d
 ```
 
-### Run the web app
+If port 5432 is already taken on your machine, set `POSTGRES_PORT` in `.env` (for example `5433`) and use that port in the connection string below.
+
+### 2. Point the API at it
+
+The connection string is kept in [.NET user secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets), outside the repository. Use the password from `.env`:
+
+```bash
+dotnet user-secrets set ConnectionStrings:Default \
+  "Host=localhost;Port=5432;Database=ogarniamy;Username=postgres;Password=<password from .env>" \
+  --project services/api
+```
+
+### 3. Run the API and the web app
+
+```bash
+dotnet run --project services/api       # http://localhost:5180, applies migrations on start
+```
 
 ```bash
 cd apps/web
 npm ci
-npm run dev
+npm run dev                             # http://localhost:4321
 ```
 
-Astro serves the app at `http://localhost:4321` by default. In development, Astro proxies `/api/*` to the local API at `http://localhost:5180`, mirroring the Static Web Apps proxy; set `API_PROXY_TARGET` to point it elsewhere. Without a running API the page shows `API: unavailable`.
+The Astro dev server proxies `/api/*` to `http://localhost:5180`, just like Static Web Apps does in Azure. Set `API_PROXY_TARGET` to proxy elsewhere. Check the stack with `curl http://localhost:5180/api/health`, which should return `{"status":"ok"}`.
 
-### Run the API
+### Configuration
 
-From another terminal at the repository root:
+| Key | Values | Purpose |
+| --- | --- | --- |
+| `ConnectionStrings:Default` | Npgsql connection string | Required. Includes a password only in `Password` mode. |
+| `Database:Auth` | `Password` (default), `AzureManagedIdentity` | How the API authenticates to PostgreSQL. Azure sets `AzureManagedIdentity` through App Service settings. |
+
+Secrets never go into tracked files: local passwords live in `.env` (gitignored) and user secrets; Azure uses managed identities.
+
+### Database migrations
+
+The API applies pending migrations at startup and will not start without a reachable database. After changing the EF Core model, add a migration:
 
 ```bash
-dotnet restore services/api/ogarniamy-zwierzaki-api.csproj
-dotnet run --project services/api/ogarniamy-zwierzaki-api.csproj
+dotnet ef migrations add <Name> --project services/api --output-dir Data/Migrations
+dotnet ef database update --project services/api     # optional: apply without starting the API
 ```
 
-The development launch profile listens on the fixed port `http://localhost:5180`, which the Astro dev proxy targets. The API exposes `GET /api/health`, which returns `{"status":"ok"}`; its OpenAPI document is available in development mode.
+Migrations are forward-only in practice: deployed data is not rolled back with code, so a schema change must stay compatible with the previous release (expand first, contract later).
 
-## Verification
-
-Build both components independently:
+## Tests and checks
 
 ```bash
-npm ci --prefix apps/web
+dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj   # needs Docker running
+dotnet build services/api/ogarniamy-zwierzaki-api.csproj
 npm run build --prefix apps/web
-dotnet restore services/api/ogarniamy-zwierzaki-api.csproj
-dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore
+infra/deploy.sh lint                                                  # needs the Azure CLI with Bicep
 ```
 
-Automated application tests have not been added yet. The deployed skeleton is checked by `scripts/smoke.sh <swa-host> <api-host>` (see [Deployment](#deployment)).
+The tests boot the real API against a throwaway PostgreSQL 17 container, so no mocks or local database are involved. Pull-request CI runs all of the above plus an infrastructure `what-if`.
 
 ## Deployment
 
-Deployment to Azure is automated through GitHub Actions and declared in Bicep under [`infra/`](infra). No credentials are stored in the repository or in GitHub secrets: CI authenticates to Azure with GitHub OIDC, and GitHub holds only non-secret identifiers as repository variables.
+Everything in Azure is declared in Bicep under [`infra/`](infra) and deployed by GitHub Actions. CI signs in to Azure with GitHub OIDC; the repository and GitHub hold no credentials, only non-secret identifiers.
 
-### Architecture
+- **Pull request** ([`ci.yml`](.github/workflows/ci.yml)): builds and tests both components, lints Bicep, and runs `infra/deploy.sh what-if` with a read-only identity so the infrastructure diff is visible in the run log. Pull requests from forks skip the Azure steps.
+- **Merge to `main`** ([`deploy.yml`](.github/workflows/deploy.yml)): after approval in the `production` environment, runs the tests, applies the Bicep, deploys the API and the web app, and finishes with [`scripts/smoke.sh`](scripts/smoke.sh). Deployments run one at a time and are never cancelled mid-run.
 
-```text
-Browser -> Azure Static Web Apps, Standard (eastus2; static content served globally)
-              |  /api/* via linked backend
-              v
-           Azure App Service, Linux F1 (swedencentral), rg-ogarniamy-mvp
-```
+The same infrastructure commands work locally after `az login`: `infra/deploy.sh lint`, `infra/deploy.sh what-if`.
 
-- The API is linked to the Static Web App as its backend, so the page and `/api` share one origin and no CORS is configured. Linking also makes the App Service reject direct requests to its own `*.azurewebsites.net` host.
-- The Static Web App resource is in `eastus2`: `westeurope` was attempted first and rejected new Static Web Apps customers (`RequestDisallowedByAzure`). The region only affects resource metadata; static content is served globally.
-- F1 has no Always On, so the first request after idle is slow, and a daily CPU quota applies. The SKU is the `appServiceSku` parameter in `infra/environments/mvp.bicepparam`.
-- Static Web Apps pull-request preview environments are disabled, because linked backends do not work there.
+### Environment
 
-### One-time bootstrap
+| Resource | Details |
+| --- | --- |
+| Resource group | `rg-ogarniamy-mvp` in `swedencentral` |
+| API | App Service Linux, F1 by default (`appServiceSku` in [`mvp.bicepparam`](infra/environments/mvp.bicepparam)); F1 has cold starts and a daily CPU quota |
+| Web | Static Web Apps Standard; resource in `eastus2`, content served globally; PR preview environments disabled because linked backends do not support them |
+| Database | PostgreSQL Flexible Server 17, Burstable B1ms, 32 GiB; Entra-only authentication with the API identity as administrator; firewall open only to the App Service outbound IPs |
 
-[`infra/bootstrap/main.bicep`](infra/bootstrap/main.bicep) is applied once by hand, never by CI. It creates `rg-ogarniamy-cicd` with two user-assigned identities trusted by GitHub OIDC, the application resource group `rg-ogarniamy-mvp` that `infra/main.bicep` deploys into, and a subscription budget:
+### Setting up a new Azure environment
 
-- **Deploy identity** (`id-ogarniamy-github`): Contributor on `rg-ogarniamy-mvp` only; its federated credential trusts only jobs in the `production` environment. It cannot touch `rg-ogarniamy-cicd`, the budget, or anything else in the subscription.
-- **PR identity** (`id-ogarniamy-github-pr`): Reader plus the `Ogarniamy What-If` custom role, both at subscription scope and inherited by the resource-group `what-if`; its federated credential trusts only `pull_request` jobs, so it can preview changes but not make them.
-- **Budget** (`budget-ogarniamy-monthly`): 40 per month in the billing currency, alerting at 50 %, 80 % and 100 % actual and 100 % forecasted spend.
+These steps are done once by a subscription owner, because CI deliberately lacks the permissions for them.
 
-The federated credentials trust GitHub's immutable subject (`owner@id/name@id`), because this repository issues immutable OIDC subject claims. The PR `what-if` runs with `--validation-level ProviderNoRbac`, so the PR identity stays read-only; do not "fix" a `what-if` authorization error by adding write actions to the `Ogarniamy What-If` role.
-
-The repository is public, so the alert recipient is never written to a tracked file or to GitHub. Set it only in your local shell when applying the bootstrap:
-
-```bash
-export BUDGET_ALERT_EMAIL='<your alert address>'
-az deployment sub create \
-  --location swedencentral \
-  --name ogarniamy-bootstrap \
-  --template-file infra/bootstrap/main.bicep \
-  --parameters infra/bootstrap/bootstrap.bicepparam
-```
-
-The budget start date (`budgetStartDate`) cannot be changed after the budget is created. Re-running the bootstrap later keeps the original value; if Azure rejects the past date, delete and recreate the budget with the current month's first day rather than moving it into CI.
-
-#### Owner steps for the resource-group-scoped deploy identity
-
-The deploy identity cannot grant roles or register resource providers, so the subscription owner runs these steps by hand, in this order, **before** merging the change that makes `infra/main.bicep` resource-group scoped (the application template now assumes `rg-ogarniamy-mvp` already exists):
-
-1. Re-apply the bootstrap with the command above (`BUDGET_ALERT_EMAIL` set). It creates or keeps `rg-ogarniamy-mvp`, assigns the deploy identity Contributor on it, and updates the budget amount.
-2. Delete the old subscription-scope Contributor assignment of the deploy identity (the bootstrap no longer declares it, but a subscription deployment does not remove it):
+1. **Apply the bootstrap.** [`infra/bootstrap/main.bicep`](infra/bootstrap/main.bicep) creates `rg-ogarniamy-cicd` with two GitHub OIDC identities, the application resource group `rg-ogarniamy-mvp`, the role assignments and the monthly budget. The budget alert address comes only from your shell, because the repository is public:
 
    ```bash
-   az role assignment delete \
-     --assignee <deploy principal id> \
-     --role Contributor \
-     --scope /subscriptions/<subscription id>
+   export BUDGET_ALERT_EMAIL='<your alert address>'
+   az deployment sub create \
+     --location swedencentral \
+     --name ogarniamy-bootstrap \
+     --template-file infra/bootstrap/main.bicep \
+     --parameters infra/bootstrap/bootstrap.bicepparam
    ```
 
-3. Register the PostgreSQL resource provider, which the resource-group-scoped identity cannot do:
+2. **Register resource providers** that the resource-group-scoped deploy identity cannot register:
 
    ```bash
    az provider register --namespace Microsoft.DBforPostgreSQL
    ```
 
-4. Check that Contributor remains only at the resource group scope:
+3. **Configure GitHub.** Add repository variables `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` from the bootstrap outputs. Create the `production` environment with a required reviewer and a branch policy allowing only `main`.
 
-   ```bash
-   az role assignment list --assignee <deploy principal id> --all --output table
-   ```
+What the bootstrap grants:
 
-### GitHub configuration
+- **Deploy identity** `id-ogarniamy-github`: Contributor on `rg-ogarniamy-mvp` only, trusted only for jobs in the `production` environment.
+- **PR identity** `id-ogarniamy-github-pr`: Reader plus the custom `Ogarniamy What-If` role at subscription scope, trusted only for `pull_request` jobs. `what-if` runs with `--validation-level ProviderNoRbac`, so this identity never needs write access; do not add write actions to fix a `what-if` error.
+- **Budget** `budget-ogarniamy-monthly`: 40 per month, alerts at 50 %, 80 % and 100 % actual and 100 % forecasted spend. Its start date cannot be changed after creation.
 
-- Repository variables: `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`. Their values come from the bootstrap outputs and the subscription.
-- Environment `production` with a required reviewer, restricted to deployments from `main` (custom deployment branch policy). The deploy job runs in this environment, and the deploy identity trusts no other subject.
-
-### Workflows
-
-- **Pull requests** ([`ci.yml`](.github/workflows/ci.yml)): builds the web app and the API, lints the Bicep templates, then signs in with the read-only PR identity and runs `infra/deploy.sh what-if` so the infrastructure diff is visible in the run log. The Azure steps are skipped for pull requests from forks, which receive no OIDC token.
-- **Merge to `main`** ([`deploy.yml`](.github/workflows/deploy.yml)): a single `deploy` job waits for approval in the `production` environment, then builds both components, applies `infra/deploy.sh apply`, deploys the API zip with `az webapp deploy`, uploads `apps/web/dist` to Static Web Apps with a deployment token fetched at runtime, and runs `scripts/smoke.sh`. Deployments are serialized and never cancelled mid-run. The workflow can also be started manually.
-
-The same infrastructure commands run locally after `az login`:
-
-```bash
-infra/deploy.sh lint
-infra/deploy.sh what-if
-```
+The federated credentials use GitHub's immutable OIDC subject (`owner@id/name@id`).
 
 ### Smoke test
 
-`scripts/smoke.sh <swa-host> <api-host>` checks that the page is served, that `https://<swa-host>/api/health` returns `{"status":"ok"}` (retried for up to 10 minutes to cover cold starts and link propagation), and that the API's direct host refuses the request.
+`scripts/smoke.sh <swa-host> <api-host>` checks that the page is served, that `https://<swa-host>/api/health` returns `{"status":"ok"}` (retried for up to 10 minutes to cover cold starts), and that the API's own `*.azurewebsites.net` host refuses direct requests.
 
 ### Rollback
 
-Revert the offending commit on `main` and approve the resulting deploy, which redeploys the previous build, or re-run an earlier successful `deploy` workflow run. The walking skeleton has no data, so no data rollback is involved.
+Revert the offending commit on `main` and approve the resulting deploy, or re-run an earlier successful `deploy` run. This rolls back code only; the database keeps its current schema, which is why migrations must stay backward compatible.
 
-## Project documentation
+## Contributing
+
+- Keep browser concerns in `apps/web` and application logic in `services/api`.
+- Code, comments and documentation are written in English; Polish text lives only in translation files.
+- Never commit credentials or connection strings with passwords.
+- Coding-agent guidance is in [`AGENTS.md`](AGENTS.md); the AI-assisted workflow is described in [`docs/10xdevs-agent-workflow.md`](docs/10xdevs-agent-workflow.md).
+
+The project is developed as part of the 10xDevs course; course milestones are tagged `m<module>l<lesson>` (for example `m1l1`).
+
+## Further reading
 
 - [Product requirements](context/foundation/prd.md)
-- [Shaping notes](context/foundation/shape-notes.md)
-- [Technology stack decision](context/foundation/tech-stack.md)
-- [Scaffold adapter manifest](context/foundation/scaffold-adapters/manifest.md)
-- [Bootstrap verification log](context/changes/bootstrap-verification/verification.md)
-- [AI agent and 10xDevs workflow](docs/10xdevs-agent-workflow.md)
-
-## Course history
-
-This project is developed as part of 10xDevs. Course milestones are marked with Git tags in the form `m<module>l<lesson>`, for example `m1l1`.
+- [Roadmap](context/foundation/roadmap.md)
+- [Technology stack](context/foundation/tech-stack.md)
+- [Infrastructure decisions and risks](context/foundation/infrastructure.md)

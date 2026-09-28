@@ -41,6 +41,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # Testcontainers starts a throwaway PostgreSQL on the runner's Docker.
+      - name: Test API
+        run: dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj
+
+      # Scoped to the API project, so the tests are never deployed.
       - name: Publish and package API
         id: api-package
         run: |

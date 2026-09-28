@@ -11,6 +11,12 @@ param location string
 ])
 param appServiceSku string
 
+@description('PostgreSQL Flexible Server name; the host is <postgresServerName>.postgres.database.azure.com.')
+param postgresServerName string
+
+// The site's own settings need its name, so it is computed once instead of read back from the resource.
+var siteName = 'app-ogarniamy-api-${uniqueString(subscription().id)}'
+
 resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: 'asp-ogarniamy-mvp'
   location: location
@@ -24,9 +30,12 @@ resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
 }
 
 resource api 'Microsoft.Web/sites@2024-04-01' = {
-  name: 'app-ogarniamy-api-${uniqueString(subscription().id)}'
+  name: siteName
   location: location
   kind: 'app,linux'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: plan.id
     httpsOnly: true
@@ -40,6 +49,15 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
           name: 'ASPNETCORE_ENVIRONMENT'
           value: 'Production'
         }
+        {
+          name: 'Database__Auth'
+          value: 'AzureManagedIdentity'
+        }
+        {
+          // No password: in AzureManagedIdentity mode the API signs in with an Entra token for its managed identity.
+          name: 'ConnectionStrings__Default'
+          value: 'Host=${postgresServerName}.postgres.database.azure.com;Database=ogarniamy;Username=${siteName};Ssl Mode=Require'
+        }
       ]
     }
   }
@@ -48,3 +66,5 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
 output id string = api.id
 output name string = api.name
 output defaultHostName string = api.properties.defaultHostName
+output principalId string = api.identity.principalId
+output possibleOutboundIpAddresses string = api.properties.possibleOutboundIpAddresses

@@ -5,10 +5,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ogarniamy_zwierzaki_api</RootNamespace>
+    <UserSecretsId>ed227825-89f8-49e7-9001-7096ff4ee885</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
 </Project>

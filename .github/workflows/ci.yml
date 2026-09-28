@@ -1,4 +1,4 @@
-# Pull-request validation: builds, Bicep lint and a read-only subscription what-if.
+# Pull-request validation: builds, Bicep lint and a read-only resource-group what-if.
 name: ci
 
 on:

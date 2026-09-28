@@ -20,7 +20,7 @@ jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-24.04
-    # The environment gate is required: only its OIDC subject is trusted by the Contributor deploy identity.
+    # The environment gate is required: only its OIDC subject is trusted by the deploy identity (Contributor on rg-ogarniamy-mvp).
     environment: production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

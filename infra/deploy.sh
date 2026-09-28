@@ -5,7 +5,7 @@ set -euo pipefail
 
 INFRA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOYMENT_NAME='ogarniamy-mvp'
-DEPLOYMENT_LOCATION='swedencentral'
+RESOURCE_GROUP='rg-ogarniamy-mvp'
 TEMPLATE_FILE="${INFRA_DIR}/main.bicep"
 PARAMETERS_FILE="${INFRA_DIR}/environments/mvp.bicepparam"
 
@@ -23,16 +23,16 @@ case "$1" in
     ;;
   what-if)
     # ProviderNoRbac: full validation that needs only read permission, so the read-only PR identity can run it.
-    az deployment sub what-if \
+    az deployment group what-if \
       --validation-level ProviderNoRbac \
-      --location "${DEPLOYMENT_LOCATION}" \
+      --resource-group "${RESOURCE_GROUP}" \
       --name "${DEPLOYMENT_NAME}" \
       --template-file "${TEMPLATE_FILE}" \
       --parameters "${PARAMETERS_FILE}"
     ;;
   apply)
-    az deployment sub create \
-      --location "${DEPLOYMENT_LOCATION}" \
+    az deployment group create \
+      --resource-group "${RESOURCE_GROUP}" \
       --name "${DEPLOYMENT_NAME}" \
       --template-file "${TEMPLATE_FILE}" \
       --parameters "${PARAMETERS_FILE}" \

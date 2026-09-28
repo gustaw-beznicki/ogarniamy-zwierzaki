@@ -1,7 +1,8 @@
-// One-time bootstrap, applied by hand (never from CI): GitHub OIDC identities and the subscription budget.
+// One-time bootstrap, applied by hand (never from CI): GitHub OIDC identities, the application
+// resource group with the deploy identity's scoped role, and the subscription budget.
 targetScope = 'subscription'
 
-@description('Region of the CI/CD resource group and identities.')
+@description('Region of the CI/CD and application resource groups and of the identities.')
 param location string
 
 @description('GitHub OIDC repository subject prefix without "repo:" (immutable form owner@ownerId/name@repoId), trusted by the federated credentials.')
@@ -18,14 +19,20 @@ param budgetStartDate string
 param budgetContactEmail string
 
 var cicdResourceGroupName = 'rg-ogarniamy-cicd'
+var appResourceGroupName = 'rg-ogarniamy-mvp'
 var deployIdentityName = 'id-ogarniamy-github'
 var prIdentityName = 'id-ogarniamy-github-pr'
 
-var contributorRoleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
 var readerRoleId = 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
 
 resource cicdResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: cicdResourceGroupName
+  location: location
+}
+
+// The application template deploys into this resource group; the deploy identity is Contributor here only.
+resource appResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+  name: appResourceGroupName
   location: location
 }
 
@@ -44,7 +51,7 @@ resource whatIfRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
   name: guid(subscription().id, 'Ogarniamy What-If')
   properties: {
     roleName: 'Ogarniamy What-If'
-    description: 'Validate and preview subscription deployments without writing resources.'
+    description: 'Validate and preview deployments without writing resources.'
     type: 'CustomRole'
     assignableScopes: [
       subscription().id
@@ -61,12 +68,12 @@ resource whatIfRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' = {
   }
 }
 
-resource deployContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(subscription().id, cicdResourceGroupName, deployIdentityName, contributorRoleId)
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleId)
-    principalId: identities.outputs.deployPrincipalId
-    principalType: 'ServicePrincipal'
+module appResourceGroupRoles 'app-rg-roles.bicep' = {
+  name: 'ogarniamy-app-rg-roles'
+  scope: appResourceGroup
+  params: {
+    deployPrincipalId: identities.outputs.deployPrincipalId
+    deployIdentityName: deployIdentityName
   }
 }
 

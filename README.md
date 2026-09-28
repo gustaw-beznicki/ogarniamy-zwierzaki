@@ -62,10 +62,10 @@ services/api (ASP.NET Core)          -> Azure App Service (Linux)
 ├── services/
 │   └── api/                         # ASP.NET Core API
 ├── infra/
-│   ├── main.bicep                   # Subscription-scope entry point (resource group, API, web)
+│   ├── main.bicep                   # Resource-group-scope entry point (API, web) for rg-ogarniamy-mvp
 │   ├── modules/                     # App Service, Static Web App, and budget modules
 │   ├── environments/mvp.bicepparam  # Non-secret region and SKU parameters
-│   ├── bootstrap/                   # One-time, hand-applied CI identities and budget
+│   ├── bootstrap/                   # One-time, hand-applied CI identities, app resource group and budget
 │   └── deploy.sh                    # lint / what-if / apply, shared by local runs and CI
 ├── .github/
 │   └── workflows/                   # ci.yml (pull requests) and deploy.yml (main)
@@ -148,11 +148,11 @@ Browser -> Azure Static Web Apps, Standard (eastus2; static content served globa
 
 ### One-time bootstrap
 
-[`infra/bootstrap/main.bicep`](infra/bootstrap/main.bicep) is applied once by hand, never by CI. It creates `rg-ogarniamy-cicd` with two user-assigned identities trusted by GitHub OIDC, plus a subscription budget:
+[`infra/bootstrap/main.bicep`](infra/bootstrap/main.bicep) is applied once by hand, never by CI. It creates `rg-ogarniamy-cicd` with two user-assigned identities trusted by GitHub OIDC, the application resource group `rg-ogarniamy-mvp` that `infra/main.bicep` deploys into, and a subscription budget:
 
-- **Deploy identity** (`id-ogarniamy-github`): subscription Contributor; its federated credential trusts only jobs in the `production` environment.
-- **PR identity** (`id-ogarniamy-github-pr`): Reader plus the `Ogarniamy What-If` custom role; its federated credential trusts only `pull_request` jobs, so it can preview changes but not make them.
-- **Budget** (`budget-ogarniamy-monthly`): 20 per month in the billing currency, alerting at 50 %, 80 % and 100 % actual and 100 % forecasted spend.
+- **Deploy identity** (`id-ogarniamy-github`): Contributor on `rg-ogarniamy-mvp` only; its federated credential trusts only jobs in the `production` environment. It cannot touch `rg-ogarniamy-cicd`, the budget, or anything else in the subscription.
+- **PR identity** (`id-ogarniamy-github-pr`): Reader plus the `Ogarniamy What-If` custom role, both at subscription scope and inherited by the resource-group `what-if`; its federated credential trusts only `pull_request` jobs, so it can preview changes but not make them.
+- **Budget** (`budget-ogarniamy-monthly`): 40 per month in the billing currency, alerting at 50 %, 80 % and 100 % actual and 100 % forecasted spend.
 
 The federated credentials trust GitHub's immutable subject (`owner@id/name@id`), because this repository issues immutable OIDC subject claims. The PR `what-if` runs with `--validation-level ProviderNoRbac`, so the PR identity stays read-only; do not "fix" a `what-if` authorization error by adding write actions to the `Ogarniamy What-If` role.
 
@@ -168,6 +168,32 @@ az deployment sub create \
 ```
 
 The budget start date (`budgetStartDate`) cannot be changed after the budget is created. Re-running the bootstrap later keeps the original value; if Azure rejects the past date, delete and recreate the budget with the current month's first day rather than moving it into CI.
+
+#### Owner steps for the resource-group-scoped deploy identity
+
+The deploy identity cannot grant roles or register resource providers, so the subscription owner runs these steps by hand, in this order, **before** merging the change that makes `infra/main.bicep` resource-group scoped (the application template now assumes `rg-ogarniamy-mvp` already exists):
+
+1. Re-apply the bootstrap with the command above (`BUDGET_ALERT_EMAIL` set). It creates or keeps `rg-ogarniamy-mvp`, assigns the deploy identity Contributor on it, and updates the budget amount.
+2. Delete the old subscription-scope Contributor assignment of the deploy identity (the bootstrap no longer declares it, but a subscription deployment does not remove it):
+
+   ```bash
+   az role assignment delete \
+     --assignee <deploy principal id> \
+     --role Contributor \
+     --scope /subscriptions/<subscription id>
+   ```
+
+3. Register the PostgreSQL resource provider, which the resource-group-scoped identity cannot do:
+
+   ```bash
+   az provider register --namespace Microsoft.DBforPostgreSQL
+   ```
+
+4. Check that Contributor remains only at the resource group scope:
+
+   ```bash
+   az role assignment list --assignee <deploy principal id> --all --output table
+   ```
 
 ### GitHub configuration
 

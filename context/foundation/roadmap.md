@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-09-27
+updated: 2026-09-28
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -43,7 +43,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | ---- | ------------------------------------ | ------------------------------------------------------------------------------------ | ------------- | ------------------------------------------- | -------- |
 | F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | done |
 | F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
-| S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | proposed |
+| S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | in-progress |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | proposed |
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | proposed |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
@@ -114,7 +114,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Sign-in approach: accounts managed by the API itself, or an external identity service. — Owner: user. Block: no (decided in `/10x-plan`).
 - **Risk:** The first slice to bring in the data store and per-account isolation. From day one, the person–animal relationship carries a role (a binding requirement in §Access Control) so that sharing can be added cheaply later. It also turns the mockup's base layout into the app shell.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-02: Capture a document and keep the original
 
@@ -205,6 +205,8 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 
 ## Parked
 
+- **Account recovery: email verification and password reset** — Why parked: planned for milestone M-2 (account hardening), after M-1 closes; PRD US-03, FR-015, FR-016. Suggested Change ID `account-recovery-email`. Brings in the first email-sending service, which does not exist yet.
+- **Stronger sign-in: authenticator-app MFA and Google / Apple sign-in** — Why parked: planned for milestone M-2, after M-1 closes; PRD US-04, FR-017, FR-018. Suggested Change ID `mfa-and-external-sign-in`. Open question for its `/10x-plan`: reach Google and Apple through one common mechanism, either ASP.NET Core's external-login pipeline or a self-hostable identity broker, without Azure lock-in (the owner may self-host).
 - **Sharing an animal between caretakers, caretaker role, expiring access** — Why parked: PRD §Non-Goals. Deferred to a later step; S-01 keeps the ownership data shape that makes it cheap.
 - **Medication plans and dose logs** — Why parked: PRD §Non-Goals.
 - **Document type field or automatic type suggestion** — Why parked: PRD §Non-Goals (the product does not guess).

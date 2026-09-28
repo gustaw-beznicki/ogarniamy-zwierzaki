@@ -143,11 +143,46 @@ Addressable market, per the user, is any pet owner; the MVP is designed for the 
 - When content search is unavailable, the owner is told so explicitly rather than shown
   degraded results
 
+### US-03: Owner recovers access and proves their email address
+
+Planned for milestone M-2 (account hardening), after M-1 closes.
+
+- **Given** an owner with an account
+- **When** they have forgotten their password, or have just registered
+- **Then** they can set a new password through a link sent to their email, and their email address
+  is confirmed as theirs
+
+#### Acceptance Criteria
+
+- A newly registered owner receives an email with a confirmation link
+- An owner who forgot their password can request a reset link and set a new password
+- A reset link works once and expires after a limited time
+- Requesting a reset does not reveal whether an account exists for that email
+- Resetting a password ends the owner's other signed-in sessions
+
+### US-04: Owner protects their account with a second factor or signs in with an existing account
+
+Planned for milestone M-2 (account hardening), after M-1 closes.
+
+- **Given** an owner who wants a stronger or faster sign-in
+- **When** they turn on an authenticator app, or choose to sign in with Google or Apple
+- **Then** signing in requires the second factor, or works without a separate password
+
+#### Acceptance Criteria
+
+- An owner can turn on authenticator-app (TOTP) verification and receives one-time recovery codes
+- With it turned on, signing in asks for the code; a recovery code works once in its place
+- An owner can sign in with a Google or an Apple account
+- An external sign-in reaches the same owner's data as their email account for the same verified
+  address, never another owner's
+- External sign-in is not tied to one hosting provider, so the product can be self-hosted
+
 ## Functional Requirements
 
-All 14 requirements are must-have. The Socratic round removed every nice-to-have from this list:
-medication plans and automatic document-type suggestion were both moved to Non-Goals rather than
-kept as deferred requirements.
+FR-001 to FR-014 are must-have for milestone M-1. The Socratic round removed every nice-to-have
+from that list: medication plans and automatic document-type suggestion were both moved to
+Non-Goals rather than kept as deferred requirements. FR-015 to FR-018 were added later
+(2026-09-28) for milestone M-2.
 
 ### Accounts and access
 
@@ -259,6 +294,17 @@ kept as deferred requirements.
   > on the profile, not a "timeline" feature. The promise of a reliable treatment chronology is
   > withdrawn; what remains is a second route to a document when the owner cannot think of the right
   > search term.
+
+### Account hardening (milestone M-2)
+
+- FR-015: Owner confirms their email address through a link sent after registration. Priority:
+  must-have for M-2
+- FR-016: Owner can reset a forgotten password through a single-use, time-limited email link,
+  without the request revealing whether an account exists. Priority: must-have for M-2
+- FR-017: Owner can turn on authenticator-app (TOTP) verification with single-use recovery codes.
+  Priority: must-have for M-2
+- FR-018: Owner can sign in with a Google or an Apple account, through a mechanism that does not
+  lock the product into one hosting provider. Priority: must-have for M-2
 
 ## Non-Functional Requirements
 

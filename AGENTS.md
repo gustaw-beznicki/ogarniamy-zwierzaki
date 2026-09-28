@@ -54,45 +54,53 @@ Generated outputs such as `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/
 - The commit message must describe the actual change; the lesson number alone is not a valid message.
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
-## Zestaw narzędzi AI 10xDevs — Moduł 2, Lekcja 3
+## Zestaw narzędzi AI 10xDevs — Moduł 2, Lekcja 4
 
-Przed scaleniem przejrzyj kod wygenerowany przez AI za pomocą **łańcucha przeglądu implementacji**:
+Przygotuj się na trudniejszy strumień implementacji z **łańcuchem planowania opartym na badaniach**:
 
 ```
-/10x-implement -> /10x-impl-review -> triage -> (/10x-lesson | fix | skip | disagree)
+internal research (/10x-research) + external research (exa.ai, Context7) -> /10x-plan -> /10x-implement -> success
 ```
 
-`/10x-impl-review` jest głównym tematem lekcji. Przegląd jest bramką jakości, a nie poleceniem naprawienia każdego znaleziska.
+Lekcja koncentruje się na odróżnianiu badań wewnętrznych od zewnętrznych oraz wykorzystywaniu dowodów do uzasadniania decyzji planistycznych.
 
 ### Router zadań — od czego zacząć
 
-| Umiejętność | Użyj jej, gdy |
+| Skill | Użyj, gdy |
 | --- | --- |
-| **Przegląd kodu (główny temat lekcji)** | |
-| `/10x-impl-review <change-id>` | Zaimplementowałeś kod i chcesz przeprowadzić ustrukturyzowany przegląd przed scaleniem. Umiejętność sprawdza zgodność z planem, dyscyplinę zakresu, bezpieczeństwo i jakość, architekturę, spójność wzorców oraz kryteria sukcesu, a następnie przedstawia znaleziska do triage. |
-| **Rezultat powtarzającej się lekcji** | |
-| `/10x-lesson` | Znalezisko ujawnia powtarzającą się regułę projektu lub wzorzec błędów agenta. Zapisz je w `context/foundation/lessons.md` zamiast traktować jako jednorazową notatkę. |
+| **Badania wewnętrzne (temat lekcji)** | |
+| `/10x-research <change-id>` | Potrzebujesz dowodów z istniejącego codebase’u — wzorców, konwencji, punktów integracji lub istniejących implementacji. Uruchamia równoległych sub-agentów w repozytorium i zapisuje ustrukturyzowane ustalenia w `research.md`. |
+| **Badania zewnętrzne (temat lekcji)** | |
+| exa.ai | Potrzebujesz wyszukiwania w sieci natywnie wspieranego przez AI do porównań bibliotek, najlepszych praktyk lub kontekstu ekosystemu, na które codebase nie potrafi odpowiedzieć. |
+| Context7 (`resolve-library-id` → `get-library-docs`) | Potrzebujesz aktualnej, bieżącej dokumentacji dla konkretnej biblioteki lub frameworka. Najpierw rozwiązuje ID biblioteki, a następnie pobiera odpowiednie strony dokumentacji. |
+| **Koło zapasowe do ramowania problemu** | |
+| `/10x-frame <change-id>` | Plan nie może się ustabilizować, plan nie daje oczekiwanych wyników albo uporczywy dryf stale psuje implementację. Użyj jako wyjścia awaryjnego dla osobnego problemu (zademonstrowanego na przykładzie Space Explorers), a nie jako rytuału przed badaniami. |
+| **Planowanie i wykonanie** | |
+| `/10x-plan <change-id>` / `/10x-implement <change-id> phase <n>` | Użyj tego samego łańcucha planowania i wykonania co w Lekcji 2, teraz z dowodami z wcześniejszych badań zasilającymi plan. |
 
-### Dyscyplina triage
+### Dyscyplina badawcza
 
-- Severity określa, jak poważne jest znalezisko. Impact określa, jak duże znaczenie ma teraz decyzja.
-- Prawidłowe rezultaty: napraw teraz, napraw inaczej, pomiń, zaakceptuj jako ryzyko, zapisz jako powtarzającą się regułę (`/10x-lesson`), nie zgódź się.
-- Napraw krytyczne znaleziska. Nie poświęcaj godzin na obserwacje o niskim wpływie tylko dlatego, że agent je znalazł.
-- Świadome pomijanie znalezisk o niskim wpływie jest prawidłowym wynikiem przeglądu, a nie zaniedbaniem.
-- Jeśli nie zgadzasz się ze znaleziskiem, zapisz dlaczego. Błędne rozumowanie agenta również jest sygnałem.
+- Badania wewnętrzne (`/10x-research`) odpowiadają na pytanie „co nasz codebase już robi?” — wzorce, schematy, konwencje, punkty integracji.
+- Badania zewnętrzne (exa.ai, Context7) odpowiadają na pytanie „co powinniśmy zrobić?” — możliwości bibliotek, dokumentacja API, najlepsze praktyki ekosystemu.
+- Połącz oba jako wkład oparty na dowodach dla `/10x-plan`. Plan bez dowodów badawczych w nietrywialnym strumieniu jest zgadywaniem.
+- Dokumentacja przyjazna agentom (`llms.txt`, markdown-for-agents, endpointy `/md`) jest sygnałem jakości przy wyborze bibliotek — biblioteki publikujące dokumentację czytelną dla agentów integrują się szybciej.
 
-### Granice przeglądu
+### `/10x-frame` jako koło zapasowe
 
-- Ta lekcja dotyczy przeglądu zaimplementowanego kodu. Nie tworzy planu, nie wykonuje nowych faz ani nie uczy przeglądu CI.
-- Strategia testowania i bramki jakości są wprowadzane w Module 3.
-- W tej lekcji nie używaj `/10x-contract` jako wyniku triage.
+Trzy sygnały, by sięgnąć po `/10x-frame`:
+1. Plan nie może się ustabilizować — badania stale otwierają kolejne pytania, zamiast zawężać się do kontraktu.
+2. Plan nie dostarcza rezultatów — implementacja wielokrotnie nie spełnia kryteriów sukcesu.
+3. Uporczywy dryf — implementacja stale odbiega od planu w sposób sugerujący, że problem został błędnie sformułowany.
+
+Zademonstrowano na przykładzie Space Explorers, a nie na ścieżce SRS. To wyjście awaryjne, a nie obowiązkowy krok.
 
 ### Ścieżki używane przez tę lekcję
 
-- `context/changes/<change-id>/plan.md` — oczekiwany kontrakt implementacji
-- `context/changes/<change-id>/reviews/` — wynik przeglądu
-- `context/foundation/lessons.md` — powtarzające się lekcje
+- `context/changes/<change-id>/research.md` - wynik badań wewnętrznych
+- `context/changes/<change-id>/frame.md` - wynik ramowania problemu, gdy jest potrzebny
+- `context/changes/<change-id>/plan.md` - kontrakt implementacyjny oparty na dowodach
+- `context/foundation/lessons.md` - powtarzające się reguły i pułapki
 
-Umiejętności nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozwiązana ścieżka docelowa zaczyna się od `context/archive/`, przerwij z komunikatem: „Ta zmiana jest zarchiwizowana. Zamiast tego otwórz nową zmianę za pomocą `/10x-new`.”
+Skills nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozstrzygnięta docelowa ścieżka zaczyna się od `context/archive/`, przerwij z komunikatem: „This change is archived. Open a new change with `/10x-new` instead.”
 
 <!-- END @przeprogramowani/10x-cli -->

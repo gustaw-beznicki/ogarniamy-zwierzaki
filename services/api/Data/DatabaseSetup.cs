@@ -6,20 +6,9 @@ using Npgsql;
 
 namespace ogarniamy_zwierzaki_api.Data;
 
-// How the API authenticates to PostgreSQL. Selected by the Database:Auth setting.
-public enum DatabaseAuthMode
-{
-    // The password is part of ConnectionStrings:Default (local, tests, self-hosted).
-    Password,
-
-    // The password is a periodically refreshed Entra token of the App Service managed identity.
-    AzureManagedIdentity,
-}
-
 public static class DatabaseSetup
 {
     private const string ConnectionStringName = "Default";
-    private const string EntraTokenScope = "https://ossrdbms-aad.database.windows.net/.default";
 
     public static IServiceCollection AddAppDatabase(this IServiceCollection services)
     {
@@ -51,25 +40,39 @@ public static class DatabaseSetup
                 $"Connection string 'ConnectionStrings:{ConnectionStringName}' is not configured.");
         }
 
-        var authMode = configuration.GetValue("Database:Auth", DatabaseAuthMode.Password);
+        var options = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
         var builder = new NpgsqlDataSourceBuilder(connectionString);
 
-        switch (authMode)
+        switch (options.Auth)
         {
             case DatabaseAuthMode.Password:
                 break;
             case DatabaseAuthMode.AzureManagedIdentity:
-                var credential = new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
-                builder.UsePeriodicPasswordProvider(async (_, ct) =>
-                    (await credential.GetTokenAsync(
-                        new TokenRequestContext([EntraTokenScope]), ct)).Token,
-                    TimeSpan.FromMinutes(55), TimeSpan.FromSeconds(5));
+                UseManagedIdentityToken(builder, options);
                 break;
             default:
-                throw new InvalidOperationException($"Unsupported Database:Auth value '{authMode}'.");
+                throw new InvalidOperationException($"Unsupported Database:Auth value '{options.Auth}'.");
         }
 
         return builder.Build();
+    }
+
+    private static void UseManagedIdentityToken(NpgsqlDataSourceBuilder builder, DatabaseOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.EntraTokenScope)
+            || options.TokenRefreshInterval <= TimeSpan.Zero
+            || options.TokenRetryInterval <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException(
+                "Database:EntraTokenScope, Database:TokenRefreshInterval and Database:TokenRetryInterval " +
+                "must be configured for AzureManagedIdentity.");
+        }
+
+        var credential = new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
+        builder.UsePeriodicPasswordProvider(async (_, ct) =>
+            (await credential.GetTokenAsync(
+                new TokenRequestContext([options.EntraTokenScope]), ct)).Token,
+            options.TokenRefreshInterval, options.TokenRetryInterval);
     }
 }
 

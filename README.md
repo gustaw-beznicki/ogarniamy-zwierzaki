@@ -107,6 +107,7 @@ The Astro dev server proxies `/api/*` to `http://localhost:5180`, just like Stat
 | --- | --- | --- |
 | `ConnectionStrings:Default` | Npgsql connection string | Required. Includes a password only in `Password` mode. |
 | `Database:Auth` | `Password` (default), `AzureManagedIdentity` | How the API authenticates to PostgreSQL. Azure sets `AzureManagedIdentity` through App Service settings. |
+| `Database:EntraTokenScope`, `Database:TokenRefreshInterval`, `Database:TokenRetryInterval` | scope URI, `hh:mm:ss` | `AzureManagedIdentity` only: which Entra token to request, how often to refresh it, and how soon to retry a failure. Defaults are in `appsettings.json`. |
 
 Secrets never go into tracked files: local passwords live in `.env` (gitignored) and user secrets; Azure uses managed identities.
 

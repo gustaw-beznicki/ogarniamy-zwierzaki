@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Current product status, architecture, setup, and public documentation are maintained in `@README.md`.
+Current product status and the documentation index are in `@README.md`; architecture and developer guides are under `@docs/`.
 
 Do not present planned capabilities as implemented. The repository currently contains a verified Astro frontend and ASP.NET Core API scaffold; the remaining product flows are planned.
 
@@ -28,7 +28,7 @@ Never edit anything under `context/archive/`. If a requested target starts there
 
 ## Setup and verification
 
-- Setup, run, and build instructions: `@README.md`
+- Setup, run, and build instructions: `@docs/local-development.md`, `@docs/testing.md`; deployment: `@docs/deployment.md`
 - Web scripts and supported Node.js version: `@apps/web/package.json`
 - Web TypeScript configuration: `@apps/web/tsconfig.json`
 - API project settings: `@services/api/ogarniamy-zwierzaki-api.csproj`
@@ -43,6 +43,8 @@ Generated outputs such as `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/
 - Keep browser/UI concerns in `apps/web` and application/API logic in `services/api`.
 - Do not change strict TypeScript, nullable reference types, or implicit usings unless the task explicitly requires an intentional configuration migration.
 - Never add credentials, API keys, or connection strings to tracked files. If a feature requires a secret and no storage convention exists, stop and ask where it should be stored.
+- One type per file: every class, record, enum, interface and struct lives in its own file named after the type (generated EF Core migration files excepted).
+- NuGet package versions live only in the root `Directory.Packages.props` (central package management). A `.csproj` references packages without a `Version` attribute; add or bump a version by editing `Directory.Packages.props`.
 - Edit only files required by the current task. Do not revert, format, stage, or commit unrelated changes or untracked files.
 
 ## Git and course commits

@@ -1,2 +1,5 @@
 /lekcje-10xdevs-4/
 /lekcje-10xdevs-foundations/
+
+# Local secrets for compose.yaml; .env.example is the tracked template.
+.env

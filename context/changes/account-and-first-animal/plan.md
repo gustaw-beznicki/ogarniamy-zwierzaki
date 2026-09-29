@@ -489,30 +489,30 @@ B1ms and F1 are small; nothing in this slice is heavy. F1 cold starts plus the f
 
 #### Automated
 
-- [x] 1.1 Bicep lint passes for both templates
+- [x] 1.1 Bicep lint passes for both templates — 22acaa0
 - [ ] 1.2 PR what-if runs at resource-group scope with no deletions or replacements
-- [x] 1.3 API and web still build
+- [x] 1.3 API and web still build — 22acaa0
 
 #### Manual
 
-- [x] 1.4 Owner re-applied bootstrap, deleted subscription Contributor, registered PostgreSQL provider
-- [x] 1.5 Deploy identity holds Contributor only on rg-ogarniamy-mvp
+- [x] 1.4 Owner re-applied bootstrap, deleted subscription Contributor, registered PostgreSQL provider — 22acaa0
+- [x] 1.5 Deploy identity holds Contributor only on rg-ogarniamy-mvp — 22acaa0
 - [ ] 1.6 Deploy workflow succeeds including smoke test
-- [x] 1.7 Budget shows amount 40 with unchanged start date and thresholds
+- [x] 1.7 Budget shows amount 40 with unchanged start date and thresholds — 22acaa0
 
 ### Phase 2: Database foundation
 
 #### Automated
 
-- [ ] 2.1 Bicep lint passes
+- [x] 2.1 Bicep lint passes
 - [ ] 2.2 PR what-if shows server, database, admin and App Service identity with no deletions
-- [ ] 2.3 API builds with the new packages
-- [ ] 2.4 Tests pass against Testcontainers PostgreSQL
-- [ ] 2.5 No password or password-bearing connection string in tracked files
+- [x] 2.3 API builds with the new packages
+- [x] 2.4 Tests pass against Testcontainers PostgreSQL
+- [x] 2.5 No password or password-bearing connection string in tracked files
 
 #### Manual
 
-- [ ] 2.6 Local compose plus user-secrets gives a healthy API
+- [x] 2.6 Local compose plus user-secrets gives a healthy API
 - [ ] 2.7 Deployed /api/health is ok through the managed-identity connection
 - [ ] 2.8 Server has password auth disabled, one Entra admin, outbound-IP firewall rules, no 0.0.0.0 rule
 

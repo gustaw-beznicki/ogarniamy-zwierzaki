@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Current product status, architecture, setup, and public documentation are maintained in `@README.md`.
+Current product status and the documentation index are in `@README.md`; architecture and developer guides are under `@docs/`.
 
 Do not present planned capabilities as implemented. The repository currently contains a verified Astro frontend and ASP.NET Core API scaffold; the remaining product flows are planned.
 
@@ -28,7 +28,7 @@ Never edit anything under `context/archive/`. If a requested target starts there
 
 ## Setup and verification
 
-- Setup, run, and build instructions: `@README.md`
+- Setup, run, and build instructions: `@docs/local-development.md`, `@docs/testing.md`; deployment: `@docs/deployment.md`
 - Web scripts and supported Node.js version: `@apps/web/package.json`
 - Web TypeScript configuration: `@apps/web/tsconfig.json`
 - API project settings: `@services/api/ogarniamy-zwierzaki-api.csproj`

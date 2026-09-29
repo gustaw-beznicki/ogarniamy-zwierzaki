@@ -205,7 +205,14 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 
 ## Parked
 
-- **Account recovery: email verification and password reset** — Why parked: planned for milestone M-2 (account hardening), after M-1 closes; PRD US-03, FR-015, FR-016. Suggested Change ID `account-recovery-email`. Brings in the first email-sending service, which does not exist yet.
+- **Account recovery: email verification and password reset** — Why parked: planned for milestone M-2 (account hardening), after M-1 closes; PRD US-03, FR-015, FR-016. Suggested Change ID `account-recovery-email`. Brings in the first email-sending service, which does not exist yet. Also brings the password pepper,
+  which needs the reset flow first: a leaked pepper can only be recovered from by forcing password resets
+  (OWASP Password Storage Cheat Sheet). Technical hand-off:
+  - keep the pepper in Key Vault, read by the API managed identity (role assignment in the bootstrap);
+  - version the custom `IPasswordHasher<AppUser>` so hashes without a pepper still verify, and re-hash them
+    with the pepper at next login;
+  - document the forced-reset procedure for a pepper compromise.
+  Evidence: `context/changes/account-and-first-animal/research.md` (OWASP follow-up).
 - **Stronger sign-in: authenticator-app MFA and Google / Apple sign-in** — Why parked: planned for milestone M-2, after M-1 closes; PRD US-04, FR-017, FR-018. Suggested Change ID `mfa-and-external-sign-in`. Open question for its `/10x-plan`: reach Google and Apple through one common mechanism, either ASP.NET Core's external-login pipeline or a self-hostable identity broker, without Azure lock-in (the owner may self-host).
 - **Sharing an animal between caretakers, caretaker role, expiring access** — Why parked: PRD §Non-Goals. Deferred to a later step; S-01 keeps the ownership data shape that makes it cheap.
 - **Medication plans and dose logs** — Why parked: PRD §Non-Goals.

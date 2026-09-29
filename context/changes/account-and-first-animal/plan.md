@@ -520,16 +520,16 @@ B1ms and F1 are small; nothing in this slice is heavy. F1 cold starts plus the f
 
 #### Automated
 
-- [x] 3.1 Migration applies from scratch in tests
-- [x] 3.2 Auth tests pass
-- [x] 3.3 Animal and onboarding tests pass
-- [x] 3.4 Cross-account isolation tests pass
-- [x] 3.5 API builds without new warnings
+- [x] 3.1 Migration applies from scratch in tests — 98a1cd5
+- [x] 3.2 Auth tests pass — 98a1cd5
+- [x] 3.3 Animal and onboarding tests pass — 98a1cd5
+- [x] 3.4 Cross-account isolation tests pass — 98a1cd5
+- [x] 3.5 API builds without new warnings — 98a1cd5
 
 #### Manual
 
-- [x] 3.6 .http sequence behaves as specified locally
-- [x] 3.7 No endpoint reads animal DbSets outside OwnedAnimals
+- [x] 3.6 .http sequence behaves as specified locally — 98a1cd5
+- [x] 3.7 No endpoint reads animal DbSets outside OwnedAnimals — 98a1cd5
 - [ ] 3.8 Deployed session cookie round-trips through the SWA proxy
 
 ### Phase 4: Frontend — shell, sign-in, onboarding, Animals

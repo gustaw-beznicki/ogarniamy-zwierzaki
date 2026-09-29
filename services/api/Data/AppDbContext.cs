@@ -8,8 +8,9 @@ using ogarniamy_zwierzaki_api.Auth;
 namespace ogarniamy_zwierzaki_api.Data;
 
 // Identity accounts, data-protection keys and animals. The naming convention is set where the context is configured.
+// IdentityUserContext leaves out Identity's account-level roles: the product's roles are per animal (animal_members.role).
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
-    : IdentityDbContext<AppUser>(options), IDataProtectionKeyContext
+    : IdentityUserContext<AppUser>(options), IDataProtectionKeyContext
 {
     // Read and written only through OwnedAnimals, which scopes every query to the current user.
     public DbSet<Animal> Animals => Set<Animal>();
@@ -29,16 +30,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             user.HasIndex(u => u.NormalizedEmail).HasDatabaseName("ix_users_normalized_email");
             user.HasIndex(u => u.NormalizedUserName).HasDatabaseName("ix_users_normalized_user_name");
         });
-        builder.Entity<IdentityRole>(role =>
-        {
-            role.ToTable("roles");
-            role.HasIndex(r => r.NormalizedName).HasDatabaseName("ix_roles_normalized_name");
-        });
         builder.Entity<IdentityUserClaim<string>>().ToTable("user_claims");
         builder.Entity<IdentityUserLogin<string>>().ToTable("user_logins");
-        builder.Entity<IdentityUserRole<string>>().ToTable("user_roles");
         builder.Entity<IdentityUserToken<string>>().ToTable("user_tokens");
-        builder.Entity<IdentityRoleClaim<string>>().ToTable("role_claims");
 
         builder.Entity<Animal>(animal =>
         {

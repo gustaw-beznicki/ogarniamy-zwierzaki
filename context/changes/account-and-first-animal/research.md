@@ -170,7 +170,7 @@ How does the API handle authentication and authorization? This covers ASP.NET Co
   - `GET /openapi/v1.json`, Development only (`Program.cs:71-75`; `OpenApiTests.cs`)
   - `GET /api/health` (`Program.cs:82-92`)
   - `POST /api/auth/register`, `/login` and `/logout` (`AuthEndpoints.cs:12-16`)
-- **Roles and policies:** none are used. The Identity roles and claims tables exist but no code reads them (`AppDbContext.cs`).
+- **Roles and policies:** none are used. Since the PR #6 review, `AppDbContext` derives from `IdentityUserContext<AppUser>`, so Identity's account-level role tables do not exist; per-animal roles live in `animal_members.role`. The `user_claims` table exists but no code reads it (`AppDbContext.cs`).
 - **Owner isolation:**
   - The user id comes from the cookie's NameIdentifier claim through `UserManager.GetUserId` (`AnimalEndpoints.cs:55-56`).
   - Every animal query goes through `OwnedAnimals.ForUser`, which starts from `animal_members WHERE user_id = @id` (`services/api/Animals/OwnedAnimals.cs:44-48`).

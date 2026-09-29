@@ -34,6 +34,8 @@ builder.Services.AddIdentityCore<AppUser>(options =>
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddSignInManager();
+// PBKDF2-HMAC-SHA512 work factor (OWASP minimum: 220,000). Older hashes are re-hashed at the next successful sign-in.
+builder.Services.Configure<PasswordHasherOptions>(builder.Configuration.GetSection("PasswordHasher"));
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "oz_session";

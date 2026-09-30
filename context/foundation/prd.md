@@ -159,6 +159,8 @@ Planned for milestone M-2 (account hardening), after M-1 closes.
 - A reset link works once and expires after a limited time
 - Requesting a reset does not reveal whether an account exists for that email
 - Resetting a password ends the owner's other signed-in sessions
+- A copy of the database alone is not enough to start guessing stored passwords: password hashes are
+  combined with a secret (pepper) kept outside the database
 
 ### US-04: Owner protects their account with a second factor or signs in with an existing account
 

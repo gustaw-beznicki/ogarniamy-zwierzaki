@@ -4,3 +4,53 @@ GET {{ogarniamy_zwierzaki_api_HostAddress}}/api/health
 Accept: application/json
 
 ###
+
+# Creates the account and starts a session (HttpOnly cookie oz_session).
+POST {{ogarniamy_zwierzaki_api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "owner@example.test",
+  "password": "sample-passphrase"
+}
+
+###
+
+POST {{ogarniamy_zwierzaki_api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "owner@example.test",
+  "password": "sample-passphrase"
+}
+
+###
+
+GET {{ogarniamy_zwierzaki_api_HostAddress}}/api/me
+Accept: application/json
+
+###
+
+POST {{ogarniamy_zwierzaki_api_HostAddress}}/api/animals
+Content-Type: application/json
+
+{
+  "name": "Czarek"
+}
+
+###
+
+GET {{ogarniamy_zwierzaki_api_HostAddress}}/api/animals
+Accept: application/json
+
+###
+
+# Replace the id with one returned by the list or create request.
+GET {{ogarniamy_zwierzaki_api_HostAddress}}/api/animals/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+
+POST {{ogarniamy_zwierzaki_api_HostAddress}}/api/auth/logout
+
+###

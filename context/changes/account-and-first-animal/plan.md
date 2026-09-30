@@ -490,46 +490,46 @@ B1ms and F1 are small; nothing in this slice is heavy. F1 cold starts plus the f
 #### Automated
 
 - [x] 1.1 Bicep lint passes for both templates — 22acaa0
-- [ ] 1.2 PR what-if runs at resource-group scope with no deletions or replacements
+- [x] 1.2 PR what-if runs at resource-group scope with no deletions or replacements — 22acaa0
 - [x] 1.3 API and web still build — 22acaa0
 
 #### Manual
 
 - [x] 1.4 Owner re-applied bootstrap, deleted subscription Contributor, registered PostgreSQL provider — 22acaa0
 - [x] 1.5 Deploy identity holds Contributor only on rg-ogarniamy-mvp — 22acaa0
-- [ ] 1.6 Deploy workflow succeeds including smoke test
+- [x] 1.6 Deploy workflow succeeds including smoke test — 22acaa0
 - [x] 1.7 Budget shows amount 40 with unchanged start date and thresholds — 22acaa0
 
 ### Phase 2: Database foundation
 
 #### Automated
 
-- [x] 2.1 Bicep lint passes
-- [ ] 2.2 PR what-if shows server, database, admin and App Service identity with no deletions
-- [x] 2.3 API builds with the new packages
-- [x] 2.4 Tests pass against Testcontainers PostgreSQL
-- [x] 2.5 No password or password-bearing connection string in tracked files
+- [x] 2.1 Bicep lint passes — 17a4971
+- [x] 2.2 PR what-if shows server, database, admin and App Service identity with no deletions — 17a4971
+- [x] 2.3 API builds with the new packages — 17a4971
+- [x] 2.4 Tests pass against Testcontainers PostgreSQL — 17a4971
+- [x] 2.5 No password or password-bearing connection string in tracked files — 17a4971
 
 #### Manual
 
-- [x] 2.6 Local compose plus user-secrets gives a healthy API
-- [ ] 2.7 Deployed /api/health is ok through the managed-identity connection
-- [ ] 2.8 Server has password auth disabled, one Entra admin, outbound-IP firewall rules, no 0.0.0.0 rule
+- [x] 2.6 Local compose plus user-secrets gives a healthy API — 17a4971
+- [x] 2.7 Deployed /api/health is ok through the managed-identity connection — 17a4971
+- [x] 2.8 Server has password auth disabled, one Entra admin, outbound-IP firewall rules, no 0.0.0.0 rule — 17a4971
 
 ### Phase 3: Accounts and animals API
 
 #### Automated
 
-- [ ] 3.1 Migration applies from scratch in tests
-- [ ] 3.2 Auth tests pass
-- [ ] 3.3 Animal and onboarding tests pass
-- [ ] 3.4 Cross-account isolation tests pass
-- [ ] 3.5 API builds without new warnings
+- [x] 3.1 Migration applies from scratch in tests — 98a1cd5
+- [x] 3.2 Auth tests pass — 98a1cd5
+- [x] 3.3 Animal and onboarding tests pass — 98a1cd5
+- [x] 3.4 Cross-account isolation tests pass — 98a1cd5
+- [x] 3.5 API builds without new warnings — 98a1cd5
 
 #### Manual
 
-- [ ] 3.6 .http sequence behaves as specified locally
-- [ ] 3.7 No endpoint reads animal DbSets outside OwnedAnimals
+- [x] 3.6 .http sequence behaves as specified locally — 98a1cd5
+- [x] 3.7 No endpoint reads animal DbSets outside OwnedAnimals — 98a1cd5
 - [ ] 3.8 Deployed session cookie round-trips through the SWA proxy
 
 ### Phase 4: Frontend — shell, sign-in, onboarding, Animals

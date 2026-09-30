@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-09-28
+updated: 2026-09-30
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -202,6 +202,7 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 3. **Is the premise that owners now want to keep their animals' medical records sound?** Recorded as the user's premise, not a verified finding. — Owner: user. Block: no.
 4. **When is the secondary success criterion (several dozen of Czarek's and Sonia's real documents uploaded and searchable) exercised?** It is the real-volume check for S-03 and S-04 and the input for tuning Question 1. — Owner: user. Block: no; roadmap-wide.
 5. **How is the F-02 mockup kept current as slices refine their screens?** It could be updated per slice, or treated as a starting point only. — Owner: user. Block: no; roadmap-wide. **Resolved (2026-09-26):** starting point only; slices refine screens in their own plans. Index: `context/foundation/ui-mockup/README.md`.
+6. **Are the M-2 security items safe to defer while M-1 is in use?** The deciding question is who signs up before M-1 closes: the owner and test accounts only, or other people too. The two most material gaps are cookie keys stored unencrypted next to the user data and no limits on sign-in attempts (`session-hardening`, `sign-in-abuse-protection`). — Owner: user. Block: no. Revisit before inviting anyone else.
 
 ## Parked
 
@@ -212,8 +213,25 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
   - version the custom `IPasswordHasher<AppUser>` so hashes without a pepper still verify, and re-hash them
     with the pepper at next login;
   - document the forced-reset procedure for a pepper compromise.
-  Evidence: `context/changes/account-and-first-animal/research.md` (OWASP follow-up).
+  Also in scope: make registration stop revealing which emails already have an account (research gap 4;
+  a non-revealing sign-up needs this email flow), and decide in the same hasher rework whether to move
+  from PBKDF2 to Argon2id, which OWASP prefers.
+  Evidence: `context/changes/account-and-first-animal/research.md` (OWASP follow-up, Account enumeration).
 - **Stronger sign-in: authenticator-app MFA and Google / Apple sign-in** — Why parked: planned for milestone M-2, after M-1 closes; PRD US-04, FR-017, FR-018. Suggested Change ID `mfa-and-external-sign-in`. Open question for its `/10x-plan`: reach Google and Apple through one common mechanism, either ASP.NET Core's external-login pipeline or a self-hostable identity broker, without Azure lock-in (the owner may self-host).
+- **Session hardening** — Why parked: planned for milestone M-2 (account hardening), after M-1 closes; security findings, not PRD features. Suggested Change ID `session-hardening`. Source: `context/changes/account-and-first-animal/research.md` (gaps 1, 5, 6, 7).
+  - The keys that sign session cookies are encrypted at rest and kept separate from the user data. Today, anyone who can read the database or a backup can forge a sign-in for any owner.
+  - Signing out ends the session on the server, not only in the browser.
+  - Another site cannot make a signed-in owner's browser act on their account; this includes signing them out.
+  - Owners choose whether to stay signed in ("remember me").
+  - Unknowns for its `/10x-plan`: does session revalidation run with the current account setup (research Open Question 1)? Do browsers apply a cross-site sign-out (Open Question 3)?
+- **Sign-in abuse protection** — Why parked: planned for milestone M-2, after M-1 closes; security findings. Suggested Change ID `sign-in-abuse-protection`. Source: `context/changes/account-and-first-animal/research.md` (gaps 2, 4, 7).
+  - Repeated sign-in and registration attempts are slowed down, whether they target one account or many.
+  - A stranger cannot keep an owner locked out by entering wrong passwords.
+  - Response time on a failed sign-in no longer reveals whether an email has an account.
+  - Common and known-breached passwords are refused.
+- **Database least privilege** — Why parked: planned for milestone M-2, after M-1 closes; security finding. Suggested Change ID `database-least-privilege`. Source: `context/changes/account-and-first-animal/research.md` (gap 3, Database access).
+  - The running API reaches the database with only the rights it needs; administration and schema changes use a separate identity.
+  - Today, the API identity is the database administrator.
 - **Sharing an animal between caretakers, caretaker role, expiring access** — Why parked: PRD §Non-Goals. Deferred to a later step; S-01 keeps the ownership data shape that makes it cheap.
 - **Medication plans and dose logs** — Why parked: PRD §Non-Goals.
 - **Document type field or automatic type suggestion** — Why parked: PRD §Non-Goals (the product does not guess).

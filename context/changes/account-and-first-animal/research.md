@@ -7,9 +7,9 @@ repository: ogarniamy-zwierzaki
 topic: "Authentication, authorization and password safety in the API compared with Microsoft Learn guidance"
 tags: [research, security, authentication, authorization, aspnetcore-identity, data-protection, services-api]
 status: complete
-last_updated: 2026-09-29
+last_updated: 2026-09-30
 last_updated_by: Claude (Opus 5.5)
-last_updated_note: "Follow-up: compared with the OWASP Password Storage Cheat Sheet. The iteration count was raised to 220,000 with verified rehash on login; the pepper moved to the password-reset scope."
+last_updated_note: "Follow-up: compared with the OWASP Password Storage Cheat Sheet. The iteration count was raised to 220,000 with verified rehash on login; the pepper moved to the password-reset scope; the remaining gaps are planned for M-2 in roadmap.md."
 ---
 
 # Research: Authentication, authorization and password safety compared with Microsoft Learn guidance
@@ -288,7 +288,12 @@ Not applicable: there is no other `research.md` under `context/changes/**` or `c
 1. **Security stamp validation:** does `AddIdentityCore<AppUser>().AddSignInManager()` register `ISecurityStampValidator` in .NET 10? If not, even a future `UpdateSecurityStampAsync` would not revoke cookies. Check it with a test that rotates the stamp and uses a short `ValidationInterval`.
 2. **SWA edge headers:** does Azure Static Web Apps send HSTS for the default `*.azurestaticapps.net` host? This can be checked in Phase 5 with `curl -I`.
 3. **Cross-site logout:** do browsers apply the deleting `Set-Cookie` from a cross-site logout POST?
-4. **Decisions for the owner** (not for research):
+4. **Decisions for the owner** (not for research). **Update 2026-09-30:** all remaining items below are planned for milestone M-2 in `context/foundation/roadmap.md` §Parked:
+   - `session-hardening`: key ring, application name, logout revocation, CSRF, remember-me
+   - `sign-in-abuse-protection`: rate limits, lockout abuse, login timing, banned passwords
+   - `database-least-privilege`
+   - `account-recovery-email`: pepper, non-revealing registration, Argon2id decision
+   Roadmap Open Question 6 covers whether deferring them is safe while M-1 is in use.
    - encrypt the key ring (Key Vault key via a bootstrap RBAC step) and set an application name;
    - add rate limiting to the auth routes;
    - split the PostgreSQL admin from the API identity;

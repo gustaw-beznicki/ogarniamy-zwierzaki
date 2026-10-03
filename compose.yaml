@@ -1,4 +1,5 @@
-# Local PostgreSQL for development. The password comes from the untracked .env (see .env.example).
+# Local PostgreSQL and Blob Storage emulator (Azurite) for development.
+# The PostgreSQL password comes from the untracked .env (see .env.example).
 services:
   postgres:
     image: postgres:17
@@ -11,5 +12,16 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  azurite:
+    # Pinned; the integration tests use the same image.
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
+    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--location", "/data"]
+    ports:
+      # Host port; set AZURITE_BLOB_PORT in .env if 10000 is taken by another project.
+      - "${AZURITE_BLOB_PORT:-10000}:10000"
+    volumes:
+      - azurite-data:/data
+
 volumes:
   postgres-data:
+  azurite-data:

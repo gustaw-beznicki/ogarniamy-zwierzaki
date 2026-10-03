@@ -8,6 +8,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddAppDatabase();
+// Originals live in a private Blob container: Azure Storage with the managed identity, Azurite locally and in tests.
+builder.Services.AddOriginalStorage();
 
 // Cookie encryption keys live in PostgreSQL, so sessions survive restarts in every hosting mode.
 builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
@@ -67,6 +70,7 @@ builder.Services.AddScoped<OwnedAnimals>();
 
 var app = builder.Build();
 
+await app.PrepareOriginalStorageAsync();
 await app.MigrateDatabaseAsync();
 
 // Configure the HTTP request pipeline.

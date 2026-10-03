@@ -1,10 +1,10 @@
 ---
 change_id: account-and-first-animal
 title: Account and first animal
-status: implementing
+status: archived
 created: 2026-09-28
 updated: 2026-10-03
-archived_at: null
+archived_at: 2026-10-03T22:19:53Z
 ---
 
 ## Notes

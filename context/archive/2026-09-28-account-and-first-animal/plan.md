@@ -554,13 +554,13 @@ B1ms and F1 are small; nothing in this slice is heavy. F1 cold starts plus the f
 
 #### Automated
 
-- [ ] 5.1 Smoke test passes in deploy workflow
-- [x] 5.2 Full test suite passes in CI
+- [x] 5.1 Smoke test passes in deploy workflow — c71258c
+- [x] 5.2 Full test suite passes in CI — e81e45c
 
 #### Manual
 
-- [x] 5.3 Deployed registration sets the session cookie through SWA
-- [x] 5.4 Second account sees only its own animal and gets 404 for the other's
-- [x] 5.5 Session survives an App Service restart
-- [x] 5.6 Real phone and desktop complete the flow in both languages
-- [x] 5.7 Verification accounts recorded outside tracked files
+- [x] 5.3 Deployed registration sets the session cookie through SWA — e81e45c
+- [x] 5.4 Second account sees only its own animal and gets 404 for the other's — e81e45c
+- [x] 5.5 Session survives an App Service restart — e81e45c
+- [x] 5.6 Real phone and desktop complete the flow in both languages — e81e45c
+- [x] 5.7 Verification accounts recorded outside tracked files — e81e45c

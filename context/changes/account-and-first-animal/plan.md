@@ -530,25 +530,25 @@ B1ms and F1 are small; nothing in this slice is heavy. F1 cold starts plus the f
 
 - [x] 3.6 .http sequence behaves as specified locally — 98a1cd5
 - [x] 3.7 No endpoint reads animal DbSets outside OwnedAnimals — 98a1cd5
-- [ ] 3.8 Deployed session cookie round-trips through the SWA proxy
+- [x] 3.8 Deployed session cookie round-trips through the SWA proxy — 98a1cd5
 
 ### Phase 4: Frontend — shell, sign-in, onboarding, Animals
 
 #### Automated
 
-- [ ] 4.1 Type check passes
-- [ ] 4.2 Build emits every route in both locales
-- [ ] 4.3 CI web job runs the type check
-- [ ] 4.4 No Polish diacritics outside pl.ts
+- [x] 4.1 Type check passes
+- [x] 4.2 Build emits every route in both locales
+- [x] 4.3 CI web job runs the type check
+- [x] 4.4 No Polish diacritics outside pl.ts
 - [ ] 4.10 Smoke test with the new page check passes in deploy workflow
 
 #### Manual
 
-- [ ] 4.5 Local register to Animals flow works on phone and desktop widths
-- [ ] 4.6 Session gate routes signed-out, no-animal and with-animal owners correctly
-- [ ] 4.7 Sign-out ends access to Animals
-- [ ] 4.8 Language switch changes route and text
-- [ ] 4.9 Human reviewed and corrected pl.ts
+- [x] 4.5 Local register to Animals flow works on phone and desktop widths
+- [x] 4.6 Session gate routes signed-out, no-animal and with-animal owners correctly
+- [x] 4.7 Sign-out ends access to Animals
+- [x] 4.8 Language switch changes route and text
+- [x] 4.9 Human reviewed and corrected pl.ts
 
 ### Phase 5: Deployed verification
 

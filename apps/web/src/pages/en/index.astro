@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getMessages, localePath } from '../../i18n';
+import { SessionGate } from '../../components/SessionGate';
+const locale = 'en' as const;
+const messages = getMessages(locale);
+const route = 'animals';
+const alternateLocaleHref = localePath('pl', route);
+---
+<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="entry" client:load /></BaseLayout>

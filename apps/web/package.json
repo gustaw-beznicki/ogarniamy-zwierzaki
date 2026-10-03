@@ -8,13 +8,21 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "check": "astro check",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^7.3.3"
+    "@astrojs/react": "^7.0.0",
+    "astro": "^7.3.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3"
   }
 }

@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getMessages, localePath } from '../i18n';
+import { SessionGate } from '../components/SessionGate';
+import { FirstAnimalForm } from '../components/FirstAnimalForm';
+const locale = 'pl' as const;
+const messages = getMessages(locale);
+const route = 'onboarding';
+const alternateLocaleHref = localePath('en', route);
+---
+<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="onboarding" client:load><FirstAnimalForm locale={locale} messages={messages} client:load /></SessionGate></BaseLayout>

@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-09-30
+updated: 2026-10-03
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -43,7 +43,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | ---- | ------------------------------------ | ------------------------------------------------------------------------------------ | ------------- | ------------------------------------------- | -------- |
 | F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | done |
 | F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
-| S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | in-progress |
+| S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | done |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | proposed |
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | proposed |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
@@ -114,7 +114,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Sign-in approach: accounts managed by the API itself, or an external identity service. — Owner: user. Block: no (decided in `/10x-plan`).
 - **Risk:** The first slice to bring in the data store and per-account isolation. From day one, the person–animal relationship carries a role (a binding requirement in §Access Control) so that sharing can be added cheaply later. It also turns the mockup's base layout into the app shell.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Capture a document and keep the original
 
@@ -249,3 +249,5 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 
 - **F-02: (foundation) a low-fidelity mockup of every screen on the primary flow exists as the shared visual reference for all slices, at both phone and desktop widths. The screens are sign-in/registration, first-animal onboarding, document capture, search with results and fragments, and the animal profile with its document list. No components are implemented.** — Archived 2026-09-26 → `context/archive/2026-09-26-whole-app-ui-mockup/`. Lesson: —.
 - **F-01: (foundation) the empty web front end and API run on the Azure hosting target and are deployed automatically after each merge to main. A spending alert is in place against trial-credit expiry.** — Archived 2026-09-27 → `context/archive/2026-09-27-azure-walking-skeleton/`. Lesson: —.
+
+- **S-01: user can register, sign in, and set up their first animal (name only) on an onboarding screen, and sees only their own data.** — Archived 2026-10-03 → `context/archive/2026-09-28-account-and-first-animal/`. Lesson: —.

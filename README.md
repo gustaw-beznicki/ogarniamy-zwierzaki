@@ -14,12 +14,15 @@ The project is in early development. What runs today:
 
 - An Astro frontend and an ASP.NET Core API, deployed to Azure by CI/CD.
 - A PostgreSQL database that the API migrates at startup; `GET /api/health` is healthy only when the database is reachable.
+- Email and password registration, sign-in and sign-out with cookie sessions.
+- First-animal onboarding and an Animals list isolated by owner.
+- A Polish and English interface, with bottom navigation on phones and a sidebar on desktop. Search and Add are placeholders.
 - An integration test suite that runs against a real PostgreSQL container.
 
 Everything else in the MVP is planned, not built yet:
 
-- Owner accounts with strict isolation between users.
-- Animal profiles and per-animal document views.
+- Password reset, email verification and additional sign-in methods.
+- Animal profile editing, inactive status and per-animal document views.
 - Photo and PDF upload with an editable veterinary-event date, stored privately.
 - Text extraction from PDFs and OCR for scans and photos.
 - Semantic search across document content, optionally filtered by animal, showing the matching fragment and opening the original.
@@ -36,7 +39,41 @@ The requirements, guardrails and non-goals are in the [PRD](context/foundation/p
 | CI/CD, the Azure environment and setting up a new one | [Deployment](docs/deployment.md) |
 | Conventions for code and changes | [Contributing](CONTRIBUTING.md) |
 
-Quick start: start PostgreSQL with `docker compose up -d`, store the connection string in user secrets, then run `dotnet run --project services/api` and `npm run dev` in `apps/web`. The [local development guide](docs/local-development.md) has the exact steps.
+## Local development
+
+Install Node.js 22.12 or newer, .NET SDK 10 and Docker with Compose. Copy `.env.example` to `.env`, set a local database password, then start PostgreSQL with `docker compose up -d`. Store the matching connection string in .NET user secrets as described in the [local development guide](docs/local-development.md); keep passwords outside tracked files.
+
+Run the API and frontend in separate terminals:
+
+```bash
+dotnet run --project services/api
+```
+
+```bash
+npm ci --prefix apps/web
+npm run dev --prefix apps/web
+```
+
+Open `http://localhost:4321/signin/` for Polish or `http://localhost:4321/en/signin/` for English. The frontend proxies `/api/*` to the local API at `http://localhost:5180`. Register, save the first animal's name and continue to Animals.
+
+## Verification
+
+With Docker running, run the integration suite and component checks:
+
+```bash
+dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj
+dotnet build services/api/ogarniamy-zwierzaki-api.csproj
+npm run check --prefix apps/web
+npm run build --prefix apps/web
+```
+
+The tests use a disposable PostgreSQL container and cover authentication, animal validation and isolation between accounts. Pull-request CI also lints Bicep and previews infrastructure changes. See [tests and checks](docs/testing.md) for details.
+
+After deployment, `scripts/smoke.sh <swa-host> <api-host>` checks both locale sign-in pages, API and database health through the proxy (with a 600-second retry window), an anonymous `/api/me` response of 401 without a redirect, and refusal of direct API access. It creates no accounts.
+
+## Rollback
+
+Revert the offending commit on `main` and approve the resulting deployment, or re-run an earlier successful deployment. This restores code only: accounts, animals, session keys and the migrated database schema remain. Use forward-only, backward-compatible migrations (expand first, contract later) so the previous release can still read the current data. Database recovery is a separate operation. See the [deployment guide](docs/deployment.md).
 
 ## Further reading
 

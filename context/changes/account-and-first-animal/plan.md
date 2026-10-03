@@ -536,31 +536,31 @@ B1ms and F1 are small; nothing in this slice is heavy. F1 cold starts plus the f
 
 #### Automated
 
-- [x] 4.1 Type check passes
-- [x] 4.2 Build emits every route in both locales
-- [x] 4.3 CI web job runs the type check
-- [x] 4.4 No Polish diacritics outside pl.ts
-- [ ] 4.10 Smoke test with the new page check passes in deploy workflow
+- [x] 4.1 Type check passes — 3b55186
+- [x] 4.2 Build emits every route in both locales — 3b55186
+- [x] 4.3 CI web job runs the type check — 3b55186
+- [x] 4.4 No Polish diacritics outside pl.ts — 3b55186
+- [x] 4.10 Smoke test with the new page check passes in deploy workflow — 008aea2
 
 #### Manual
 
-- [x] 4.5 Local register to Animals flow works on phone and desktop widths
-- [x] 4.6 Session gate routes signed-out, no-animal and with-animal owners correctly
-- [x] 4.7 Sign-out ends access to Animals
-- [x] 4.8 Language switch changes route and text
-- [x] 4.9 Human reviewed and corrected pl.ts
+- [x] 4.5 Local register to Animals flow works on phone and desktop widths — 3b55186
+- [x] 4.6 Session gate routes signed-out, no-animal and with-animal owners correctly — 3b55186
+- [x] 4.7 Sign-out ends access to Animals — 3b55186
+- [x] 4.8 Language switch changes route and text — 3b55186
+- [x] 4.9 Human reviewed and corrected pl.ts — 3b55186
 
 ### Phase 5: Deployed verification
 
 #### Automated
 
 - [ ] 5.1 Smoke test passes in deploy workflow
-- [ ] 5.2 Full test suite passes in CI
+- [x] 5.2 Full test suite passes in CI
 
 #### Manual
 
-- [ ] 5.3 Deployed registration sets the session cookie through SWA
-- [ ] 5.4 Second account sees only its own animal and gets 404 for the other's
-- [ ] 5.5 Session survives an App Service restart
-- [ ] 5.6 Real phone and desktop complete the flow in both languages
-- [ ] 5.7 Verification accounts recorded outside tracked files
+- [x] 5.3 Deployed registration sets the session cookie through SWA
+- [x] 5.4 Second account sees only its own animal and gets 404 for the other's
+- [x] 5.5 Session survives an App Service restart
+- [x] 5.6 Real phone and desktop complete the flow in both languages
+- [x] 5.7 Verification accounts recorded outside tracked files

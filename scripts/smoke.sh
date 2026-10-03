@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end smoke test of the deployed walking skeleton. Used by CI and runnable locally.
+# End-to-end smoke test of the deployed app. Used by CI and runnable locally.
 # Usage: scripts/smoke.sh <swa-host> <api-host>
 set -euo pipefail
 
@@ -39,7 +39,7 @@ for path in /signin/ /en/signin/; do
   echo "PASS: check 1: ${url} returned 200 and contains the app marker"
 done
 
-# Check 2: the API answers through the Static Web Apps /api proxy (retried for cold start and link propagation).
+# Check 2: the API and database are healthy through the Static Web Apps /api proxy (retried for cold start and link propagation).
 url="https://${SWA_HOST}/api/health"
 deadline=$((SECONDS + RETRY_TIMEOUT_SECONDS))
 while true; do
@@ -54,6 +54,13 @@ while true; do
   echo "WAIT: check 2: ${url} returned ${status}; retrying in ${RETRY_INTERVAL_SECONDS}s"
   sleep "${RETRY_INTERVAL_SECONDS}"
 done
+
+# Check 2b: the authenticated API is reachable through the proxy and refuses an anonymous request without redirecting.
+# fetch does not send cookies or follow redirects; a login redirect therefore fails this check.
+url="https://${SWA_HOST}/api/me"
+status="$(fetch "${url}")"
+[[ "${status}" == "401" ]] || fail "check 2b: ${url} returned ${status}, expected 401 without a session"
+echo "PASS: check 2b: ${url} returned 401 without a session"
 
 # Check 3: the App Service refuses direct traffic because it is a linked backend.
 url="https://${API_HOST}/api/health"

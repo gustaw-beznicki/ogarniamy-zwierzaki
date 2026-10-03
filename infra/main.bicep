@@ -23,6 +23,9 @@ param swaLocation string
 ])
 param appServiceSku string
 
+@description('Deploy the PostgreSQL firewall rules. infra/deploy.sh sets false when the existing rules already match the App Service outbound IPs, because re-applying them takes about a minute per rule.')
+param applyFirewallRules bool = true
+
 // Computed once and passed to both modules, so the API's connection setting does not reference the server
 // (whose Entra administrator in turn needs the API's managed identity).
 var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id)}'
@@ -45,6 +48,7 @@ module postgres 'modules/postgres.bicep' = {
     apiPrincipalId: appService.outputs.principalId
     // Known only at deployment time, so the module loops over it (a template-level loop fails with BCP178).
     allowedIpAddresses: split(appService.outputs.possibleOutboundIpAddresses, ',')
+    applyFirewallRules: applyFirewallRules
   }
 }
 

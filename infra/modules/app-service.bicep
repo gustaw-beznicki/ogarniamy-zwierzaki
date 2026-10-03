@@ -38,6 +38,8 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
   }
   properties: {
     serverFarmId: plan.id
+    // The API keeps no in-process session state, so instance-affinity cookies (ARRAffinity) are not needed.
+    clientAffinityEnabled: false
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'

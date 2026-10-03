@@ -16,6 +16,9 @@ param apiPrincipalId string
 @description('App Service outbound IP addresses allowed through the firewall, one rule per address.')
 param allowedIpAddresses array
 
+@description('Deploy the firewall rules. False skips the module; existing rules stay in place (deployments are incremental).')
+param applyFirewallRules bool
+
 resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' = {
   name: serverName
   location: location
@@ -71,7 +74,7 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2025-08-0
 
 // A separate module: the rule count is known only at deployment time, so what-if cannot expand this module.
 // Keeping the loop in its own module lets what-if still show the server, administrator and database above.
-module firewall 'postgres-firewall.bicep' = {
+module firewall 'postgres-firewall.bicep' = if (applyFirewallRules) {
   name: '${deployment().name}-firewall'
   params: {
     serverName: server.name

@@ -16,6 +16,13 @@ The same infrastructure commands work locally after `az login`: `infra/deploy.sh
 | Web | Static Web Apps Standard; resource in `eastus2`, content served globally; PR preview environments disabled because linked backends do not support them |
 | Database | PostgreSQL Flexible Server 17, Burstable B1ms, 32 GiB; Entra-only authentication with the API identity as administrator; firewall open only to the App Service outbound IPs |
 
+**Firewall rules and deploy time.** Azure applies the PostgreSQL firewall rules one at a time, about a minute per rule, with one rule per App Service outbound IP (31 today).
+
+- Before each `what-if` and `apply`, `infra/deploy.sh` compares the existing rules with the App Service's outbound IPs.
+- If they already match, it passes `applyFirewallRules=false`, the firewall module is skipped, and the rules stay as they are.
+- The rules are applied in full on a first deployment, when the IPs change (for example after a plan SKU change), or when the comparison cannot read either side.
+- Rules for IPs the App Service no longer uses are not deleted automatically; remove them by hand.
+
 ## Setting up a new Azure environment
 
 These steps are done once by a subscription owner, because CI deliberately lacks the permissions for them.

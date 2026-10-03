@@ -1,0 +1,17 @@
+---
+import '../styles/tokens.css';
+import type { Locale, Messages } from '../i18n';
+const { locale, messages } = Astro.props as { locale: Locale; messages: Messages };
+---
+<!doctype html>
+<html lang={locale} data-app="ogarniamy-zwierzaki">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#FCF9EA" />
+    <title>{messages.appName}</title>
+  </head>
+  <body><slot /></body>
+</html>

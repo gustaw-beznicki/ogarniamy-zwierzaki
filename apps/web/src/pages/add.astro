@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getMessages, localePath } from '../i18n';
+import { SessionGate } from '../components/SessionGate';
+import { AppShell } from '../components/AppShell';
+import { Placeholder } from '../components/Placeholder';
+const locale = 'pl' as const;
+const messages = getMessages(locale);
+const route = 'add';
+const alternateLocaleHref = localePath('en', route);
+---
+<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="protected" client:load><AppShell locale={locale} messages={messages} active="add" alternateLocaleHref={alternateLocaleHref} client:load><Placeholder title={messages.add} messages={messages} client:load /></AppShell></SessionGate></BaseLayout>

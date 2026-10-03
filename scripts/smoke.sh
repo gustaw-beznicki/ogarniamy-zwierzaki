@@ -30,12 +30,14 @@ fetch() {
   echo "${status:-000}"
 }
 
-# Check 1: the static page is served and contains the API status element.
-url="https://${SWA_HOST}/"
-status="$(fetch "${url}")"
-[[ "${status}" == "200" ]] || fail "check 1: ${url} returned ${status}, expected 200"
-grep -q 'id="api-status"' "${BODY_FILE}" || fail "check 1: ${url} body does not contain id=\"api-status\""
-echo "PASS: check 1: ${url} returned 200 and contains id=\"api-status\""
+# Check 1: both locale sign-in pages are served and carry the app marker.
+for path in /signin/ /en/signin/; do
+  url="https://${SWA_HOST}${path}"
+  status="$(fetch "${url}")"
+  [[ "${status}" == "200" ]] || fail "check 1: ${url} returned ${status}, expected 200"
+  grep -q 'data-app="ogarniamy-zwierzaki"' "${BODY_FILE}" || fail "check 1: ${url} body does not contain the app marker"
+  echo "PASS: check 1: ${url} returned 200 and contains the app marker"
+done
 
 # Check 2: the API answers through the Static Web Apps /api proxy (retried for cold start and link propagation).
 url="https://${SWA_HOST}/api/health"

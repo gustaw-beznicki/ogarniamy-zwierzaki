@@ -76,7 +76,7 @@ export const messages = {
   startOver: 'Change selection',
   heic_not_supported: 'HEIC/HEIF photos are not supported. Convert the photo to JPEG or PNG, or save the document as a PDF, and add it again. The original was not changed.',
   unsupported_file_type: 'Only PDF, JPEG and PNG files are supported.',
-  file_too_large: 'Each file can be at most 10 MB (10,485,760 bytes).',
+  file_too_large: 'The file is too large. The maximum size is 10 MB.',
   empty_file: 'This file is empty. Choose another file.',
   too_many_photos: 'A document can have at most 10 photos.',
   duplicate_photo: 'This photo is already in the document, so it was not added again.',

@@ -78,7 +78,7 @@ export const messages = {
   startOver: 'Zmień wybór',
   heic_not_supported: 'Zdjęcia HEIC/HEIF nie są obsługiwane. Przekonwertuj zdjęcie do formatu JPEG lub PNG albo zapisz dokument jako PDF i dodaj go ponownie. Oryginał nie został zmieniony.',
   unsupported_file_type: 'Obsługiwane są tylko pliki PDF, JPEG i PNG.',
-  file_too_large: 'Każdy plik może mieć najwyżej 10 MB (10 485 760 bajtów).',
+  file_too_large: 'Plik jest za duży, maksymalny rozmiar to 10 MB.',
   empty_file: 'Ten plik jest pusty. Wybierz inny plik.',
   too_many_photos: 'Dokument może mieć najwyżej 10 zdjęć.',
   duplicate_photo: 'To zdjęcie jest już w dokumencie, więc nie zostało dodane ponownie.',

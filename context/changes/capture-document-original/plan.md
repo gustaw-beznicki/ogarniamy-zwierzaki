@@ -384,8 +384,8 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 
 #### Automated
 
-- [x] 4.1 Frontend checks pass: `npm ci --prefix apps/web`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
-- [x] 4.2 Existing API integration checks remain green after transport/antiforgery integration: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 4.1 Frontend checks pass: `npm ci --prefix apps/web`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`. — da732f8
+- [x] 4.2 Existing API integration checks remain green after transport/antiforgery integration: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — da732f8
 
 #### Manual
 

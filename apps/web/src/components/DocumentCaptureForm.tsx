@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import type { Locale, Messages } from '../i18n';
-import { countLabel, formatEventDate, interpolate, localToday } from '../i18n/format';
+import { countLabel, formatEventDate, interpolate, localToday, uuidQueryParameter } from '../i18n/format';
 import { clientLocalePath } from '../i18n/paths';
 import { ApiError, api, type Animal, type UploadManifest } from '../lib/api';
 
@@ -57,6 +57,11 @@ async function detectType(file: File): Promise<SupportedType | 'heic' | null> {
   return null;
 }
 
+// Web Crypto (hashing and operation IDs) exists only on HTTPS or localhost.
+function secureContext(): boolean {
+  return window.isSecureContext && typeof crypto !== 'undefined' && typeof crypto.subtle !== 'undefined';
+}
+
 async function sha256Hex(file: File): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -95,6 +100,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
   const [progress, setProgress] = useState<Progress | null>(null);
   const [errorCode, setErrorCode] = useState('');
   const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const completedRef = useRef(false);
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -107,7 +113,10 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       if (!active) return;
       setAccountEmail(me.email);
       setAnimals(defaults.animals);
-      setAnimalId(defaults.defaultAnimalId ?? defaults.animals[0]?.id ?? '');
+      // An animal chosen on its document list wins over the account default when it is still eligible.
+      const requested = uuidQueryParameter('animalId')?.toLowerCase();
+      const preselected = defaults.animals.find((animal) => animal.id.toLowerCase() === requested)?.id;
+      setAnimalId(preselected ?? defaults.defaultAnimalId ?? defaults.animals[0]?.id ?? '');
       setLoadState('ready');
     }).catch((error: unknown) => {
       if (!active) return;
@@ -131,6 +140,17 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     return () => { for (const url of Object.values(urls)) URL.revokeObjectURL(url); };
   }, [selection]);
 
+  // Leaving mid-upload abandons the operation, so the browser asks first; the redirect after completion is exempt.
+  useEffect(() => {
+    if (status !== 'running') return;
+    const warn = (event: BeforeUnloadEvent) => {
+      if (completedRef.current) return;
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [status]);
+
   const frozen = status !== 'editing';
   const today = localToday();
   const selectedAnimal = animals.find((animal) => animal.id === animalId);
@@ -142,6 +162,10 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     if (files.length === 0) return;
     setErrorCode('');
     setReplacement(null);
+    if (!secureContext()) {
+      setErrorCode('insecure_context');
+      return;
+    }
     let checked: SelectedFile[];
     try {
       checked = await checkFiles(files);
@@ -214,6 +238,10 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     setErrorCode('');
     setReplacement(null);
     if (!validate() || !selection) return;
+    if (!secureContext()) {
+      setErrorCode('insecure_context');
+      return;
+    }
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!timeZone) {
       setErrorCode('invalid_time_zone');
@@ -262,6 +290,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       setProgress({ phase: 'completing' });
       const document = await api.completeUpload(current.operationId, current.accountEmail);
       setProgress({ phase: 'done' });
+      completedRef.current = true;
       window.location.assign(`${clientLocalePath(locale, 'document')}?id=${encodeURIComponent(document.id)}`);
     } catch (error) {
       const apiError = error instanceof ApiError ? error : null;
@@ -276,7 +305,12 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       }
       let code = apiError?.code ?? 'upload_interrupted';
       if (code === 'not_found') code = stage === 'create' ? 'animal_unavailable' : 'upload_not_found';
-      if (code === 'request_failed' || code === 'invalid_antiforgery_token' || !(code in messages)) code = 'upload_interrupted';
+      if (code === 'unsupported_media_type') code = 'unsupported_file_type';
+      if (code === 'request_failed' || code === 'invalid_antiforgery_token' || !Object.hasOwn(messages, code)) {
+        // Only network failures, server errors and a rejected token can succeed on retry; other 4xx need a new selection.
+        const transient = !apiError || apiError.status === 0 || apiError.status >= 500 || code === 'invalid_antiforgery_token';
+        code = transient ? 'upload_interrupted' : 'upload_rejected';
+      }
       setStatus('failed');
       setErrorCode(code);
     }
@@ -306,7 +340,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     }
   }
 
-  const message = (code: string) => (code in messages ? messages[code as keyof Messages] : messages.request_failed);
+  const message = (code: string) => (Object.hasOwn(messages, code) ? messages[code as keyof Messages] : messages.request_failed);
 
   if (loadState === 'loading') return <main className="content"><p className="loading" role="status">{messages.loadingContent}</p></main>;
   if (loadState === 'failed') return <main className="content"><p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.request_failed}</p></main>;
@@ -386,7 +420,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       {status === 'failed' && attempt
         ? <div className="capture-actions">
           {retryableCodes.has(errorCode) && <button type="button" className="primary" onClick={() => void run(attempt)}>{messages.retry}</button>}
-          <button type="button" className="secondary" onClick={startOver}>{messages.startOver}</button>
+          {!retryableCodes.has(errorCode) && <button type="button" className="secondary" onClick={startOver}>{messages.startOver}</button>}
         </div>
         : <button className="primary" type="submit" disabled={frozen}>{status === 'running' ? messages.saving : messages.save}</button>}
     </form>

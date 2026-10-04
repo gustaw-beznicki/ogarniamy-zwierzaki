@@ -1,7 +1,7 @@
 ---
 change_id: capture-document-original
 title: Capture document original
-status: implementing
+status: impl_reviewed
 created: 2026-10-04
 updated: 2026-10-04
 archived_at: null

@@ -97,6 +97,8 @@ export const messages = {
   upload_incomplete: 'Not every file has been saved yet. Your files are kept in this form — try again.',
   storage_unavailable: 'We could not save the files right now. Your files are kept in this form — try again.',
   upload_interrupted: 'The upload was interrupted. Your files are kept in this form — try again.',
+  upload_rejected: 'The upload was rejected. Change the selection and try again.',
+  insecure_context: 'This page must be opened over HTTPS to save documents.',
   session_expired: 'Your session has ended. Sign in again and select the files again: they were not kept, so they cannot be saved to another account.',
   signInAgain: 'Sign in again',
   loadingContent: 'Loading…',

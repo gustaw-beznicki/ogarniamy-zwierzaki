@@ -6,6 +6,9 @@ import { ApiError, api, type StoredDocument } from '../lib/api';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'failed';
 
+// Originals are only ever served by the same-origin API; any other URL is refused rather than rendered.
+const originalUrlPrefix = '/api/documents/';
+
 function downloadUrl(originalUrl: string): string {
   return `${originalUrl}${originalUrl.includes('?') ? '&' : '?'}download=true`;
 }
@@ -23,6 +26,10 @@ export function DocumentDetails({ locale, messages }: { locale: Locale; messages
     }
     void api.document(id).then((stored) => {
       if (!active) return;
+      if (!stored.files.every((file) => file.originalUrl.startsWith(originalUrlPrefix))) {
+        setState('failed');
+        return;
+      }
       setDocument(stored);
       setState('ready');
     }).catch((error: unknown) => {

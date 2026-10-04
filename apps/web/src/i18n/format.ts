@@ -9,7 +9,7 @@ export function interpolate(template: string, values: Record<string, string | nu
   return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in values ? String(values[name]) : match));
 }
 
-// A translated count with the locale's plural form, for example "1 file" / "5 plików".
+// A translated count with the locale's plural form, for example "1 file" / "5 files".
 export function countLabel(locale: Locale, messages: Messages, key: CountedKey, count: number): string {
   const category = new Intl.PluralRules(locale).select(count);
   const form: PluralCategory = category === 'one' || category === 'few' || category === 'many' ? category : 'other';

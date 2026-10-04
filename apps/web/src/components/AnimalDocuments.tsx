@@ -72,7 +72,7 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
     {backToAnimals}
     <div className="section-header">
       <div><p className="eyebrow">{messages.documentsTitle}</p><h1>{animal.name}</h1></div>
-      <a className="primary button-link" href={clientLocalePath(locale, 'add')}>{messages.addDocument}</a>
+      <a className="primary button-link" href={`${clientLocalePath(locale, 'add')}?animalId=${encodeURIComponent(animal.id)}`}>{messages.addDocument}</a>
     </div>
     {documents.length === 0
       ? <p className="notice">{messages.documentsEmpty}</p>

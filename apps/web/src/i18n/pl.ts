@@ -99,6 +99,8 @@ export const messages = {
   upload_incomplete: 'Nie wszystkie pliki zostały jeszcze zapisane. Pliki są zachowane w tym formularzu — spróbuj ponownie.',
   storage_unavailable: 'Nie udało się teraz zapisać plików. Pliki są zachowane w tym formularzu — spróbuj ponownie.',
   upload_interrupted: 'Wysyłanie zostało przerwane. Pliki są zachowane w tym formularzu — spróbuj ponownie.',
+  upload_rejected: 'Wysyłanie zostało odrzucone. Zmień wybór i spróbuj ponownie.',
+  insecure_context: 'Aby zapisywać dokumenty, otwórz tę stronę przez HTTPS.',
   session_expired: 'Sesja wygasła. Zaloguj się ponownie i jeszcze raz wybierz pliki: nie zostały zachowane, więc nie trafią na inne konto.',
   signInAgain: 'Zaloguj się ponownie',
   loadingContent: 'Ładowanie…',

@@ -27,7 +27,7 @@ Each original is stored under `documents/<document id>/<file id>`.
 
 ## Scenario 2: "original unavailable" (503 `original_unavailable`)
 
-**Symptom**: the document is listed, but one of its files cannot be opened. The API log shows `Original of file <fileId> of Stored document <id> is missing from storage.`
+**Symptom**: the document is listed, but one of its files cannot be opened. The API log shows `Original of file <fileId> of Stored document <id> is missing from storage or does not match its receipt.` The API opens an original only when its length and `sha256` metadata match the database; the ETag is not compared, so a version restored below opens again.
 
 1. **Find the expected file** (read-only): step 4 of [Check incomplete uploads](check-incomplete-uploads.md) gives the blob key, length and SHA-256.
 2. **List its versions** (read-only):
@@ -62,7 +62,7 @@ Each original is stored under `documents/<document id>/<file id>`.
    az storage container restore --auth-mode login --account-name "${SA}" --name originals --deleted-version <version>
    ```
 
-6. **Verify** (read-only): the restored blob's length and `sha256` metadata match step 1, and the owner can open the file again. No database change is needed.
+6. **Verify** (read-only): the restored blob's length and `sha256` metadata match step 1 (a blob without `sha256` metadata was not written by the API and is never served; it also makes completing its upload fail with a 500 until the blob is replaced by the matching version), and the owner can open the file again. No database change is needed.
 7. **If nothing can be restored** (older than 30 days): keep the record, note the document and file IDs, and tell the owner the original is lost. Never substitute another file.
 
 ## Scenario 3: "storage unavailable" (503 `storage_unavailable`)

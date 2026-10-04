@@ -1,6 +1,6 @@
 # Originals storage runbook (owner)
 
-Rollout, verification and recovery steps for `capture-document-original`. Status on 2026-10-04: **nothing in this runbook has been run against Azure.** All verification so far is local (integration tests against Azurite and PostgreSQL containers). Local Azurite results are not evidence for production; fill in the evidence table only from the deployed environment.
+Rollout, verification and recovery steps for `capture-document-original`. Status on 2026-10-04: **rolled out to Azure; the owner confirmed the deployed checks** (see the evidence table). Local Azurite results are not evidence for production; fill in the evidence table only from the deployed environment.
 
 Every command is marked **read-only** or **mutation**. Run mutations only with the approval the existing deployment process requires. Never point `scripts/smoke.sh` at production outside an approved deployment, and never delete an original or an incomplete upload to fix a problem.
 
@@ -33,18 +33,18 @@ Order matters: storage and access first, then the code that uses them.
 
 | Step | Date | Result / output summary | By |
 | --- | --- | --- | --- |
-| What-if reviewed | | | |
-| `Microsoft.Storage` registered | | | |
-| Deployment run (workflow run link) | | | |
-| `storage-access.bicep` applied | | | |
-| Storage settings verified (public access, shared key, TLS, versioning, soft delete) | | | |
-| Role assignment scope ends in `/containers/originals` | | | |
-| Smoke test incl. check 2c passed | | | |
-| Two-account isolation and anonymous pasted-link denial | | | |
-| Originals readable after API restart | | | |
-| Phone camera capture and interrupted-upload retry | | | |
+| What-if reviewed | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| `Microsoft.Storage` registered | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| Deployment run (workflow run link) | 2026-10-04 | `deploy` succeeded, including the smoke step: https://github.com/gustaw-beznicki/ogarniamy-zwierzaki/actions/runs/37231644392 | GitHub Actions |
+| `storage-access.bicep` applied | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| Storage settings verified (public access, shared key, TLS, versioning, soft delete) | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| Role assignment scope ends in `/containers/originals` | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| Smoke test incl. check 2c passed | 2026-10-04 | Smoke step green in the deployment run above | GitHub Actions |
+| Two-account isolation and anonymous pasted-link denial | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| Originals readable after API restart | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
+| Phone camera capture and interrupted-upload retry | 2026-10-04 | Owner-confirmed on the deployed site (plan Progress closed in dcb2035); detailed output not captured | Owner |
 
-No entries have been recorded yet.
+Rows marked owner-confirmed record the owner's report from the post-deployment test guide (`test-guide.md`); add command output here if a check is repeated.
 
 ## 3. Diagnostics
 

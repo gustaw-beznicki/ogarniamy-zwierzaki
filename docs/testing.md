@@ -13,7 +13,7 @@ The tests boot the real API against throwaway PostgreSQL 17 and Azurite containe
 ## What the API tests cover
 
 - Accounts, sessions, animals and isolation between accounts: anonymous requests get 401 without a redirect, and another account's animals, documents, upload operations and originals get 404.
-- Capture rules: one PDF (any number of internal pages) or 1–10 JPEG/PNG images; 10,485,760 bytes accepted and one byte more refused; empty files, unsupported formats, mismatched bytes, malformed dates and unknown time zones refused; today and earlier accepted and tomorrow refused, in time zones on both sides of UTC midnight.
+- Capture rules: one PDF (any number of internal pages) or 1–10 JPEG/PNG images; 10,485,760 bytes accepted and one byte more refused; empty files, the same file twice in one document, unsupported formats, mismatched bytes, malformed dates and unknown time zones refused; today and earlier accepted and tomorrow refused, in time zones on both sides of UTC midnight.
 - Antiforgery: every capture mutation without a valid token for the signed-in account is refused before anything changes.
 - Originals: returned byte for byte in their confirmed order with private, non-cacheable headers and byte ranges, after an API restart and a fresh sign-in, with no content-processing service.
 - Retries and failures: repeated and concurrent create, upload and completion produce one document; failures are injected at the storage adapter (`FaultyOriginalStorage`) and the EF Core boundary (`InjectedDatabaseFaults`) to cover a blob written before a database failure, a lost storage response, a lost completion response, a storage outage during upload, completion and reading, and a missing blob. Each answers with a retryable 503 and keeps the records.

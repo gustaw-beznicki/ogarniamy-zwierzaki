@@ -12,7 +12,7 @@ public sealed class BlobOriginalStorage(BlobContainerClient container) : IOrigin
     private const string Sha256MetadataKey = "sha256";
 
     public async Task<OriginalFileReceipt?> CreateIfAbsentAsync(
-        string key, Stream content, string contentType, CancellationToken cancellationToken)
+        string key, Stream content, string contentType, CancellationToken cancellationToken, string? verifiedSha256 = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
@@ -22,8 +22,8 @@ public sealed class BlobOriginalStorage(BlobContainerClient container) : IOrigin
         }
 
         var start = content.Position;
-        var sha256 = Convert.ToHexStringLower(await SHA256.HashDataAsync(content, cancellationToken));
-        var length = content.Position - start;
+        var length = content.Length - start;
+        var sha256 = verifiedSha256 ?? Convert.ToHexStringLower(await SHA256.HashDataAsync(content, cancellationToken));
         content.Position = start;
 
         var options = new BlobUploadOptions
@@ -65,14 +65,23 @@ public sealed class BlobOriginalStorage(BlobContainerClient container) : IOrigin
         }
     }
 
-    public async Task<Stream?> OpenReadAsync(string key, CancellationToken cancellationToken)
+    public async Task<Stream?> OpenReadAsync(
+        string key, long expectedLength, string expectedSha256, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        var blob = container.GetBlobClient(key);
         try
         {
+            var properties = (await blob.GetPropertiesAsync(cancellationToken: cancellationToken)).Value;
+            if (properties.ContentLength != expectedLength
+                || !properties.Metadata.TryGetValue(Sha256MetadataKey, out var sha256)
+                || sha256 != expectedSha256)
+            {
+                return null;
+            }
+
             // allowModifications: false pins the ETag, so a changed blob fails the read instead of mixing versions.
-            return await container.GetBlobClient(key)
-                .OpenReadAsync(new BlobOpenReadOptions(allowModifications: false), cancellationToken);
+            return await blob.OpenReadAsync(new BlobOpenReadOptions(allowModifications: false), cancellationToken);
         }
         catch (RequestFailedException exception) when (exception.Status == StatusCodes.Status404NotFound)
         {

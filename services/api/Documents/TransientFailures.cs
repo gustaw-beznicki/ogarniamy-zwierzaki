@@ -14,8 +14,10 @@ public static class TransientFailures
     {
         // The Azure SDK reports exhausted retries as an AggregateException of the individual failures.
         AggregateException aggregate => aggregate.InnerExceptions.Any(IsTransient),
-        // Blob Storage answered with an error or could not be reached; expected answers are handled by the adapter.
-        RequestFailedException => true,
+        // Blob Storage could not be reached, timed out, throttled or failed on its side; expected answers are handled
+        // by the adapter. Other 4xx answers (e.g. 403 when the API's Blob role is missing) are configuration faults:
+        // they surface as unhandled 500s logged at Error instead of a retryable storage_unavailable.
+        RequestFailedException { Status: 0 or 408 or 429 or >= 500 } => true,
         DbException { IsTransient: true } => true,
         // A timeout: the request itself was not cancelled.
         TimeoutException or OperationCanceledException => true,

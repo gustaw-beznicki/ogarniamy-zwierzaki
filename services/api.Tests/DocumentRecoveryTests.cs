@@ -168,10 +168,13 @@ public sealed class DocumentRecoveryTests(ApiFactory factory) : IClassFixture<Ap
         var slot = await SingleSlotAsync(factory, operationId);
         var storage = factory.Services.GetRequiredService<IOriginalStorage>();
         var squatter = TestOriginal.Png(png.Bytes.Length).Bytes;
+        OriginalFileReceipt? squatterReceipt;
         using (var content = new MemoryStream(squatter))
         {
-            Assert.NotNull(await storage.CreateIfAbsentAsync(slot.BlobKey, content, "image/png", CancellationToken.None));
+            squatterReceipt = await storage.CreateIfAbsentAsync(slot.BlobKey, content, "image/png", CancellationToken.None);
         }
+
+        Assert.NotNull(squatterReceipt);
 
         using (var upload = await client.PutFileAsync(operationId, 0, png))
         {
@@ -183,7 +186,8 @@ public sealed class DocumentRecoveryTests(ApiFactory factory) : IClassFixture<Ap
             await complete.AssertProblemAsync(HttpStatusCode.Conflict, "upload_conflict");
         }
 
-        await using var stored = await storage.OpenReadAsync(slot.BlobKey, CancellationToken.None);
+        await using var stored = await storage.OpenReadAsync(
+            slot.BlobKey, squatterReceipt.Length, squatterReceipt.Sha256, CancellationToken.None);
         Assert.NotNull(stored);
         using var copy = new MemoryStream();
         await stored.CopyToAsync(copy);

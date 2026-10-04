@@ -80,7 +80,8 @@ public sealed partial class DocumentCaptureService(
     // (written by an earlier attempt whose receipt was not recorded) is reconciled when it matches the manifest and
     // reported as a conflict, never overwritten, when it does not.
     public async Task<CaptureResult<DocumentUploadFileResponse>> UploadFileAsync(
-        string userId, Guid operationId, int position, MemoryStream content, CancellationToken cancellationToken)
+        string userId, Guid operationId, int position,
+        Func<long, CancellationToken, Task<CaptureResult<MemoryStream>>> readContent, CancellationToken cancellationToken)
     {
         try
         {
@@ -90,7 +91,15 @@ public sealed partial class DocumentCaptureService(
                 return CaptureResult<DocumentUploadFileResponse>.Fail(DocumentCaptureFailure.NotFound);
             }
 
+            // The body is read only for an owned slot, so a request for a foreign or unknown operation buffers nothing.
             var slot = upload.Files[position];
+            var received = await readContent(slot.ByteLength, cancellationToken);
+            if (received.Value is not { } content)
+            {
+                return new CaptureResult<DocumentUploadFileResponse>(null, received.Failure);
+            }
+
+            await using var _ = content;
             if (DocumentFileValidator.Verify(content.GetBuffer().AsSpan(0, (int)content.Length), slot) is { } failure)
             {
                 logger.LogInformation(
@@ -102,7 +111,9 @@ public sealed partial class DocumentCaptureService(
             if (slot.Receipt is null)
             {
                 content.Position = 0;
-                var receipt = await storage.CreateIfAbsentAsync(slot.BlobKey, content, slot.ContentType, cancellationToken)
+                // Verify has just matched these bytes against the manifest's SHA-256, so they are not hashed again.
+                var receipt = await storage.CreateIfAbsentAsync(
+                        slot.BlobKey, content, slot.ContentType, cancellationToken, slot.Sha256)
                     ?? await storage.GetReceiptAsync(slot.BlobKey, cancellationToken);
                 if (receipt is null)
                 {
@@ -204,11 +215,11 @@ public sealed partial class DocumentCaptureService(
                 return CaptureResult<OpenedOriginal>.Fail(DocumentCaptureFailure.NotFound);
             }
 
-            var content = await storage.OpenReadAsync(file.BlobKey, cancellationToken);
+            var content = await storage.OpenReadAsync(file.BlobKey, file.ByteLength, file.Sha256, cancellationToken);
             if (content is null)
             {
                 logger.LogError(
-                    "Original of file {FileId} of Stored document {DocumentId} is missing from storage.",
+                    "Original of file {FileId} of Stored document {DocumentId} is missing from storage or does not match its receipt.",
                     fileId, documentId);
                 return CaptureResult<OpenedOriginal>.Fail(DocumentCaptureFailure.OriginalUnavailable);
             }

@@ -1,6 +1,7 @@
 ---
 import '../styles/tokens.css';
 import type { Locale, Messages } from '../i18n';
+import { LanguageSwitch } from '../components/LanguageSwitch';
 const { locale, messages } = Astro.props as { locale: Locale; messages: Messages };
 ---
 <!doctype html>
@@ -13,5 +14,5 @@ const { locale, messages } = Astro.props as { locale: Locale; messages: Messages
     <meta name="theme-color" content="#FCF9EA" />
     <title>{messages.appName}</title>
   </head>
-  <body><slot /></body>
+  <body><LanguageSwitch locale={locale} messages={messages} pathname={Astro.url.pathname} client:load /><slot /></body>
 </html>

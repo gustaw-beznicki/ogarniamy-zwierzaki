@@ -1,12 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getMessages, localePath } from '../../i18n';
+import { getMessages } from '../../i18n';
 import { SessionGate } from '../../components/SessionGate';
 import { AppShell } from '../../components/AppShell';
 import { DocumentCaptureForm } from '../../components/DocumentCaptureForm';
 const locale = 'en' as const;
 const messages = getMessages(locale);
-const route = 'add';
-const alternateLocaleHref = localePath('pl', route);
 ---
-<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="protected" client:load><AppShell locale={locale} messages={messages} active="add" alternateLocaleHref={alternateLocaleHref} client:load><DocumentCaptureForm locale={locale} messages={messages} client:load /></AppShell></SessionGate></BaseLayout>
+<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="protected" client:load><AppShell locale={locale} messages={messages} active="add" client:load><DocumentCaptureForm locale={locale} messages={messages} client:load /></AppShell></SessionGate></BaseLayout>

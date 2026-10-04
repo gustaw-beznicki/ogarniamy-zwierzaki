@@ -156,6 +156,7 @@ public static class DocumentEndpoints
         DocumentCaptureFailure.FutureEventDate => Problem(StatusCodes.Status400BadRequest, "future_event_date"),
         DocumentCaptureFailure.InvalidTimeZone => Problem(StatusCodes.Status400BadRequest, "invalid_time_zone"),
         DocumentCaptureFailure.InvalidFileSet => Problem(StatusCodes.Status400BadRequest, "invalid_file_set"),
+        DocumentCaptureFailure.DuplicateFile => Problem(StatusCodes.Status400BadRequest, "duplicate_file"),
         DocumentCaptureFailure.InvalidFileName => Problem(StatusCodes.Status400BadRequest, "invalid_file_name"),
         DocumentCaptureFailure.InvalidFileHash => Problem(StatusCodes.Status400BadRequest, "invalid_file_hash"),
         DocumentCaptureFailure.EmptyFile => Problem(StatusCodes.Status400BadRequest, "empty_file"),

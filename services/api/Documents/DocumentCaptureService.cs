@@ -295,6 +295,12 @@ public sealed partial class DocumentCaptureService(
             });
         }
 
+        // The same original twice in one document adds nothing; separate documents may still repeat a file.
+        if (files.DistinctBy(f => f.Sha256).Count() != files.Count)
+        {
+            return CaptureResult<Document>.Fail(DocumentCaptureFailure.DuplicateFile);
+        }
+
         return CaptureResult<Document>.Ok(new Document
         {
             Id = operationId,

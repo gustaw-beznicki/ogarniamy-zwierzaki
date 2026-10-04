@@ -81,6 +81,8 @@ export const messages = {
   file_too_large: 'Każdy plik może mieć najwyżej 10 MB (10 485 760 bajtów).',
   empty_file: 'Ten plik jest pusty. Wybierz inny plik.',
   too_many_photos: 'Dokument może mieć najwyżej 10 zdjęć.',
+  duplicate_photo: 'To zdjęcie jest już w dokumencie, więc nie zostało dodane ponownie.',
+  duplicate_file: 'Ten sam plik występuje w dokumencie dwa razy. Usuń kopię i spróbuj ponownie.',
   one_pdf_only: 'Plik PDF musi być jedynym plikiem w dokumencie. Wybierz jeden plik PDF.',
   files_required: 'Dodaj co najmniej jedno zdjęcie albo plik PDF.',
   animal_required: 'Wybierz zwierzaka.',

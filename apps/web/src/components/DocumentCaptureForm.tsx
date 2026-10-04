@@ -14,6 +14,7 @@ interface SelectedFile {
   key: string;
   file: File;
   contentType: SupportedType;
+  sha256: string;
 }
 
 interface Selection {
@@ -80,7 +81,13 @@ async function checkFiles(files: File[]): Promise<SelectedFile[]> {
     }
     if (type === 'heic') throw new SelectionError('heic_not_supported');
     if (type === null) throw new SelectionError('unsupported_file_type');
-    checked.push({ key: crypto.randomUUID(), file, contentType: type });
+    let sha256: string;
+    try {
+      sha256 = await sha256Hex(file);
+    } catch {
+      throw new SelectionError('file_unreadable');
+    }
+    checked.push({ key: crypto.randomUUID(), file, contentType: type, sha256 });
   }
   const pdfCount = checked.filter((item) => item.contentType === 'application/pdf').length;
   if (pdfCount > 0 && checked.length > 1) throw new SelectionError('one_pdf_only');
@@ -176,12 +183,22 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     const kind: Kind = checked[0]?.contentType === 'application/pdf' ? 'pdf' : 'image';
     const current = selectionRef.current;
     if (kind === 'image' && current?.kind === 'image') {
-      if (current.files.length + checked.length > maxPhotos) {
+      // The same photo (same content, whatever its name) is added only once per document.
+      const known = new Set(current.files.map((item) => item.sha256));
+      const fresh = checked.filter((item) => !known.has(item.sha256) && known.add(item.sha256));
+      if (fresh.length < checked.length) setErrorCode('duplicate_photo');
+      if (fresh.length === 0) return;
+      if (current.files.length + fresh.length > maxPhotos) {
         setErrorCode('too_many_photos');
         return;
       }
-      setSelection({ kind, files: [...current.files, ...checked] });
+      setSelection({ kind, files: [...current.files, ...fresh] });
       return;
+    }
+    if (kind === 'image') {
+      const unique = checked.filter((item, index) => checked.findIndex((other) => other.sha256 === item.sha256) === index);
+      if (unique.length < checked.length) setErrorCode('duplicate_photo');
+      checked = unique;
     }
     if (kind === 'image' && checked.length > maxPhotos) {
       setErrorCode('too_many_photos');
@@ -252,7 +269,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     const manifestFiles: UploadManifest['files'] = [];
     try {
       for (const item of selection.files) {
-        manifestFiles.push({ name: item.file.name, contentType: item.contentType, byteLength: item.file.size, sha256: await sha256Hex(item.file) });
+        manifestFiles.push({ name: item.file.name, contentType: item.contentType, byteLength: item.file.size, sha256: item.sha256 });
       }
     } catch {
       setStatus('editing');

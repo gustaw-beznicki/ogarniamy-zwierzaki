@@ -22,6 +22,9 @@ public enum DocumentCaptureFailure
     // 400 invalid_file_set: no files, more than ten images, or a PDF together with other files.
     InvalidFileSet,
 
+    // 400 duplicate_file: the same file (same SHA-256) appears more than once in one document.
+    DuplicateFile,
+
     // 400 invalid_file_name: empty after sanitizing, or longer than 255 characters.
     InvalidFileName,
 

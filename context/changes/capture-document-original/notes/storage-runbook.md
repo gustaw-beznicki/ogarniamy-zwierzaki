@@ -62,7 +62,7 @@ The API logs operation, document and file IDs, file positions, states and failur
 | `Upload operation <id> is stored.` | Information | Document visible to its owner. |
 | `Storage unavailable for operation/document <id>, file <fileId>: StorageUnavailable.` | Warning | Transient Blob Storage or database failure (503 `storage_unavailable`); the exception is attached. |
 | `File <fileId> of operation <id> has a different original in storage: UploadConflict.` | Warning | A blob under the slot's key does not match the manifest; it was not overwritten. |
-| `Original of file <fileId> of Stored document <id> is missing from storage.` | Error | 503 `original_unavailable`; see recovery 4.2. |
+| `Original of file <fileId> of Stored document <id> is missing from storage.` | Error | 503 `original_unavailable`; see the recover-originals SOP, scenario 2. |
 
 Stream the API logs: `az webapp log tail --resource-group "${RG}" --name "${API_APP}"` (read-only). If nothing is streamed because container logging is off, enabling it (`az webapp log config --docker-container-logging filesystem`) is a configuration change and needs approval.
 
@@ -90,40 +90,4 @@ az storage container list --auth-mode login --account-name "${SA}" --include-del
 
 ## 4. Recovery
 
-### 4.1 Missing receipt (an `Uploading` operation whose original is in storage)
-
-Caused by a database failure, timeout or lost response after the blob write. No manual action: retrying the same file upload, or completing the operation, finds the blob under its deterministic key, checks its length and SHA-256 against the manifest and records the receipt. The operation must be retried by its owner from the still-open form; there is no administrative completion. An abandoned operation stays private and invisible in lists; leave it and its blobs in place (there is no cleanup policy yet).
-
-### 4.2 Stored original unavailable (503 `original_unavailable`)
-
-The document record exists but its blob is missing. The record is never removed automatically.
-
-1. Read the blob key and expected `sha256` with step 4 of the SOP, then list the key's versions (read-only, section 3).
-2. Blob versioning is on, so a deleted blob leaves its last content as a previous version. Restore it by copying that version back to the same key (mutation):
-
-   ```bash
-   az storage blob copy start --auth-mode login --account-name "${SA}" \
-     --destination-container originals --destination-blob "documents/<document id>/<file id>" \
-     --source-uri "https://${SA}.blob.core.windows.net/originals/documents/<document id>/<file id>?versionid=<version id>"
-   ```
-
-   If the version itself is soft-deleted, first undelete it (mutation): `az storage blob undelete --auth-mode login --account-name "${SA}" --container-name originals --name "documents/<document id>/<file id>"`, then copy as above.
-3. If the whole container was deleted, restore it within the retention window (mutation): `az storage container restore --auth-mode login --account-name "${SA}" --name originals --deleted-version <version>`.
-4. Verify: the restored blob's `sha256` metadata and length equal the database values, and the owner can open the original again. The API reads the blob under its key; no database change is needed.
-5. After 30 days a deleted blob cannot be recovered. Keep the record, note the document and file IDs, and tell the owner the original is lost; do not substitute another file.
-
-### 4.3 Storage unavailable (503 `storage_unavailable`)
-
-Transient Blob Storage or database failures, or missing storage authorization. Nothing is deleted and every request can be retried.
-
-1. Read-only checks: the Warning log entries and their exceptions (403 `AuthorizationPermissionMismatch` means the API's role is missing or still propagating), the role assignment and storage settings ([storage-access.md](storage-access.md), step 3), and Azure service health for the region.
-2. If the role is missing, apply `storage-access.bicep` again (mutation, owner). Do not enable shared keys, public access or SAS to work around it.
-3. `/api/health` covers only the database and must stay that way: original retrieval does not depend on OCR or search, and a storage problem must not make the whole API unhealthy.
-
-### 4.4 Code rollback
-
-Revert the commit on `main` and approve the deploy, or re-run an earlier successful `deploy` run (mutation, approved). This restores code only:
-
-- Keep the `documents` and `document_files` tables, the storage account and container, the API's role assignment and every blob. Migrations are not reverted; the schema change is additive, so the previous release keeps working with it.
-- A release from before this change has no screens for documents; the data waits for the next corrected release.
-- Do not delete originals or incomplete uploads during or after a rollback. Soft delete and versioning are a 30-day safety net, not a backup.
+See the SOP [Recover document originals](../../../../docs/sop/recover-originals.md): unfinished uploads, `original_unavailable`, `storage_unavailable` and code rollback.

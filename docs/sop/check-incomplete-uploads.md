@@ -58,4 +58,4 @@ ORDER BY f.position;
 ## What to do with the result
 
 - **Incomplete uploads found**: nothing. Only the owner can finish one, by retrying in the still-open form. Leave them and their blobs in place.
-- **A stored original is missing from storage**: follow "Originals recovery" in [deployment.md](../deployment.md).
+- **A stored original is missing from storage**: follow [Recover document originals](recover-originals.md).

@@ -39,7 +39,7 @@ The requirements, guardrails and non-goals are in the [PRD](context/foundation/p
 | Running the database, API and web app on your machine | [Local development](docs/local-development.md) |
 | Test suite and build checks | [Tests and checks](docs/testing.md) |
 | CI/CD, the Azure environment and setting up a new one | [Deployment](docs/deployment.md) |
-| Step-by-step operating procedures (SOPs) | [Check incomplete uploads](docs/sop/check-incomplete-uploads.md) |
+| Step-by-step operating procedures (SOPs) | [Check incomplete uploads](docs/sop/check-incomplete-uploads.md), [Recover document originals](docs/sop/recover-originals.md) |
 | Conventions for code and changes | [Contributing](CONTRIBUTING.md) |
 
 ## Local development

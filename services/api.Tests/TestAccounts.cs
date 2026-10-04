@@ -10,6 +10,8 @@ public static class TestAccounts
 {
     public const string ValidPassword = "long-enough-1";
 
+    public const string AntiforgeryHeader = "X-CSRF-TOKEN";
+
     public static string UniqueEmail() => $"user-{Guid.NewGuid():N}@example.test";
 
     // A cookie-aware client that never follows redirects, so a redirect would show up as a failed assertion.
@@ -26,13 +28,32 @@ public static class TestAccounts
         client.PostAsJsonAsync("/api/animals", new { name });
 
     // Registers a fresh account; the returned client carries its session cookie.
-    public static async Task<(HttpClient Client, string Email)> CreateSignedInClientAsync(this ApiFactory factory)
+    public static async Task<(HttpClient Client, string Email)> CreateSignedInClientAsync(
+        this WebApplicationFactory<Program> factory)
     {
         var client = factory.CreateClient();
         var email = UniqueEmail();
         using var response = await client.RegisterAsync(email, ValidPassword);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (client, email);
+    }
+
+    // Fetches an antiforgery request token for the client's session; its paired cookie lands in the client's cookies.
+    public static async Task<string> GetAntiforgeryTokenAsync(this HttpClient client)
+    {
+        using var response = await client.GetAsync("/api/antiforgery");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.ReadJsonAsync();
+        Assert.Equal(AntiforgeryHeader, body.GetProperty("headerName").GetString());
+        return body.GetProperty("token").GetString() ?? throw new InvalidOperationException("No antiforgery token.");
+    }
+
+    // Sends a fresh antiforgery token with every later request of the client.
+    public static async Task UseAntiforgeryTokenAsync(this HttpClient client)
+    {
+        var token = await client.GetAntiforgeryTokenAsync();
+        client.DefaultRequestHeaders.Remove(AntiforgeryHeader);
+        client.DefaultRequestHeaders.Add(AntiforgeryHeader, token);
     }
 
     public static async Task<JsonElement> ReadJsonAsync(this HttpResponseMessage response)

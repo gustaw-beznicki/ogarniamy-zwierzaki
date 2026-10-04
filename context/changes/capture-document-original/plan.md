@@ -366,19 +366,19 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 
 #### Automated
 
-- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [x] 2.2 New and existing databases migrate without losing accounts, animals or session keys; relational constraints preserve file order, blob-key uniqueness and valid references.
-- [x] 2.3 Repository tests prove owner isolation, pending-document exclusion, deterministic pagination and account-scoped capture defaults.
+- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — 2c0c9d5
+- [x] 2.2 New and existing databases migrate without losing accounts, animals or session keys; relational constraints preserve file order, blob-key uniqueness and valid references. — 2c0c9d5
+- [x] 2.3 Repository tests prove owner isolation, pending-document exclusion, deterministic pagination and account-scoped capture defaults. — 2c0c9d5
 
 ### Phase 3: Document API
 
 #### Automated
 
-- [ ] 3.1 API build and integration suite pass with PostgreSQL and Azurite: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [ ] 3.2 Upload tests prove 10 MiB inclusive, oversize rejection, one PDF or 1–10 images, signature/hash validation and today/past-date acceptance with future-date rejection in the supplied valid time zone.
-- [ ] 3.3 Authorization tests deny anonymous and foreign upload/list/detail/original requests and reject missing or invalid antiforgery tokens before mutation.
-- [ ] 3.4 Failure tests prove no partial visibility and one document after repeated/concurrent create, upload and commit, including blob-success/database-failure and lost completion response.
-- [ ] 3.5 Original retrieval tests prove byte-for-byte equality and order, correct private headers, and retrieval without any OCR/search services.
+- [x] 3.1 API build and integration suite pass with PostgreSQL and Azurite: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 3.2 Upload tests prove 10 MiB inclusive, oversize rejection, one PDF or 1–10 images, signature/hash validation and today/past-date acceptance with future-date rejection in the supplied valid time zone.
+- [x] 3.3 Authorization tests deny anonymous and foreign upload/list/detail/original requests and reject missing or invalid antiforgery tokens before mutation.
+- [x] 3.4 Failure tests prove no partial visibility and one document after repeated/concurrent create, upload and commit, including blob-success/database-failure and lost completion response.
+- [x] 3.5 Original retrieval tests prove byte-for-byte equality and order, correct private headers, and retrieval without any OCR/search services.
 
 ### Phase 4: Capture and archive interface
 

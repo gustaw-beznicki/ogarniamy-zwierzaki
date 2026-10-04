@@ -98,6 +98,8 @@ public sealed class DocumentCaptureTests(ApiFactory factory) : IClassFixture<Api
         Assert.True(original.Headers.CacheControl?.Private);
         Assert.True(original.Headers.CacheControl?.NoStore);
         Assert.Equal(["nosniff"], original.Headers.GetValues("X-Content-Type-Options"));
+        // A sandboxed response would block the browser's built-in PDF viewer.
+        Assert.False(original.Headers.Contains("Content-Security-Policy"));
         Assert.Null(original.Headers.Location);
 
         using var download = await client.GetAsync($"{originalUrl}?download=true");
@@ -139,6 +141,7 @@ public sealed class DocumentCaptureTests(ApiFactory factory) : IClassFixture<Api
             using var original = await client.GetAsync(urls[position]);
             Assert.Equal(images[position].ContentType, original.Content.Headers.ContentType?.MediaType);
             Assert.Equal(images[position].Bytes, await original.Content.ReadAsByteArrayAsync());
+            Assert.StartsWith("sandbox;", Assert.Single(original.Headers.GetValues("Content-Security-Policy")));
         }
     }
 

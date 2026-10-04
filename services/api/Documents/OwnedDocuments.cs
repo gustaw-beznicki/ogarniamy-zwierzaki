@@ -73,7 +73,7 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
                 d.UploadedAt!.Value,
                 d.Files
                     .OrderBy(f => f.Position)
-                    .Select(f => new DocumentFileDetails(f.Id, f.Position, f.OriginalName, f.ContentType, f.ByteLength, f.BlobKey))
+                    .Select(f => new DocumentFileDetails(f.Id, f.Position, f.OriginalName, f.ContentType, f.ByteLength, f.BlobKey, f.Sha256))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -84,7 +84,7 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
             .Where(d => d.Id == documentId)
             .SelectMany(d => d.Files)
             .Where(f => f.Id == fileId)
-            .Select(f => new DocumentFileDetails(f.Id, f.Position, f.OriginalName, f.ContentType, f.ByteLength, f.BlobKey))
+            .Select(f => new DocumentFileDetails(f.Id, f.Position, f.OriginalName, f.ContentType, f.ByteLength, f.BlobKey, f.Sha256))
             .FirstOrDefaultAsync(cancellationToken);
 
     // Persists a new, frozen manifest as an Uploading document. The caller supplies the operation ID (Document.Id),

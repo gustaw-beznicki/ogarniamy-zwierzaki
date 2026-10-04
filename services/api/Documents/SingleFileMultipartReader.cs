@@ -21,7 +21,9 @@ public static class SingleFileMultipartReader
     // The longest boundary RFC 2046 allows.
     private const int MaxBoundaryLength = 70;
 
-    public static async Task<CaptureResult<MemoryStream>> ReadAsync(HttpRequest request, CancellationToken cancellationToken)
+    // expectedLength is the manifest's length for the slot; it sizes the buffer instead of the client's Content-Length.
+    public static async Task<CaptureResult<MemoryStream>> ReadAsync(
+        HttpRequest request, long expectedLength, CancellationToken cancellationToken)
     {
         if (request.ContentLength > MaxRequestBytes)
         {
@@ -53,7 +55,7 @@ public static class SingleFileMultipartReader
             }
 
             var content = new MemoryStream(
-                (int)Math.Clamp(request.ContentLength ?? 0, 0, DocumentFile.MaxByteLength));
+                (int)Math.Clamp(expectedLength, 0, DocumentFile.MaxByteLength));
             if (!await CopyWithinLimitAsync(section.Body, content, cancellationToken))
             {
                 await content.DisposeAsync();

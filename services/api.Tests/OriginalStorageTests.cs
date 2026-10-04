@@ -73,7 +73,24 @@ public sealed class OriginalStorageTests(ApiFactory factory) : IClassFixture<Api
         var key = UniqueKey();
 
         Assert.Null(await Storage.GetReceiptAsync(key, CancellationToken.None));
-        Assert.Null(await Storage.OpenReadAsync(key, CancellationToken.None));
+        Assert.Null(await Storage.OpenReadAsync(key, 1, AnySha256, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task An_original_that_does_not_match_the_expected_receipt_is_not_opened()
+    {
+        var key = UniqueKey();
+        OriginalFileReceipt? receipt;
+        using (var content = new MemoryStream(RandomBytes(1_000)))
+        {
+            receipt = await Storage.CreateIfAbsentAsync(key, content, "image/png", CancellationToken.None);
+        }
+
+        Assert.NotNull(receipt);
+        Assert.Null(await Storage.OpenReadAsync(key, receipt.Length, AnySha256, CancellationToken.None));
+        Assert.Null(await Storage.OpenReadAsync(key, receipt.Length + 1, receipt.Sha256, CancellationToken.None));
+        await using var matching = await Storage.OpenReadAsync(key, receipt.Length, receipt.Sha256, CancellationToken.None);
+        Assert.NotNull(matching);
     }
 
     [Fact]
@@ -88,7 +105,7 @@ public sealed class OriginalStorageTests(ApiFactory factory) : IClassFixture<Api
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Storage.OpenReadAsync(key, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Storage.OpenReadAsync(key, 1, AnySha256, cancelled.Token));
     }
 
     [Fact]
@@ -119,13 +136,17 @@ public sealed class OriginalStorageTests(ApiFactory factory) : IClassFixture<Api
         Assert.Contains("Storage:Auth", exception.Message);
     }
 
+    private static readonly string AnySha256 = new('0', 64);
+
     private static string UniqueKey() => $"tests/{Guid.NewGuid():N}";
 
     private static byte[] RandomBytes(int length) => RandomNumberGenerator.GetBytes(length);
 
     private async Task<byte[]> ReadAllAsync(string key)
     {
-        await using var stream = await Storage.OpenReadAsync(key, CancellationToken.None);
+        var receipt = await Storage.GetReceiptAsync(key, CancellationToken.None);
+        Assert.NotNull(receipt);
+        await using var stream = await Storage.OpenReadAsync(key, receipt.Length, receipt.Sha256, CancellationToken.None);
         Assert.NotNull(stream);
         using var copy = new MemoryStream();
         await stream.CopyToAsync(copy);

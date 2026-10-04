@@ -21,14 +21,14 @@ public static class AnimalEndpoints
 
     private static async Task<Ok<IReadOnlyList<OwnedAnimal>>> ListAsync(
         ClaimsPrincipal principal, UserManager<AppUser> users, OwnedAnimals animals, CancellationToken cancellationToken) =>
-        TypedResults.Ok(await animals.ListAsync(CurrentUserId(principal, users), cancellationToken));
+        TypedResults.Ok(await animals.ListAsync(CurrentUser.Id(principal, users), cancellationToken));
 
     private static async Task<Results<Ok<OwnedAnimal>, NotFound>> GetAsync(
         Guid id, ClaimsPrincipal principal, UserManager<AppUser> users, OwnedAnimals animals,
         CancellationToken cancellationToken)
     {
         // Another account's animal is indistinguishable from a missing one.
-        var animal = await animals.FindAsync(CurrentUserId(principal, users), id, cancellationToken);
+        var animal = await animals.FindAsync(CurrentUser.Id(principal, users), id, cancellationToken);
         return animal is null ? TypedResults.NotFound() : TypedResults.Ok(animal);
     }
 
@@ -47,11 +47,7 @@ public static class AnimalEndpoints
             return ApiProblem.Create(StatusCodes.Status400BadRequest, "name_too_long");
         }
 
-        var animal = await animals.CreateAsync(CurrentUserId(principal, users), name, cancellationToken);
+        var animal = await animals.CreateAsync(CurrentUser.Id(principal, users), name, cancellationToken);
         return TypedResults.Created($"/api/animals/{animal.Id}", animal);
     }
-
-    // The fallback policy guarantees an authenticated user, so a missing id is a server error.
-    private static string CurrentUserId(ClaimsPrincipal principal, UserManager<AppUser> users) =>
-        users.GetUserId(principal) ?? throw new InvalidOperationException("The authenticated user has no id claim.");
 }

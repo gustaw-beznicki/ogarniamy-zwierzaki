@@ -44,14 +44,14 @@ public static class DocumentEndpoints
     private static async Task<Ok<CaptureDefaults>> GetCaptureDefaultsAsync(
         ClaimsPrincipal principal, UserManager<AppUser> users, OwnedDocuments documents,
         CancellationToken cancellationToken) =>
-        TypedResults.Ok(await documents.GetCaptureDefaultsAsync(CurrentUserId(principal, users), cancellationToken));
+        TypedResults.Ok(await documents.GetCaptureDefaultsAsync(CurrentUser.Id(principal, users), cancellationToken));
 
     private static async Task<Results<Created<DocumentUploadResponse>, Ok<DocumentUploadResponse>, NotFound, ProblemHttpResult>>
         CreateUploadAsync(
             Guid operationId, CreateDocumentUploadRequest request, ClaimsPrincipal principal, UserManager<AppUser> users,
             DocumentCaptureService capture, CancellationToken cancellationToken)
     {
-        var result = await capture.CreateUploadAsync(CurrentUserId(principal, users), operationId, request, cancellationToken);
+        var result = await capture.CreateUploadAsync(CurrentUser.Id(principal, users), operationId, request, cancellationToken);
         if (result.Value is { } upload)
         {
             return result.Created
@@ -66,30 +66,23 @@ public static class DocumentEndpoints
         Guid operationId, int position, HttpRequest request, ClaimsPrincipal principal, UserManager<AppUser> users,
         DocumentCaptureService capture, CancellationToken cancellationToken)
     {
-        var received = await SingleFileMultipartReader.ReadAsync(request, cancellationToken);
-        if (received.Value is not { } content)
+        var result = await capture.UploadFileAsync(
+            CurrentUser.Id(principal, users), operationId, position,
+            (expectedLength, token) => SingleFileMultipartReader.ReadAsync(request, expectedLength, token),
+            cancellationToken);
+        if (result.Value is { } file)
         {
-            return ToProblem(received.Failure);
+            return TypedResults.Ok(file);
         }
 
-        await using (content)
-        {
-            var result = await capture.UploadFileAsync(
-                CurrentUserId(principal, users), operationId, position, content, cancellationToken);
-            if (result.Value is { } file)
-            {
-                return TypedResults.Ok(file);
-            }
-
-            return result.Failure == DocumentCaptureFailure.NotFound ? TypedResults.NotFound() : ToProblem(result.Failure);
-        }
+        return result.Failure == DocumentCaptureFailure.NotFound ? TypedResults.NotFound() : ToProblem(result.Failure);
     }
 
     private static async Task<Results<Ok<StoredDocumentResponse>, NotFound, ProblemHttpResult>> CompleteUploadAsync(
         Guid operationId, ClaimsPrincipal principal, UserManager<AppUser> users, DocumentCaptureService capture,
         CancellationToken cancellationToken)
     {
-        var result = await capture.CompleteAsync(CurrentUserId(principal, users), operationId, cancellationToken);
+        var result = await capture.CompleteAsync(CurrentUser.Id(principal, users), operationId, cancellationToken);
         if (result.Value is { } document)
         {
             return TypedResults.Ok(document);
@@ -110,7 +103,7 @@ public static class DocumentEndpoints
         }
 
         var page = await documents.ListStoredAsync(
-            CurrentUserId(principal, users), animalId, pageOffset, pageSize, cancellationToken);
+            CurrentUser.Id(principal, users), animalId, pageOffset, pageSize, cancellationToken);
         return page is null ? TypedResults.NotFound() : TypedResults.Ok(page);
     }
 
@@ -118,7 +111,7 @@ public static class DocumentEndpoints
         Guid documentId, ClaimsPrincipal principal, UserManager<AppUser> users, OwnedDocuments documents,
         CancellationToken cancellationToken)
     {
-        var document = await documents.FindStoredAsync(CurrentUserId(principal, users), documentId, cancellationToken);
+        var document = await documents.FindStoredAsync(CurrentUser.Id(principal, users), documentId, cancellationToken);
         return document is null ? TypedResults.NotFound() : TypedResults.Ok(StoredDocumentResponse.From(document));
     }
 
@@ -130,7 +123,7 @@ public static class DocumentEndpoints
         UserManager<AppUser> users, DocumentCaptureService capture, CancellationToken cancellationToken)
     {
         var result = await capture.OpenOriginalAsync(
-            CurrentUserId(principal, users), documentId, fileId, cancellationToken);
+            CurrentUser.Id(principal, users), documentId, fileId, cancellationToken);
         if (result.Value is not { } original)
         {
             return result.Failure == DocumentCaptureFailure.NotFound ? TypedResults.NotFound() : ToProblem(result.Failure);
@@ -144,6 +137,12 @@ public static class DocumentEndpoints
         headers.ContentDisposition = disposition.ToString();
         headers.CacheControl = "private, no-store";
         headers.XContentTypeOptions = "nosniff";
+        if (original.File.ContentType != "application/pdf")
+        {
+            // Images opened directly run nothing on the app's origin. PDFs are left out: a sandboxed response blocks
+            // the browser's built-in PDF viewer.
+            headers.ContentSecurityPolicy = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
+        }
 
         // The content type was validated against the original's signature when it was uploaded.
         return TypedResults.Stream(original.Content, original.File.ContentType, enableRangeProcessing: true);
@@ -178,8 +177,4 @@ public static class DocumentEndpoints
     };
 
     private static ProblemHttpResult Problem(int statusCode, string code) => ApiProblem.Create(statusCode, code);
-
-    // The fallback policy guarantees an authenticated user, so a missing id is a server error.
-    private static string CurrentUserId(ClaimsPrincipal principal, UserManager<AppUser> users) =>
-        users.GetUserId(principal) ?? throw new InvalidOperationException("The authenticated user has no id claim.");
 }

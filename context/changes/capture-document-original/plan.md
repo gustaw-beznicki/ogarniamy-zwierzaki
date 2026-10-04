@@ -346,6 +346,10 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 - [Blob upload](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-upload), [download](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-download) and [security recommendations](https://learn.microsoft.com/en-us/azure/storage/blobs/security-recommendations).
 - [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) and [Azure privileged roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/privileged).
 
+## Addenda
+
+- 2026-10-04 (e3b315b, recorded by the implementation review): a manifest that lists the same SHA-256 twice is rejected with 400 `duplicate_file`, and the form skips a photo it already holds. Deduplication across separate submissions remains out of scope.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.

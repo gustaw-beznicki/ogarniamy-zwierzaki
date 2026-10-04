@@ -13,10 +13,10 @@ public sealed class FaultyOriginalStorage(IOriginalStorage inner) : IOriginalSto
     public bool LoseNextCreateResponse { get; set; }
 
     public async Task<OriginalFileReceipt?> CreateIfAbsentAsync(
-        string key, Stream content, string contentType, CancellationToken cancellationToken)
+        string key, Stream content, string contentType, CancellationToken cancellationToken, string? verifiedSha256 = null)
     {
         ThrowIfUnavailable();
-        var receipt = await inner.CreateIfAbsentAsync(key, content, contentType, cancellationToken);
+        var receipt = await inner.CreateIfAbsentAsync(key, content, contentType, cancellationToken, verifiedSha256);
         if (LoseNextCreateResponse)
         {
             LoseNextCreateResponse = false;
@@ -32,10 +32,11 @@ public sealed class FaultyOriginalStorage(IOriginalStorage inner) : IOriginalSto
         return inner.GetReceiptAsync(key, cancellationToken);
     }
 
-    public Task<Stream?> OpenReadAsync(string key, CancellationToken cancellationToken)
+    public Task<Stream?> OpenReadAsync(
+        string key, long expectedLength, string expectedSha256, CancellationToken cancellationToken)
     {
         ThrowIfUnavailable();
-        return inner.OpenReadAsync(key, cancellationToken);
+        return inner.OpenReadAsync(key, expectedLength, expectedSha256, cancellationToken);
     }
 
     private void ThrowIfUnavailable()

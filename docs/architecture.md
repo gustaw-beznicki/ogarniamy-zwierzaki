@@ -25,7 +25,7 @@ Accounts are ASP.NET Core Identity users. Signing in creates one server-side ses
 
 ## Documents and originals
 
-A document belongs to one animal and holds either one PDF or 1–10 JPEG/PNG images in a confirmed order, each at most 10,485,760 bytes. Ownership follows the animal's membership; another account's animal, document or file answers 404, and every route requires a session (401 otherwise).
+A document belongs to one animal and holds either one PDF or 1–10 JPEG/PNG images in a confirmed order, each at most 10,485,760 bytes. The same file (same SHA-256) cannot appear twice in one document (400 `duplicate_file`); separate documents may hold identical files. Ownership follows the animal's membership; another account's animal, document or file answers 404, and every route requires a session (401 otherwise).
 
 Capture is a retryable operation with a browser-generated ID, uploaded one file per request to stay within the Static Web Apps proxy limits (30 MB per request, 45 seconds per API call):
 

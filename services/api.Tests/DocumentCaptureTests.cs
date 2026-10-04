@@ -272,6 +272,10 @@ public sealed class DocumentCaptureTests(ApiFactory factory) : IClassFixture<Api
         await AssertManifestProblemAsync(
             client, DocumentApi.Manifest(animalId, TestOriginal.Pdf(), TestOriginal.Pdf()),
             HttpStatusCode.BadRequest, "invalid_file_set");
+        var photo = TestOriginal.Jpeg();
+        await AssertManifestProblemAsync(
+            client, DocumentApi.Manifest(animalId, photo, TestOriginal.Png(), photo with { Name = "copy.jpg" }),
+            HttpStatusCode.BadRequest, "duplicate_file");
         await AssertManifestProblemAsync(
             client, DocumentApi.Manifest(animalId, new TestOriginal("photo.heic", "image/heic", [1, 2, 3])),
             HttpStatusCode.UnsupportedMediaType, "unsupported_file_type");

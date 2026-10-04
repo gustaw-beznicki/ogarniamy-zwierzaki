@@ -3,7 +3,7 @@
 Everything in Azure is declared in Bicep under [`infra/`](../infra) and deployed by GitHub Actions. CI signs in to Azure with GitHub OIDC; the repository and GitHub hold no credentials, only non-secret identifiers.
 
 - **Pull request** ([`ci.yml`](../.github/workflows/ci.yml)): builds and tests both components, lints Bicep, and runs `infra/deploy.sh what-if` with a read-only identity so the infrastructure diff is visible in the run log. Pull requests from forks skip the Azure steps.
-- **Merge to `main`** ([`deploy.yml`](../.github/workflows/deploy.yml)): after approval in the `production` environment, runs the tests, applies the Bicep, deploys the API and the web app, and finishes with [`scripts/smoke.sh`](../scripts/smoke.sh). Deployments run one at a time and are never cancelled mid-run.
+- **Merge to `main`** ([`deploy.yml`](../.github/workflows/deploy.yml)): builds and tests every push, then waits for approval in the `production-approval` environment. After approval it applies the Bicep, deploys the API and the web app, and finishes with [`scripts/smoke.sh`](../scripts/smoke.sh). Only the newest commit waits for approval: a newer merge cancels an older run that is still waiting. Approved deployments run one at a time and are never cancelled mid-run.
 
 The same infrastructure commands work locally after `az login`: `infra/deploy.sh lint`, `infra/deploy.sh what-if`.
 
@@ -61,7 +61,7 @@ These steps are done once by a subscription owner, because CI deliberately lacks
 
    `location` must match [`mvp.bicepparam`](../infra/environments/mvp.bicepparam). Role assignments can take several minutes to take effect.
 
-4. **Configure GitHub.** Add repository variables `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` from the bootstrap outputs. Create the `production` environment with a required reviewer and a branch policy allowing only `main`.
+4. **Configure GitHub.** Add repository variables `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` from the bootstrap outputs. Create two environments, both with a branch policy allowing only `main`: `production-approval` with a required reviewer (the approval gate), and `production` without reviewers (the deploy job; its OIDC subject is the one the deploy identity trusts).
 
 What the bootstrap grants:
 

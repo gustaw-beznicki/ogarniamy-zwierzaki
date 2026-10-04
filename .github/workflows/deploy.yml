@@ -1,5 +1,9 @@
-# Gated deployment: after approval in the production environment, apply Bicep,
-# release the API and the web app, then run the end-to-end smoke test.
+# Gated deployment: build and test every push to main, wait for approval, then apply Bicep,
+# release the API and the web app, and run the end-to-end smoke test.
+#
+# Only the newest commit waits for approval: a newer push cancels an older run that is still
+# waiting in `approve`. A run that has been approved is never cancelled mid-deployment;
+# deployments run one at a time in `deploy`.
 name: deploy
 
 on:
@@ -8,20 +12,13 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
-
 permissions:
   contents: read
-  id-token: write
 
 jobs:
-  deploy:
-    name: deploy
+  build:
+    name: build
     runs-on: ubuntu-24.04
-    # The environment gate is required: only its OIDC subject is trusted by the deploy identity (Contributor on rg-ogarniamy-mvp).
-    environment: production
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -41,20 +38,67 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # Testcontainers starts a throwaway PostgreSQL on the runner's Docker.
+      # Testcontainers starts throwaway PostgreSQL and Azurite containers on the runner's Docker.
       - name: Test API
         run: dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj
 
       # Scoped to the API project, so the tests are never deployed.
       - name: Publish and package API
-        id: api-package
         run: |
           publish_dir="${RUNNER_TEMP}/api-publish"
-          zip_path="${RUNNER_TEMP}/api.zip"
+          mkdir -p "${RUNNER_TEMP}/api-package"
           dotnet publish services/api/ogarniamy-zwierzaki-api.csproj -c Release -o "${publish_dir}"
           # The publish output must sit at the zip root.
-          (cd "${publish_dir}" && zip -r -q "${zip_path}" .)
-          echo "zip-path=${zip_path}" >> "${GITHUB_OUTPUT}"
+          (cd "${publish_dir}" && zip -r -q "${RUNNER_TEMP}/api-package/api.zip" .)
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web
+          path: apps/web/dist
+          retention-days: 7
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: api
+          path: ${{ runner.temp }}/api-package/api.zip
+          retention-days: 7
+
+  approve:
+    name: approve
+    needs: build
+    runs-on: ubuntu-24.04
+    # Required reviewer lives on this environment; waiting here holds no deployment slot.
+    environment: production-approval
+    concurrency:
+      group: deploy-approval
+      cancel-in-progress: true
+    steps:
+      - run: echo "Approved ${GITHUB_SHA}"
+
+  deploy:
+    name: deploy
+    needs: approve
+    runs-on: ubuntu-24.04
+    # Only this environment's OIDC subject is trusted by the deploy identity (Contributor on rg-ogarniamy-mvp).
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: web
+          path: apps/web/dist
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: api
+          path: ${{ runner.temp }}/api-package
 
       - name: Azure login (deploy identity)
         uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
@@ -88,7 +132,7 @@ jobs:
         env:
           RESOURCE_GROUP: ${{ steps.infra.outputs.resource-group }}
           API_APP: ${{ steps.infra.outputs.api-app }}
-          ZIP_PATH: ${{ steps.api-package.outputs.zip-path }}
+          ZIP_PATH: ${{ runner.temp }}/api-package/api.zip
         run: |
           az webapp deploy \
             --resource-group "${RESOURCE_GROUP}" \

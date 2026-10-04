@@ -354,21 +354,21 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 
 #### Automated
 
-- [x] 1.1 API restore and build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`.
-- [x] 1.2 Bicep lint passes and read-only what-if shows the expected storage/configuration changes: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; validate the owner entry point separately without applying it.
-- [x] 1.3 Storage integration checks against Azurite preserve bytes, reject overwrite, support receipt lookup and reject anonymous reads.
+- [x] 1.1 API restore and build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`. — a744454
+- [x] 1.2 Bicep lint passes and read-only what-if shows the expected storage/configuration changes: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; validate the owner entry point separately without applying it. — a744454
+- [x] 1.3 Storage integration checks against Azurite preserve bytes, reject overwrite, support receipt lookup and reject anonymous reads. — a744454
 
 #### Manual
 
-- [x] 1.4 Owner reviews the storage diff and verifies the provider registration and scoped API role prerequisite; production apply remains a separate approved action.
+- [x] 1.4 Owner reviews the storage diff and verifies the provider registration and scoped API role prerequisite; production apply remains a separate approved action. — a744454
 
 ### Phase 2: Document model
 
 #### Automated
 
-- [ ] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [ ] 2.2 New and existing databases migrate without losing accounts, animals or session keys; relational constraints preserve file order, blob-key uniqueness and valid references.
-- [ ] 2.3 Repository tests prove owner isolation, pending-document exclusion, deterministic pagination and account-scoped capture defaults.
+- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 2.2 New and existing databases migrate without losing accounts, animals or session keys; relational constraints preserve file order, blob-key uniqueness and valid references.
+- [x] 2.3 Repository tests prove owner isolation, pending-document exclusion, deterministic pagination and account-scoped capture defaults.
 
 ### Phase 3: Document API
 

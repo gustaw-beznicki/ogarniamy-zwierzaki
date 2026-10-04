@@ -8,6 +8,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.Documents;
 using ogarniamy_zwierzaki_api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +68,7 @@ builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 builder.Services.AddScoped<OwnedAnimals>();
+builder.Services.AddScoped<OwnedDocuments>();
 
 var app = builder.Build();
 

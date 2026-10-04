@@ -15,6 +15,9 @@ The same infrastructure commands work locally after `az login`: `infra/deploy.sh
 | API | App Service Linux, F1 by default (`appServiceSku` in [`mvp.bicepparam`](../infra/environments/mvp.bicepparam)); F1 has cold starts and a daily CPU quota |
 | Web | Static Web Apps Standard; resource in `eastus2`, content served globally; PR preview environments disabled because linked backends do not support them |
 | Database | PostgreSQL Flexible Server 17, Burstable B1ms, 32 GiB; Entra-only authentication with the API identity as administrator; firewall open only to the App Service outbound IPs |
+| Originals | Storage account `stogarniamy<uniqueString>` (StorageV2, Standard_LRS, backend region) with the private `originals` container; HTTPS and TLS 1.2 only, no anonymous blob access, no shared keys (Entra ID only); blob versioning and 30-day blob and container soft delete; no lifecycle rules, so originals never expire |
+
+**Storage configuration.** Bicep sets the API's App Service settings `Storage__Auth=AzureManagedIdentity`, `Storage__BlobServiceUri` and `Storage__OriginalsContainer`; there is no storage connection string or key anywhere. The API reaches the container with its system-assigned managed identity, which needs **Storage Blob Data Contributor** on the `originals` container. The deploy identity is only Contributor and cannot grant roles, so that assignment is a separate, owner-run step (below), and the main deployment never manages it. Until the role exists, or while it propagates, capture and original requests answer 503 `storage_unavailable`; `/api/health` checks only the database and stays healthy.
 
 **Firewall rules and deploy time.** Azure applies the PostgreSQL firewall rules one at a time, about a minute per rule, with one rule per App Service outbound IP (31 today).
 
@@ -42,9 +45,23 @@ These steps are done once by a subscription owner, because CI deliberately lacks
 
    ```bash
    az provider register --namespace Microsoft.DBforPostgreSQL
+   az provider register --namespace Microsoft.Storage
    ```
 
-3. **Configure GitHub.** Add repository variables `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` from the bootstrap outputs. Create the `production` environment with a required reviewer and a branch policy allowing only `main`.
+3. **Grant the API access to the originals container**, after the first deployment has created the App Service and its managed identity. [`infra/bootstrap/storage-access.bicep`](../infra/bootstrap/storage-access.bicep) provisions the same storage through the shared module and assigns Storage Blob Data Contributor to the API identity, scoped to the `originals` container only. Preview it with `az deployment group what-if` before `az deployment group create`:
+
+   ```bash
+   API_PRINCIPAL_ID="$(az webapp list --resource-group rg-ogarniamy-mvp --query '[0].identity.principalId' --output tsv)"
+   az deployment group create \
+     --resource-group rg-ogarniamy-mvp \
+     --name ogarniamy-storage-access \
+     --template-file infra/bootstrap/storage-access.bicep \
+     --parameters location=swedencentral apiPrincipalId="${API_PRINCIPAL_ID}"
+   ```
+
+   `location` must match [`mvp.bicepparam`](../infra/environments/mvp.bicepparam). Role assignments can take several minutes to take effect.
+
+4. **Configure GitHub.** Add repository variables `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` from the bootstrap outputs. Create the `production` environment with a required reviewer and a branch policy allowing only `main`.
 
 What the bootstrap grants:
 
@@ -56,8 +73,16 @@ The federated credentials use GitHub's immutable OIDC subject (`owner@id/name@id
 
 ## Smoke test
 
-`scripts/smoke.sh <swa-host> <api-host>` checks that the page is served, that `https://<swa-host>/api/health` returns `{"status":"ok"}` (retried for up to 10 minutes to cover cold starts), and that the API's own `*.azurewebsites.net` host refuses direct requests.
+`scripts/smoke.sh <swa-host> <api-host>` checks that the page is served, that `https://<swa-host>/api/health` returns `{"status":"ok"}` (retried for up to 10 minutes to cover cold starts), that `/api/me`, the capture defaults, document list, document and original routes answer 401 without a session, and that the API's own `*.azurewebsites.net` host refuses direct requests. It only sends anonymous `GET` requests, so it changes no data and does not exercise storage access.
 
 ## Rollback
 
-Revert the offending commit on `main` and approve the resulting deploy, or re-run an earlier successful `deploy` run. This rolls back code only; the database keeps its current schema, which is why migrations must stay backward compatible.
+Revert the offending commit on `main` and approve the resulting deploy, or re-run an earlier successful `deploy` run. This rolls back code only; the database keeps its current schema, which is why migrations must stay backward compatible. Keep the document tables, the storage account, the API's storage role and every original blob: an older release may be unable to show newer documents, but their bytes and records stay intact for the next corrected release. Never delete originals or incomplete uploads to make a rollback work.
+
+## Originals recovery
+
+The originals container is the only copy of each original. Blob versioning and 30-day soft delete for blobs and containers make an accidental deletion recoverable within that window; they are not an independent backup. The account forbids shared keys, so Azure CLI data commands need `--auth-mode login` and an operator with a Blob data role on the container.
+
+- **A document's original returns 503 `original_unavailable`**: the record exists but its blob is missing. Restore the blob from its soft-deleted or previous version under the same key (`documents/{documentId}/{fileId}`); its content and `sha256` metadata come back unchanged and the API serves it again without other changes.
+- **Capture or original requests return 503 `storage_unavailable`**: Blob Storage or the database could not be reached, or the API's storage role is missing. Records are kept, and the same request can be retried once the cause is fixed.
+- **An upload stays incomplete**: the browser retries the same operation; a stored blob whose receipt was not recorded is picked up at completion. Incomplete operations remain private, are never listed and are not deleted automatically.

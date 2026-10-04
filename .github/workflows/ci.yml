@@ -45,7 +45,7 @@ jobs:
 
       - run: dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore
 
-      # Testcontainers starts a throwaway PostgreSQL on the runner's Docker.
+      # Testcontainers starts throwaway PostgreSQL and Azurite (Blob Storage emulator) containers on the runner's Docker.
       - run: dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj
 
   infra:

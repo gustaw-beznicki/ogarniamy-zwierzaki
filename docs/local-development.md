@@ -50,6 +50,12 @@ npm run dev                             # http://localhost:4321
 
 The Astro dev server proxies `/api/*` to `http://localhost:5180`, just like Static Web Apps does in Azure. Set `API_PROXY_TARGET` to proxy elsewhere. Check the stack with `curl http://localhost:5180/api/health`, which should return `{"status":"ok"}`.
 
+## Local data
+
+PostgreSQL and Azurite keep their data in the `postgres-data` and `azurite-data` Docker volumes. Treat them as a pair: a database whose blobs are gone still lists its documents, but their originals answer 503 `original_unavailable`. `docker compose down -v` deletes both. The integration tests use their own containers and never touch these volumes.
+
+To look at stored originals, list the `originals` container with [Azure Storage Explorer](https://learn.microsoft.com/azure/storage/storage-explorer/vs-azure-tool-storage-manage-with-storage-explorer) or the Azure CLI connected to Azurite. Blobs are named `documents/<document id>/<file id>`; original file names exist only in the database.
+
 ## Configuration
 
 | Key | Values | Purpose |

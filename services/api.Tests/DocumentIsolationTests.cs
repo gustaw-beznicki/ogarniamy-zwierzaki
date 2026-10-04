@@ -100,6 +100,71 @@ public sealed class DocumentIsolationTests(ApiFactory factory) : IClassFixture<A
     }
 
     [Fact]
+    public async Task Another_account_cannot_reach_any_original_of_a_pdf_or_a_ten_image_document()
+    {
+        using var owner = await factory.CreateCaptureClientAsync();
+        using var other = await factory.CreateCaptureClientAsync();
+        var animalId = await owner.CreateAnimalIdAsync();
+        var otherAnimalId = await other.CreateAnimalIdAsync("Burek");
+        var pdf = SampleOriginals.Pdf(pages: 3);
+        var images = Enumerable.Range(0, 10)
+            .Select(i => i % 2 == 0 ? TestOriginal.Jpeg(900 + i, $"page-{i}.jpg") : TestOriginal.Png(900 + i, $"page-{i}.png"))
+            .ToArray();
+        var pdfDocument = await owner.CaptureAsync(animalId, pdf);
+        var imageDocument = await owner.CaptureAsync(animalId, images);
+        var otherDocument = await other.CaptureAsync(otherAnimalId, TestOriginal.Png());
+        var ownerUrls = pdfDocument.OriginalUrls().Concat(imageDocument.OriginalUrls()).ToArray();
+        Assert.Equal(11, ownerUrls.Length);
+
+        foreach (var url in ownerUrls.Concat(ownerUrls.Select(u => $"{u}?download=true")))
+        {
+            using var response = await other.GetAsync(url);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.Empty(await response.Content.ReadAsByteArrayAsync());
+        }
+
+        // A file ID is reachable only through its own document, even when the caller owns the other document.
+        var otherDocumentId = otherDocument.GetProperty("id").GetGuid();
+        var otherFileId = otherDocument.GetProperty("files")[0].GetProperty("id").GetGuid();
+        var ownerFileId = imageDocument.GetProperty("files")[0].GetProperty("id").GetGuid();
+        await AssertNotFoundAsync(other.GetAsync($"/api/documents/{otherDocumentId}/files/{ownerFileId}/original"));
+        await AssertNotFoundAsync(owner.GetAsync($"/api/documents/{imageDocument.GetProperty("id").GetGuid()}/files/{otherFileId}/original"));
+        await AssertNotFoundAsync(owner.GetAsync(
+            $"/api/documents/{pdfDocument.GetProperty("id").GetGuid()}/files/{ownerFileId}/original"));
+
+        // Every slot of a pending ten-image operation is closed to the other account, and so is its completion.
+        var pendingId = Guid.NewGuid();
+        using (var created = await owner.PutManifestAsync(pendingId, DocumentApi.Manifest(animalId, images)))
+        {
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        }
+
+        for (var position = 0; position < images.Length; position++)
+        {
+            await AssertNotFoundAsync(other.PutFileAsync(pendingId, position, images[position]));
+        }
+
+        await AssertNotFoundAsync(other.CompleteAsync(pendingId));
+        await AssertNotFoundAsync(other.GetAsync($"/api/animals/{animalId}/documents"));
+        using (var incomplete = await owner.CompleteAsync(pendingId))
+        {
+            await incomplete.AssertProblemAsync(HttpStatusCode.Conflict, "upload_incomplete");
+        }
+
+        // The owner still reads every original in its confirmed order; the other account sees only its own document.
+        Assert.Equal(pdf.Bytes, await owner.GetOriginalBytesAsync(ownerUrls[0]));
+        for (var position = 0; position < images.Length; position++)
+        {
+            Assert.Equal(images[position].Bytes, await owner.GetOriginalBytesAsync(ownerUrls[position + 1]));
+        }
+
+        Assert.Equal(
+            [imageDocument.GetProperty("id").GetGuid(), pdfDocument.GetProperty("id").GetGuid()],
+            await owner.ListDocumentIdsAsync(animalId));
+        Assert.Equal([otherDocumentId], await other.ListDocumentIdsAsync(otherAnimalId));
+    }
+
+    [Fact]
     public async Task Pending_operations_are_invisible_until_completed()
     {
         using var client = await factory.CreateCaptureClientAsync();

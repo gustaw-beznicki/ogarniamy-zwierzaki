@@ -397,7 +397,7 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 
 #### Automated
 
-- [ ] 5.1 Full documented checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `infra/deploy.sh lint`.
+- [x] 5.1 Full documented checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `infra/deploy.sh lint`.
 - [ ] 5.2 Read-only what-if remains consistent with the reviewed storage scope; expanded smoke checks pass after a separately approved deployment.
 
 #### Manual

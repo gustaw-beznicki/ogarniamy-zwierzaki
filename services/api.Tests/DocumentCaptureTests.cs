@@ -143,6 +143,62 @@ public sealed class DocumentCaptureTests(ApiFactory factory) : IClassFixture<Api
     }
 
     [Fact]
+    public async Task Well_formed_samples_and_a_pdf_with_more_pages_than_the_image_limit_are_stored_unchanged()
+    {
+        using var client = await factory.CreateCaptureClientAsync();
+        var animalId = await client.CreateAnimalIdAsync();
+        // A PDF is one file whatever its internal page count: the ten-file limit counts images only.
+        var pdf = SampleOriginals.Pdf(pages: 12);
+        var photos = new[] { SampleOriginals.Jpeg("front.jpg"), SampleOriginals.Png("back.png") };
+
+        var pdfDocument = await client.CaptureAsync(animalId, pdf);
+        var photoDocument = await client.CaptureAsync(animalId, photos);
+
+        var pdfFile = Assert.Single(pdfDocument.GetProperty("files").EnumerateArray());
+        Assert.Equal("application/pdf", pdfFile.GetProperty("contentType").GetString());
+        Assert.Equal(pdf.Bytes.LongLength, pdfFile.GetProperty("byteLength").GetInt64());
+        Assert.Equal(pdf.Bytes, await client.GetOriginalBytesAsync(Assert.Single(pdfDocument.OriginalUrls())));
+
+        var urls = photoDocument.OriginalUrls();
+        Assert.Equal(2, urls.Length);
+        Assert.Equal(photos[0].Bytes, await client.GetOriginalBytesAsync(urls[0]));
+        Assert.Equal(photos[1].Bytes, await client.GetOriginalBytesAsync(urls[1]));
+    }
+
+    [Fact]
+    public async Task The_capture_default_follows_the_account_to_another_device()
+    {
+        var (phone, email) = await factory.CreateSignedInClientAsync();
+        using (phone)
+        {
+            await phone.UseAntiforgeryTokenAsync();
+            var first = await phone.CreateAnimalIdAsync("Czarek");
+            var second = await phone.CreateAnimalIdAsync("Burek");
+
+            using var laptop = factory.CreateClient();
+            using (var login = await laptop.LoginAsync(email, TestAccounts.ValidPassword))
+            {
+                Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
+            }
+
+            Assert.Equal(first, (await laptop.GetJsonAsync("/api/capture-defaults")).GetProperty("defaultAnimalId").GetGuid());
+
+            // A completed capture on one device is the default on the other; a merely created operation is not.
+            using (var pending = await phone.PutManifestAsync(Guid.NewGuid(), DocumentApi.Manifest(first, TestOriginal.Png())))
+            {
+                Assert.Equal(HttpStatusCode.Created, pending.StatusCode);
+            }
+
+            await phone.CaptureAsync(second, TestOriginal.Png());
+            Assert.Equal(second, (await laptop.GetJsonAsync("/api/capture-defaults")).GetProperty("defaultAnimalId").GetGuid());
+
+            await laptop.UseAntiforgeryTokenAsync();
+            await laptop.CaptureAsync(first, TestOriginal.Png());
+            Assert.Equal(first, (await phone.GetJsonAsync("/api/capture-defaults")).GetProperty("defaultAnimalId").GetGuid());
+        }
+    }
+
+    [Fact]
     public async Task Originals_support_byte_ranges()
     {
         using var client = await factory.CreateCaptureClientAsync();

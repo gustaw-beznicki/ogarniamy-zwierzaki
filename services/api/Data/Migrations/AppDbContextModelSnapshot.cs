@@ -206,6 +206,10 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
 
+                    b.Property<Guid?>("LastCaptureAnimalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_capture_animal_id");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("lockout_enabled");
@@ -252,6 +256,9 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
+                    b.HasIndex("LastCaptureAnimalId")
+                        .HasDatabaseName("ix_users_last_capture_animal_id");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("ix_users_normalized_email");
 
@@ -260,6 +267,142 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                         .HasDatabaseName("ix_users_normalized_user_name");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.Document", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AnimalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("animal_id");
+
+                    b.Property<string>("CaptureTimeZone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("capture_time_zone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("EventDate")
+                        .HasColumnType("date")
+                        .HasColumnName("event_date");
+
+                    b.Property<string>("StorageState")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("storage_state");
+
+                    b.Property<DateTimeOffset?>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_documents");
+
+                    b.HasIndex("AnimalId", "StorageState", "EventDate", "UploadedAt", "Id")
+                        .IsDescending(false, false, true, true, true)
+                        .HasDatabaseName("ix_documents_animal_id_storage_state_event_date_uploaded_at_id");
+
+                    b.ToTable("documents", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_documents_capture_time_zone", "char_length(capture_time_zone) > 0");
+
+                            t.HasCheckConstraint("ck_documents_storage_state", "storage_state IN ('uploading', 'stored')");
+
+                            t.HasCheckConstraint("ck_documents_uploaded_at", "(storage_state = 'stored') = (uploaded_at IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.DocumentFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BlobKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("blob_key");
+
+                    b.Property<long>("ByteLength")
+                        .HasColumnType("bigint")
+                        .HasColumnName("byte_length");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<string>("OriginalName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("original_name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<string>("ReceiptEtag")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("receipt_etag");
+
+                    b.Property<long?>("ReceiptLength")
+                        .HasColumnType("bigint")
+                        .HasColumnName("receipt_length");
+
+                    b.Property<string>("ReceiptSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("receipt_sha256");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sha256");
+
+                    b.HasKey("Id")
+                        .HasName("pk_document_files");
+
+                    b.HasIndex("BlobKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_files_blob_key");
+
+                    b.HasIndex("DocumentId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_files_document_id_position");
+
+                    b.ToTable("document_files", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_document_files_blob_key", "blob_key = 'documents/' || document_id::text || '/' || id::text");
+
+                            t.HasCheckConstraint("ck_document_files_byte_length", "byte_length BETWEEN 1 AND 10485760");
+
+                            t.HasCheckConstraint("ck_document_files_content_type", "content_type IN ('application/pdf', 'image/jpeg', 'image/png')");
+
+                            t.HasCheckConstraint("ck_document_files_original_name", "char_length(original_name) > 0");
+
+                            t.HasCheckConstraint("ck_document_files_position", "position >= 0 AND position < 10 AND (content_type <> 'application/pdf' OR position = 0)");
+
+                            t.HasCheckConstraint("ck_document_files_receipt", "(receipt_length IS NULL AND receipt_sha256 IS NULL AND receipt_etag IS NULL) OR (receipt_length = byte_length AND receipt_sha256 = sha256 AND receipt_etag IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_document_files_sha256", "sha256 ~ '^[0-9a-f]{64}$'");
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -309,6 +452,40 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                         .HasConstraintName("fk_animal_members_users_user_id");
 
                     b.Navigation("Animal");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.Auth.AppUser", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.Animals.Animal", null)
+                        .WithMany()
+                        .HasForeignKey("LastCaptureAnimalId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_users_animals_last_capture_animal_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.Document", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.Animals.Animal", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_documents_animals_animal_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.DocumentFile", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.Documents.Document", null)
+                        .WithMany("Files")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_files_documents_document_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.Document", b =>
+                {
+                    b.Navigation("Files");
                 });
 #pragma warning restore 612, 618
         }

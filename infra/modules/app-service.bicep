@@ -14,6 +14,12 @@ param appServiceSku string
 @description('PostgreSQL Flexible Server name; the host is <postgresServerName>.postgres.database.azure.com.')
 param postgresServerName string
 
+@description('Blob service endpoint of the originals storage account, for example https://<account>.blob.core.windows.net/.')
+param storageBlobEndpoint string
+
+@description('Name of the private container holding the originals.')
+param originalsContainerName string
+
 // The site's own settings need its name, so it is computed once instead of read back from the resource.
 var siteName = 'app-ogarniamy-api-${uniqueString(subscription().id)}'
 
@@ -59,6 +65,19 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
           // No password: in AzureManagedIdentity mode the API signs in with an Entra token for its managed identity.
           name: 'ConnectionStrings__Default'
           value: 'Host=${postgresServerName}.postgres.database.azure.com;Database=ogarniamy;Username=${siteName};Ssl Mode=Require'
+        }
+        {
+          // No key or connection string: the API reaches Blob Storage with its managed identity.
+          name: 'Storage__Auth'
+          value: 'AzureManagedIdentity'
+        }
+        {
+          name: 'Storage__BlobServiceUri'
+          value: storageBlobEndpoint
+        }
+        {
+          name: 'Storage__OriginalsContainer'
+          value: originalsContainerName
         }
       ]
     }

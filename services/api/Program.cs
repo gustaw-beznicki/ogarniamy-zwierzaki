@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.Documents;
+using ogarniamy_zwierzaki_api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddAppDatabase();
+// Originals live in a private Blob container: Azure Storage with the managed identity, Azurite locally and in tests.
+builder.Services.AddOriginalStorage();
 
 // Cookie encryption keys live in PostgreSQL, so sessions survive restarts in every hosting mode.
 builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
@@ -63,10 +68,29 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
+// Capture mutations require an antiforgery token in the X-CSRF-TOKEN header; its paired cookie is HttpOnly and
+// same-site only, and secure outside local development like the session cookie.
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = AntiforgeryHeaderFilter.HeaderName;
+    options.Cookie.Name = "oz_csrf";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
+
+// The clock that decides "today" in the capturing user's time zone; tests replace it.
+builder.Services.TryAddSingleton(TimeProvider.System);
+
 builder.Services.AddScoped<OwnedAnimals>();
+builder.Services.AddScoped<OwnedDocuments>();
+builder.Services.AddScoped<DocumentCaptureService>();
 
 var app = builder.Build();
 
+await app.PrepareOriginalStorageAsync();
 await app.MigrateDatabaseAsync();
 
 // Configure the HTTP request pipeline.
@@ -79,6 +103,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 // Healthy only when the database is reachable; an unhealthy check returns 503.
 app.MapHealthChecks("/api/health", new HealthCheckOptions
@@ -96,5 +121,7 @@ app.MapHealthChecks("/api/health", new HealthCheckOptions
 app.MapAuthEndpoints();
 app.MapMeEndpoint();
 app.MapAnimalEndpoints();
+app.MapAntiforgeryEndpoints();
+app.MapDocumentEndpoints();
 
 app.Run();

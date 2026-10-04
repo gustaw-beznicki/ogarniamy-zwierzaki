@@ -43,7 +43,7 @@ Generated outputs such as `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/
 - Keep browser/UI concerns in `apps/web` and application/API logic in `services/api`.
 - Do not change strict TypeScript, nullable reference types, or implicit usings unless the task explicitly requires an intentional configuration migration.
 - Never add credentials, API keys, or connection strings to tracked files. If a feature requires a secret and no storage convention exists, stop and ask where it should be stored.
-- One type per file: every class, record, enum, interface and struct lives in its own file named after the type (generated EF Core migration files excepted).
+- One type per file (C#): every class, record, enum, interface and struct in `services/` lives in its own file named after the type (generated EF Core migration files excepted). TypeScript in `apps/web` may group related types in one module, as `src/lib/api.ts` does.
 - NuGet package versions live only in the root `Directory.Packages.props` (central package management). A `.csproj` references packages without a `Version` attribute; add or bump a version by editing `Directory.Packages.props`.
 - Edit only files required by the current task. Do not revert, format, stage, or commit unrelated changes or untracked files.
 

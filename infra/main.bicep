@@ -30,12 +30,28 @@ param applyFirewallRules bool = true
 // (whose Entra administrator in turn needs the API's managed identity).
 var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id)}'
 
+// Computed here, not from App Service outputs; bootstrap/storage-access.bicep must use the same values.
+// No role assignment is created here: the API's Blob access is granted once by the owner (storage-access.bicep).
+var storageAccountName = 'stogarniamy${uniqueString(resourceGroup().id)}'
+var originalsContainerName = 'originals'
+
+module storage 'modules/storage.bicep' = {
+  name: 'ogarniamy-storage'
+  params: {
+    storageAccountName: storageAccountName
+    location: location
+    originalsContainerName: originalsContainerName
+  }
+}
+
 module appService 'modules/app-service.bicep' = {
   name: 'ogarniamy-app-service'
   params: {
     location: location
     appServiceSku: appServiceSku
     postgresServerName: postgresServerName
+    storageBlobEndpoint: storage.outputs.blobEndpoint
+    originalsContainerName: storage.outputs.originalsContainerName
   }
 }
 
@@ -67,3 +83,4 @@ output apiDefaultHostName string = appService.outputs.defaultHostName
 output staticWebAppName string = staticWebApp.outputs.name
 output staticWebAppDefaultHostName string = staticWebApp.outputs.defaultHostName
 output postgresServerName string = postgres.outputs.name
+output storageAccountName string = storage.outputs.name

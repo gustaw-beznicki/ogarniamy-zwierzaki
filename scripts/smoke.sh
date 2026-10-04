@@ -62,6 +62,21 @@ status="$(fetch "${url}")"
 [[ "${status}" == "401" ]] || fail "check 2b: ${url} returned ${status}, expected 401 without a session"
 echo "PASS: check 2b: ${url} returned 401 without a session"
 
+# Check 2c: document routes refuse anonymous reads, so a pasted original link is useless without the owner's session.
+# Read-only GET requests without a session; the session check runs before any lookup, so a placeholder ID is enough.
+PROBE_ID="00000000-0000-4000-8000-000000000000"
+for path in \
+  "/api/capture-defaults" \
+  "/api/animals/${PROBE_ID}/documents" \
+  "/api/documents/${PROBE_ID}" \
+  "/api/documents/${PROBE_ID}/files/${PROBE_ID}/original" \
+  "/api/documents/${PROBE_ID}/files/${PROBE_ID}/original?download=true"; do
+  url="https://${SWA_HOST}${path}"
+  status="$(fetch "${url}")"
+  [[ "${status}" == "401" ]] || fail "check 2c: ${url} returned ${status}, expected 401 without a session"
+  echo "PASS: check 2c: ${url} returned 401 without a session"
+done
+
 # Check 3: the App Service refuses direct traffic because it is a linked backend.
 url="https://${API_HOST}/api/health"
 status="$(fetch "${url}")"

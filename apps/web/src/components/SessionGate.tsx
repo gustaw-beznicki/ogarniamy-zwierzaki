@@ -11,7 +11,8 @@ export function SessionGate({ locale, messages, destination, children }: {
   destination: Destination;
   children?: ReactNode;
 }) {
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  // The sign-in form shows at once; the session check runs in the background and only redirects a signed-in user.
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(destination === 'signin' ? 'ready' : 'loading');
   useEffect(() => {
     let active = true;
     void api.me().then((me) => {
@@ -28,13 +29,9 @@ export function SessionGate({ locale, messages, destination, children }: {
         setStatus('ready');
       }
     }).catch((error: unknown) => {
-      if (!active) return;
+      if (!active || destination === 'signin') return;
       if (error instanceof ApiError && error.code === 'unauthorized') {
-        if (destination === 'signin') {
-          setStatus('ready');
-        } else {
-          window.location.replace(clientLocalePath(locale, 'signin'));
-        }
+        window.location.replace(clientLocalePath(locale, 'signin'));
       } else {
         setStatus('failed');
       }

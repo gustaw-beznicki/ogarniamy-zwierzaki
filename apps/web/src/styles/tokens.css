@@ -12,6 +12,9 @@
   --color-accent: #DB9558;
   --color-text: #2B2620;
   --color-text-muted: #5A5046;
+  --color-danger: #A3291C;
+  --color-danger-bg: #F9E1DA;
+  --color-danger-text: #6E1A11;
   --radius-control: 12px;
   --radius-card: 16px;
   --radius-pill: 999px;
@@ -37,7 +40,7 @@ input { width: 100%; border: 1px solid var(--color-text-muted); border-radius: v
 input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--color-text); outline-offset: 3px; }
 .primary { min-height: 48px; border: 0; border-radius: var(--radius-control); padding: 12px 18px; background: var(--color-accent); font-weight: 700; cursor: pointer; }
 .primary:disabled { opacity: .7; cursor: wait; }
-.error { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px; border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-text); }
+.error { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 12px; border: 1px solid var(--color-danger); border-left-width: 4px; border-radius: var(--radius-control); background: var(--color-danger-bg); color: var(--color-danger-text); font-weight: 600; }
 .form-card { width: min(100%, 560px); margin: 8vh auto 0; }
 .form-card > p { color: var(--color-text-muted); }
 .loading { padding: 24px; color: var(--color-text-muted); text-align: center; }

@@ -389,19 +389,19 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 
 #### Manual
 
-- [ ] 4.3 PL and EN desktop/phone flows capture a PDF and a reordered multi-photo document without typed titles, show progress/errors, and open every original after a fresh sign-in.
-- [ ] 4.4 Switching accounts/devices preserves only the correct account's last completed animal; changing locale preserves the document being viewed.
-- [ ] 4.5 Interrupted uploads retry in the open form without duplicates; future dates, HEIC/HEIF, an eleventh image and an oversized file produce understandable messages.
+- [x] 4.3 PL and EN desktop/phone flows capture a PDF and a reordered multi-photo document without typed titles, show progress/errors, and open every original after a fresh sign-in.
+- [x] 4.4 Switching accounts/devices preserves only the correct account's last completed animal; changing locale preserves the document being viewed.
+- [x] 4.5 Interrupted uploads retry in the open form without duplicates; future dates, HEIC/HEIF, an eleventh image and an oversized file produce understandable messages.
 
 ### Phase 5: Verification and documentation
 
 #### Automated
 
 - [x] 5.1 Full documented checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `infra/deploy.sh lint`. — 1253fe2
-- [ ] 5.2 Read-only what-if remains consistent with the reviewed storage scope; expanded smoke checks pass after a separately approved deployment.
+- [x] 5.2 Read-only what-if remains consistent with the reviewed storage scope; expanded smoke checks pass after a separately approved deployment.
 
 #### Manual
 
-- [ ] 5.3 On the deployed SWA origin, two synthetic accounts prove upload/retrieval isolation, anonymous pasted-link denial and original retrieval after API restart; verify storage access settings and recovery features in Azure.
-- [ ] 5.4 A real phone confirms camera-produced JPEG/PNG behavior, ordered capture and retry on a slow/interrupted connection; documents that cannot finish inside the proxy window show a retryable error.
-- [ ] 5.5 Owner reviews the original-recovery and rollback runbook; completed originals survive code rollback and future OCR/search unavailability is not a retrieval dependency.
+- [x] 5.3 On the deployed SWA origin, two synthetic accounts prove upload/retrieval isolation, anonymous pasted-link denial and original retrieval after API restart; verify storage access settings and recovery features in Azure.
+- [x] 5.4 A real phone confirms camera-produced JPEG/PNG behavior, ordered capture and retry on a slow/interrupted connection; documents that cannot finish inside the proxy window show a retryable error.
+- [x] 5.5 Owner reviews the original-recovery and rollback runbook; completed originals survive code rollback and future OCR/search unavailability is not a retrieval dependency.

@@ -19,6 +19,10 @@ Flexible Server 17, Entra-only auth     private `originals` container, no keys o
 - The API never stores a database password or storage key in Azure: it signs in to both with its managed identity. Locally and in tests it uses a password connection string for PostgreSQL and an Azurite connection string for Blob Storage.
 - Planned additions: OCR, pgvector search, and background indexing. Original retrieval will not depend on them, and `/api/health` checks only the database.
 
+## Accounts and sessions
+
+Accounts are ASP.NET Core Identity users. Signing in creates one server-side session per device in the `auth_sessions` table (the authentication ticket, encrypted with Data Protection, with a 14-day sliding expiry); the HttpOnly `oz_session` cookie carries only that session's key. `POST /api/auth/logout` deletes the current device's session, so a copy of the old cookie no longer authenticates even if the expiring `Set-Cookie` never reaches the browser; other devices stay signed in. Every `/api/*` response is sent with `Cache-Control: no-store` unless the endpoint sets its own.
+
 ## Documents and originals
 
 A document belongs to one animal and holds either one PDF or 1–10 JPEG/PNG images in a confirmed order, each at most 10,485,760 bytes. Ownership follows the animal's membership; another account's animal, document or file answers 404, and every route requires a session (401 otherwise).

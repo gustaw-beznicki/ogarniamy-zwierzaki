@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using ogarniamy_zwierzaki_api;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
@@ -24,7 +25,8 @@ builder.Services.AddOriginalStorage();
 // Cookie encryption keys live in PostgreSQL, so sessions survive restarts in every hosting mode.
 builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
 
-// Accounts are ASP.NET Core Identity users stored in PostgreSQL; the session is an HttpOnly cookie.
+// Accounts are ASP.NET Core Identity users stored in PostgreSQL; the session is an HttpOnly cookie that carries only
+// the key of a server-side session (auth_sessions), so logging out ends the session even if a copy of the cookie remains.
 builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
 builder.Services.AddIdentityCore<AppUser>(options =>
     {
@@ -49,7 +51,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
-    options.ExpireTimeSpan = TimeSpan.FromDays(14);
+    options.ExpireTimeSpan = AuthSession.Lifetime;
     options.SlidingExpiration = true;
     // An API answers with a status code instead of redirecting to a login or access-denied page.
     options.Events.OnRedirectToLogin = context =>
@@ -63,6 +65,10 @@ builder.Services.ConfigureApplicationCookie(options =>
         return Task.CompletedTask;
     };
 });
+
+builder.Services.AddSingleton<DatabaseTicketStore>();
+builder.Services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme)
+    .Configure<DatabaseTicketStore>((options, store) => options.SessionStore = store);
 
 // Every endpoint requires a signed-in user unless it opts out with AllowAnonymous.
 builder.Services.AddAuthorizationBuilder()
@@ -101,6 +107,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseNoStoreApiResponses();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();

@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ogarniamy_zwierzaki_api.Tests;
 
@@ -130,6 +131,91 @@ public sealed class AuthTests(ApiFactory factory) : IClassFixture<ApiFactory>
             using var me = await client.GetAsync("/api/me");
             Assert.Equal(HttpStatusCode.Unauthorized, me.StatusCode);
         }
+    }
+
+    [Fact]
+    public async Task Logout_ends_the_session_even_if_a_copy_of_the_cookie_is_sent_again()
+    {
+        var email = TestAccounts.UniqueEmail();
+        using var client = factory.CreateClient();
+        using var registered = await client.RegisterAsync(email, TestAccounts.ValidPassword);
+        Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
+        var sessionCookie = Assert.Single(registered.Headers.GetValues("Set-Cookie"), c => c.StartsWith("oz_session="))
+            .Split(';')[0];
+
+        using (var before = await SendWithCookieAsync(sessionCookie))
+        {
+            Assert.Equal(HttpStatusCode.OK, before.StatusCode);
+        }
+
+        using var logout = await client.PostAsync("/api/auth/logout", null);
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+
+        // Simulates a proxy that dropped the expiring Set-Cookie: the browser would still send the old cookie.
+        using var after = await SendWithCookieAsync(sessionCookie);
+        Assert.Equal(HttpStatusCode.Unauthorized, after.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logout_ends_only_the_session_of_the_device_that_logged_out()
+    {
+        var (first, email) = await factory.CreateSignedInClientAsync();
+        using (first)
+        using (var second = factory.CreateClient())
+        {
+            using var login = await second.LoginAsync(email, TestAccounts.ValidPassword);
+            Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
+
+            using var logout = await first.PostAsync("/api/auth/logout", null);
+            Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+
+            using var firstMe = await first.GetAsync("/api/me");
+            Assert.Equal(HttpStatusCode.Unauthorized, firstMe.StatusCode);
+            var me = await second.GetMeAsync();
+            Assert.Equal(email, me.GetProperty("email").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task Logout_without_a_session_succeeds()
+    {
+        using var client = factory.CreateClient();
+
+        using var withoutCookie = await client.PostAsync("/api/auth/logout", null);
+        Assert.Equal(HttpStatusCode.NoContent, withoutCookie.StatusCode);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
+        request.Headers.Add("Cookie", "oz_session=not-a-valid-ticket");
+        using var withInvalidCookie = await CreateClientWithoutCookies().SendAsync(request);
+        Assert.Equal(HttpStatusCode.NoContent, withInvalidCookie.StatusCode);
+    }
+
+    [Fact]
+    public async Task Api_responses_are_not_stored()
+    {
+        var (client, _) = await factory.CreateSignedInClientAsync();
+        using (client)
+        {
+            using var me = await client.GetAsync("/api/me");
+            Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+            Assert.True(me.Headers.CacheControl?.NoStore);
+        }
+
+        using var anonymous = await factory.CreateClient().GetAsync("/api/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        Assert.True(anonymous.Headers.CacheControl?.NoStore);
+    }
+
+    // A client without a cookie container, so a test controls exactly which cookie a request carries.
+    private HttpClient CreateClientWithoutCookies() =>
+        factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
+
+    private async Task<HttpResponseMessage> SendWithCookieAsync(string cookie)
+    {
+        using var client = CreateClientWithoutCookies();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/me");
+        request.Headers.Add("Cookie", cookie);
+        return await client.SendAsync(request);
     }
 
     [Theory]

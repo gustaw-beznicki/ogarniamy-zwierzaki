@@ -25,7 +25,7 @@ body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--color-b
 button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { color: inherit; }
-.content { width: min(100%, 760px); margin: 0 auto; padding: 32px 16px 104px; }
+.content { width: min(100%, 760px); margin: 0 auto; padding: 64px 16px 104px; }
 h1 { margin: 0 0 16px; font-size: 28px; line-height: 1.2; }
 p { line-height: 1.5; }
 .card { padding: 24px; border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-card); }
@@ -128,8 +128,14 @@ label.chip:focus-within { outline: 3px solid var(--color-text); outline-offset: 
   .nav-link span { width: 24px; text-align: center; font-size: 20px; }
   .nav-link.active { background: var(--color-accent); font-weight: 700; }
   .sidebar-bottom { display: grid; gap: 10px; margin-top: auto; }
-  .language, .sign-out { border: 0; padding: 12px; border-radius: var(--radius-control); color: var(--color-text); background: transparent; text-align: left; text-decoration: none; cursor: pointer; }
-  .sign-out:hover, .language:hover { background: rgba(255,255,255,.35); }
+  .sign-out { border: 0; padding: 12px; border-radius: var(--radius-control); color: var(--color-text); background: transparent; text-align: left; text-decoration: none; cursor: pointer; }
+  .sign-out:hover { background: rgba(255,255,255,.35); }
   .tab-bar { display: none; }
-  .content { padding: 40px; }
+  .content { padding: 64px 40px 40px; }
 }
+
+/* Language toggle: always in the top-right corner of every page. */
+.language-switch { position: absolute; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 16px; display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--color-surface); box-shadow: var(--shadow-card); }
+.language-switch a { min-width: 40px; padding: 6px 10px; border-radius: var(--radius-pill); color: var(--color-text); font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; }
+.language-switch a.active { background: var(--color-accent); }
+.language-switch a:not(.active):hover { background: rgba(255,255,255,.5); }

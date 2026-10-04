@@ -374,18 +374,18 @@ Rollback restores code, not data. Retain the added tables, storage account, acce
 
 #### Automated
 
-- [x] 3.1 API build and integration suite pass with PostgreSQL and Azurite: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [x] 3.2 Upload tests prove 10 MiB inclusive, oversize rejection, one PDF or 1–10 images, signature/hash validation and today/past-date acceptance with future-date rejection in the supplied valid time zone.
-- [x] 3.3 Authorization tests deny anonymous and foreign upload/list/detail/original requests and reject missing or invalid antiforgery tokens before mutation.
-- [x] 3.4 Failure tests prove no partial visibility and one document after repeated/concurrent create, upload and commit, including blob-success/database-failure and lost completion response.
-- [x] 3.5 Original retrieval tests prove byte-for-byte equality and order, correct private headers, and retrieval without any OCR/search services.
+- [x] 3.1 API build and integration suite pass with PostgreSQL and Azurite: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — 2465785
+- [x] 3.2 Upload tests prove 10 MiB inclusive, oversize rejection, one PDF or 1–10 images, signature/hash validation and today/past-date acceptance with future-date rejection in the supplied valid time zone. — 2465785
+- [x] 3.3 Authorization tests deny anonymous and foreign upload/list/detail/original requests and reject missing or invalid antiforgery tokens before mutation. — 2465785
+- [x] 3.4 Failure tests prove no partial visibility and one document after repeated/concurrent create, upload and commit, including blob-success/database-failure and lost completion response. — 2465785
+- [x] 3.5 Original retrieval tests prove byte-for-byte equality and order, correct private headers, and retrieval without any OCR/search services. — 2465785
 
 ### Phase 4: Capture and archive interface
 
 #### Automated
 
-- [ ] 4.1 Frontend checks pass: `npm ci --prefix apps/web`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
-- [ ] 4.2 Existing API integration checks remain green after transport/antiforgery integration: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 4.1 Frontend checks pass: `npm ci --prefix apps/web`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
+- [x] 4.2 Existing API integration checks remain green after transport/antiforgery integration: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
 
 #### Manual
 

@@ -4,7 +4,11 @@ Site: https://mango-bush-08ef40b0f.5.azurestaticapps.net (PL) and `/en/` (EN).
 Use test accounts and test files only — no real veterinary records.
 
 **Prepare**
-- Two test accounts, **A** and **B**, each with at least one animal. Give A two animals.
+- Two test accounts, **A** and **B**: register them yourself on the site's sign-in page (any email, e.g. `you+a@…` and `you+b@…`; no email confirmation; password at least 10 characters). Keep the passwords in your password manager, not in the repo. Each gets its first animal during sign-up. The app has no "add animal" screen yet (planned in S-06), so add A's second animal from the browser console while signed in as A (F12 → Console):
+
+  ```js
+  await fetch('/api/animals/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Second' }) }).then((r) => r.status)  // 201 = created
+  ```
 - A small PDF, 3–4 ordinary photos, a `.heic` photo (e.g. from an iPhone or downloaded) and an 11 MB file (`head -c 11000000 /dev/urandom > big.jpg`).
 
 ## 0. Deployment (5.2)

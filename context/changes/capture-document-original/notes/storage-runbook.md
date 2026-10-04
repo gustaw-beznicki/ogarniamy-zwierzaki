@@ -70,29 +70,7 @@ To count incomplete operations from logs alone, compare the operation IDs of `cr
 
 ### Database (read-only queries)
 
-The production database accepts only the API's managed identity, and its firewall allows only the App Service outbound IPs. Running these queries in Azure therefore needs a temporary, separately approved access path (for example a temporary Entra administrator and firewall rule for the operator, removed afterwards); do not widen access permanently. Locally they run as is: `docker compose exec postgres psql -U postgres -d ogarniamy`.
-
-```sql
--- Incomplete (Uploading) operations: count and oldest.
-SELECT count(*) AS uploading, min(created_at) AS oldest
-FROM documents
-WHERE storage_state = 'uploading';
-
--- Each incomplete operation with how many of its originals have a recorded receipt.
-SELECT d.id, d.created_at, count(f.id) AS files, count(f.receipt_etag) AS files_with_receipt
-FROM documents d
-JOIN document_files f ON f.document_id = d.id
-WHERE d.storage_state = 'uploading'
-GROUP BY d.id, d.created_at
-ORDER BY d.created_at;
-
--- Blob key and expected hash of every original of one Stored document, to compare with storage.
-SELECT f.position, f.id AS file_id, f.blob_key, f.byte_length, f.sha256
-FROM document_files f
-JOIN documents d ON d.id = f.document_id
-WHERE d.id = '<document id>' AND d.storage_state = 'stored'
-ORDER BY f.position;
-```
+See the SOP [Check incomplete uploads](../../../../docs/sop/check-incomplete-uploads.md): access, counting `uploading` operations and looking up one document's blob keys and hashes.
 
 ### Storage (read-only)
 
@@ -120,7 +98,7 @@ Caused by a database failure, timeout or lost response after the blob write. No 
 
 The document record exists but its blob is missing. The record is never removed automatically.
 
-1. Read the blob key and expected `sha256` with the third SQL query, then list the key's versions (read-only, section 3).
+1. Read the blob key and expected `sha256` with step 4 of the SOP, then list the key's versions (read-only, section 3).
 2. Blob versioning is on, so a deleted blob leaves its last content as a previous version. Restore it by copying that version back to the same key (mutation):
 
    ```bash

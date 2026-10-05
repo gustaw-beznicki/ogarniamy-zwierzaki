@@ -12,7 +12,7 @@ Local evidence at commit `8a4887c081d510295b9c50b60a25d0eb6b54d03c` includes S-0
 
 Completion already holds a document lock and commits Stored/UploadedAt plus the capture preference atomically. Attach durable jobs to that transaction. Stable completion responses must remain independent of asynchronous status. Documents belong to animals; owner-facing reads must use owner memberships, including for inactive animals.
 
-The configured App Service is F1. Existing infrastructure decisions assign B1/Always On and private database connectivity to S-03. CI Contributor cannot create role assignments; use separate owner-run Bicep for OCR runtime access without widening CI. Production state and real-photo quality were not queried during planning.
+The configured App Service is F1, and S-03 keeps it (Plan amendment 2026-10-06): the worker runs inside the API on F1, which sleeps after idle time and has a daily CPU quota. B1/Always On and private database connectivity, previously assigned to S-03, are deferred (B1 on a trigger; private network to the M-2 change `database-private-network`). CI Contributor cannot create role assignments; use separate owner-run Bicep for OCR runtime access without widening CI. Production state and real-photo quality were not queried during planning.
 
 ## Desired End State
 
@@ -29,7 +29,7 @@ The configured App Service is F1. Existing infrastructure decisions assign B1/Al
 - `services/api/Storage/IOriginalStorage.cs:3` — immutable writes/read-only source streams.
 - `services/api/Documents/DocumentPage.cs:3` — this is a pagination DTO, not a PDF page entity.
 - `services/api.Tests/ApiFactory.cs:9` — real PostgreSQL/Azurite fixtures.
-- `infra/modules/app-service.bicep:52` — Always On depends on SKU.
+- `infra/modules/app-service.bicep:52` — Always On depends on SKU; F1 has none, so work resumes only when the app wakes.
 - Azure's free OCR tier processes fewer pages and smaller files than S-02 accepts; choose S0, with no silently truncated PDF analysis.
 
 ## What We're NOT Doing
@@ -40,6 +40,8 @@ The configured App Service is F1. Existing infrastructure decisions assign B1/Al
 - A separate broker/Queue Storage/WebJob deployment. Durable PostgreSQL work and an API-hosted worker are sufficient for this slice.
 - Animal lifecycle UI or capture eligibility changes, owned by S-06.
 - Claims of immediate physical provider deletion, guaranteed OCR correctness, or verified phone/deployed behavior without evidence.
+- Moving the API to B1/Always On. S-03 stays on F1; B1 follows a trigger (F1 CPU quota reached, or cold starts breaking the S-04 search target). Plan amendment 2026-10-06.
+- Private database networking (VNet integration, PostgreSQL private endpoint, private DNS, disabling public access). Moved to M-2 as `database-private-network`. Plan amendment 2026-10-06.
 
 ## Implementation Approach
 
@@ -84,11 +86,11 @@ Establish the selected provider contract and a deployable, continuously running 
 
 #### 2. Infrastructure and runtime authorization
 
-**Files**: infra/modules/document-intelligence.bicep, network.bicep, postgres-private-endpoint.bicep (new), infra/main.bicep, infra/modules/app-service.bicep, postgres.bicep, infra/environments/mvp.bicepparam, infra/deploy.sh, infra/bootstrap/document-reading-access.bicep (new)
+**Files**: infra/modules/document-intelligence.bicep (new), infra/main.bicep, infra/modules/app-service.bicep, infra/deploy.sh (lint list), infra/bootstrap/document-reading-access.bicep (new)
 
-**Intent**: Support unattended processing with least-privilege runtime access and the previously planned private database transition.
+**Intent**: Provide the OCR resource and least-privilege runtime access while the API stays on F1.
 
-**Contract**: Provision S0 Document Intelligence in swedencentral with a custom subdomain, disable local-key auth, pass its non-secret endpoint/model/version settings, and switch App Service to B1/Always On. Add VNet integration with separate delegated API and private-endpoint subnets, PostgreSQL private endpoint and linked private DNS. Stage publicNetworkAccess as an explicit parameter: private connectivity first, confirm DNS/TLS/database health from the API, then disable public access in a later approved apply. Preserve linked SWA inbound routing; do not make the API inbound endpoint private. Adjust firewall reconciliation to skip public rules in private mode; incremental omission does not remove old rules, so disable public access explicitly. Owner-run Bicep grants API identity Cognitive Services User scoped to the OCR resource; CI creates no RBAC. Provider registrations and any read-only what-if role additions remain owner bootstrap work. No apply is authorized by this plan.
+**Contract**: Provision S0 Document Intelligence in swedencentral with a custom subdomain, disable local-key auth, and pass its non-secret endpoint/model/version settings. Keep App Service on F1 (SKU parameterization with SKU-dependent Always On stays), the public PostgreSQL firewall unchanged, and no network resources (Plan amendment 2026-10-06). Owner-run Bicep grants API identity Cognitive Services User scoped to the OCR resource; CI creates no RBAC. Provider registrations and any read-only what-if role additions remain owner bootstrap work. No apply is authorized by this plan.
 
 #### 3. Configuration and non-regressing verification
 
@@ -108,7 +110,7 @@ Establish the selected provider contract and a deployable, continuously running 
 
 #### Manual Verification:
 
-- Owner confirms the five-photo quality verdict and reviews S0/B1 cost implications, privacy assurance and staged network/RBAC diff before any production mutation.
+- Owner confirms the five-photo quality verdict and reviews S0 cost implications, privacy assurance and the RBAC diff before any production mutation (B1 and network review dropped by the 2026-10-06 amendment).
 
 **Implementation Note**: Keep manual items pending until their evidence is confirmed; follow the implementation workflow before proceeding past a manual gate. Production mutations require separate approval.
 
@@ -249,7 +251,7 @@ Close deployed quality/recovery evidence and explain implemented reading without
 
 **Intent**: Document and prove the selected behavior, deployment sequence and recoverability.
 
-**Contract**: Retain current CI checks and non-mutating smoke behavior; add anonymous status/retry-route checks without uploading owner data. Document parser helper packaging, job states, configuration, due/failed/cleanup inspection, paused-worker recovery, and rollback retaining originals/text/jobs. Record one-time provider/RBAC/network applies and live evidence under change notes. Verify B1/Always On, OCR identity, private database resolution and disabled public access after staged approved rollout. Test two synthetic owners and an inactive profile if S-06 is integrated. Monitor IDs/state/timing only; omit extracted text, source filenames, provider payloads and credentials. Reading outages do not change original health dependencies.
+**Contract**: Retain current CI checks and non-mutating smoke behavior; add anonymous status/retry-route checks without uploading owner data. Document parser helper packaging, job states, configuration, due/failed/cleanup inspection, paused-worker recovery, F1 sleep behavior (work waits until the next wake-up), and rollback retaining originals/text/jobs. Record one-time provider/RBAC applies and live evidence under change notes. Verify on F1 after approved rollout: OCR identity, that due jobs and pending cleanup resume after the app wakes, and observed CPU use against the F1 daily quota (record whether a B1 trigger is approaching). Test two synthetic owners and an inactive profile if S-06 is integrated. Monitor IDs/state/timing only; omit extracted text, source filenames, provider payloads and credentials. Reading outages do not change original health dependencies.
 
 ### Success Criteria:
 
@@ -261,7 +263,7 @@ Close deployed quality/recovery evidence and explain implemented reading without
 
 #### Manual Verification:
 
-- After separately approved deployment, two synthetic accounts prove status/original isolation, a restart recovers jobs/cleanup, and idle-period processing works with Always On.
+- After separately approved deployment, two synthetic accounts prove status/original isolation, a restart recovers jobs/cleanup, and work queued while F1 slept resumes after the next wake-up; CPU use stays within the F1 daily quota.
 - Owner reviews OCR quality evidence, retention/cleanup limitations and rollback runbook; original retrieval works with reading disabled.
 
 **Implementation Note**: Keep manual items pending until their evidence is confirmed; follow the implementation workflow before proceeding past a manual gate. Production mutations require separate approval.
@@ -282,7 +284,7 @@ Use real PostgreSQL/Azurite and deterministic fake provider responses. Exercise 
 2. Store a text PDF, scanned/mixed PDF and reordered photos; inspect internal text/provenance in a controlled development session.
 3. Stop/restart work at known provider stages and confirm recovery and deletion acknowledgement.
 4. View PL/EN status and Retry through the deployed SWA origin with two synthetic owners.
-5. Open an inactive animal's original while reading is unavailable, and verify database private connectivity/Always On after approved rollout.
+5. Open an inactive animal's original while reading is unavailable, and verify F1 wake-up recovery and CPU use against the daily quota after approved rollout.
 
 ## Performance Considerations
 
@@ -290,7 +292,7 @@ Process files sequentially at default concurrency one; stream source reads and a
 
 ## Migration Notes
 
-Generate the processing migration after S-06's migration is integrated. Backfill only Stored documents, with unique jobs. Keep storage constraints and original retrieval unchanged. Deployment order: B1/private connectivity and OCR access prerequisites, schema/application with reading initially disabled, verified configuration, then worker activation; disable public database access only after private-path evidence. Rollback stops the worker and restores code while keeping originals, published text, jobs and cleanup records. If a pre-S-03 release stores new documents without jobs, a forward recovery reconciliation inserts missing Stored jobs before re-enabling processing.
+Generate the processing migration after S-06's migration is integrated. Backfill only Stored documents, with unique jobs. Keep storage constraints and original retrieval unchanged. Deployment order (F1, no network change): OCR resource and owner-run access, schema/application with reading initially disabled, verified configuration, then worker activation. Rollback stops the worker and restores code while keeping originals, published text, jobs and cleanup records. If a pre-S-03 release stores new documents without jobs, a forward recovery reconciliation inserts missing Stored jobs before re-enabling processing.
 
 ## References
 
@@ -299,7 +301,27 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 - [Azure Read model](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/prebuilt/read?view=doc-intel-4.0.0).
 - [Provider privacy](https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/document-intelligence/data-privacy-security) and [Delete Analyze Result](https://learn.microsoft.com/en-us/rest/api/aiservices/document-models/delete-analyze-result?view=rest-aiservices-v4.0+(2024-11-30)).
 - [PdfPig upstream](https://github.com/UglyToad/PdfPig).
-- [App Service VNet integration](https://learn.microsoft.com/en-gb/azure/app-service/overview-vnet-integration); [PostgreSQL Private Link](https://learn.microsoft.com/en-us/azure/postgresql/network/concepts-networking-private-link).
+- [App Service VNet integration](https://learn.microsoft.com/en-gb/azure/app-service/overview-vnet-integration) and [PostgreSQL Private Link](https://learn.microsoft.com/en-us/azure/postgresql/network/concepts-networking-private-link) now inform the M-2 change `database-private-network`, not S-03.
+- [App Service quotas](https://learn.microsoft.com/en-us/azure/app-service/web-sites-monitor) (F1 daily CPU quota and what happens when it is exceeded).
+- `context/foundation/infrastructure.md` (S-03 decisions, 2026-10-06) and `context/foundation/roadmap.md` (Parked: Database private network).
+
+## Plan amendment 2026-10-06
+
+**Decision (owner, 2026-10-06):**
+
+1. Hosting stays on F1. S-03 does not switch App Service to B1/Always On. B1 is enabled later, when a trigger fires: the F1 daily CPU quota (60 CPU minutes/day) is reached, or cold starts break the about-two-second search target in S-04.
+2. Private PostgreSQL networking (VNet integration, private endpoint, private DNS, disabling public access) leaves S-03 and moves to milestone M-2 as the separate change `database-private-network`. VNet integration does not work on F1 anyway.
+3. OCR is unchanged: Azure Document Intelligence `prebuilt-read` S0 with owner-run RBAC.
+
+**Why:** S-03 would have added about EUR 19/month (B1 about EUR 11.5, private endpoint and DNS about EUR 7.7) for a single user, against a budget of 40/month.
+
+**Consequences:**
+
+- Phase 1 infrastructure is reduced to the Document Intelligence resource, its API settings and the owner-run access template. The B1 switch, network modules, PostgreSQL public-access staging and private-mode firewall reconciliation were removed in a separate fix commit.
+- The worker (Phase 3) must not assume continuous run time: when the app starts or wakes, it picks up due and lease-expired jobs and pending provider cleanup. Local PDF parsing keeps a hard time limit in the child process, so it cannot use up the F1 daily CPU quota; exhausting the quota stops the app and makes originals unavailable, which would break the guardrail.
+- Documented limitation: while F1 sleeps after idle time, new reading jobs, retries, provider cleanup and backfill wait until the next wake-up.
+- Phase 5 verifies F1 behavior (wake-up recovery and CPU use against the quota) instead of B1/Always On and private database resolution.
+- The Progress row titles are unchanged by convention. Their wording about B1, Always On and the network in 1.4, 5.2 and 5.4 is outdated; this amendment and the phase sections above take precedence.
 
 ## Progress
 

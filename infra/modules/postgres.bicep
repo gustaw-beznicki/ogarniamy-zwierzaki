@@ -1,6 +1,5 @@
 // PostgreSQL Flexible Server with Entra-only authentication and the application database.
-// The API reaches it through a private endpoint (postgres-private-endpoint.bicep). While public access stays enabled,
-// it is limited to the API's outbound IPs. The API's managed identity is the only administrator.
+// Public access is limited to the API's outbound IPs; the API's managed identity is the only administrator.
 
 @description('Server name; the host is <serverName>.postgres.database.azure.com.')
 param serverName string
@@ -19,13 +18,6 @@ param allowedIpAddresses array
 
 @description('Deploy the firewall rules. False skips the module; existing rules stay in place (deployments are incremental).')
 param applyFirewallRules bool
-
-@description('Public network access. Disabled leaves only the private endpoint; the old firewall rules are not deleted but no longer apply.')
-@allowed([
-  'Enabled'
-  'Disabled'
-])
-param publicNetworkAccess string
 
 resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' = {
   name: serverName
@@ -47,7 +39,7 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' = {
       mode: 'Disabled'
     }
     network: {
-      publicNetworkAccess: publicNetworkAccess
+      publicNetworkAccess: 'Enabled'
     }
     authConfig: {
       activeDirectoryAuth: 'Enabled'
@@ -82,8 +74,7 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2025-08-0
 
 // A separate module: the rule count is known only at deployment time, so what-if cannot expand this module.
 // Keeping the loop in its own module lets what-if still show the server, administrator and database above.
-// Skipped in private mode: firewall rules only govern the public endpoint.
-module firewall 'postgres-firewall.bicep' = if (applyFirewallRules && publicNetworkAccess == 'Enabled') {
+module firewall 'postgres-firewall.bicep' = if (applyFirewallRules) {
   name: '${deployment().name}-firewall'
   params: {
     serverName: server.name

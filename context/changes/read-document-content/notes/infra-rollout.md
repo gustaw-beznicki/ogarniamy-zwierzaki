@@ -5,14 +5,10 @@ needs the owner's explicit approval.
 
 ## What changes
 
-- App Service plan `F1` -> `B1`, with Always On, which the reading worker needs to run unattended.
-- A VNet (`vnet-ogarniamy-mvp`, `10.20.0.0/16`): `snet-api` (`/26`, delegated to App Service VNet integration) and
-  `snet-private-endpoints` (`/27`).
-- The API's outbound traffic goes through the VNet (`vnetRouteAllEnabled`). Inbound stays public for the
-  Static Web Apps linked backend.
-- A PostgreSQL private endpoint, with the `privatelink.postgres.database.azure.com` private DNS zone linked to the VNet.
-  The connection string does not change; the host name resolves to the private address inside the VNet.
-- `postgresPublicNetworkAccess` (in `infra/environments/mvp.bicepparam`) stays `Enabled` until the private path is verified.
+The API stays on App Service `F1` and the database keeps its public firewall (owner decision 2026-10-06, see the
+plan's "Plan amendment 2026-10-06"). B1/Always On follows a trigger, and the private database network is the
+M-2 change `database-private-network`.
+
 - Azure Document Intelligence `S0` in `swedencentral` (`di-ogarniamy-<unique>`), with a custom subdomain, local
   (key) auth disabled and the public endpoint behind Entra ID. The API gets `DocumentReading__*` settings with
   `WorkerEnabled=false`.
@@ -23,38 +19,34 @@ needs the owner's explicit approval.
 
 | Item | Approximate cost |
 | --- | --- |
-| App Service B1 (Linux) | about USD 13 per month (F1 is free) |
 | Document Intelligence S0, Read model | about USD 1.50 per 1,000 pages, pay per use |
-| PostgreSQL private endpoint | about USD 7-8 per month plus a small per-GB data charge |
-| Private DNS zone | about USD 0.50 per month plus queries |
-| VNet | no charge |
+| App Service | unchanged (F1, free) |
 
-Pricing: https://azure.microsoft.com/pricing/details/app-service/linux/ ,
-https://azure.microsoft.com/pricing/details/ai-document-intelligence/ ,
-https://azure.microsoft.com/pricing/details/private-link/ , https://azure.microsoft.com/pricing/details/dns/ .
+Pricing: https://azure.microsoft.com/pricing/details/ai-document-intelligence/ .
 
-The existing budget (`budget-ogarniamy-monthly`) is 40 per month. Static Web Apps Standard and PostgreSQL
-`Standard_B1ms` already cost roughly USD 20-25 per month together. With B1 and the private endpoint added, the fixed
-cost comes close to the budget or exceeds it, before any OCR pages. Review the budget before approving step 1.
+## F1 limitations to keep in mind
+
+- F1 sleeps after idle time. New reading jobs, retries, provider cleanup and backfill wait until the next request wakes
+  the app; the worker then resumes due and lease-expired jobs and pending cleanup.
+- F1 has a daily CPU quota (60 CPU minutes). Exceeding it stops the app, so originals become unavailable. Local PDF
+  parsing has a hard time limit for this reason. Watch CPU time in the App Service quotas view after enabling the worker;
+  approaching the quota is a trigger for B1.
 
 ## Prerequisites
 
-- Resource providers `Microsoft.CognitiveServices` and `Microsoft.Network` are already `Registered` in the subscription.
-  This was checked read-only.
-- The CI deploy identity (Contributor on the resource group) can create the VNet, private endpoint, DNS zone and account.
-- The PR identity runs what-if with the custom `Ogarniamy What-If` role. If validation fails on the new resource types
-  (network, private DNS, Cognitive Services), adding the missing read-only or validate action is owner bootstrap
-  work in `infra/bootstrap/`. Never add write actions, and do not widen CI permissions.
+- Resource provider `Microsoft.CognitiveServices` is already `Registered` in the subscription (checked read-only).
+- The CI deploy identity (Contributor on the resource group) can create the account.
+- The PR identity runs what-if with the custom `Ogarniamy What-If` role. If validation fails on Cognitive Services,
+  adding the missing read-only or validate action is owner bootstrap work in `infra/bootstrap/`. Never add write
+  actions, and do not widen CI permissions.
 
 ## Steps
 
-### 1. Merge and approved deploy (public database access still Enabled)
+### 1. Merge and approved deploy
 
-The normal approved deploy (`infra/deploy.sh apply`) applies B1, VNet integration, the private endpoint, DNS and the
-Document Intelligence account. Run `infra/deploy.sh what-if` first and check the diff: no role assignments, the
-postgres server only gets a private endpoint connection, and `publicNetworkAccess` stays `Enabled`.
-
-The API keeps working through the existing public path while DNS switches over. Reading stays off
+The normal approved deploy (`infra/deploy.sh apply`) creates the Document Intelligence account and adds the
+`DocumentReading__*` app settings. Run `infra/deploy.sh what-if` first and check the diff: one new
+Cognitive Services account, no SKU, network, PostgreSQL or role assignment changes. Reading stays off
 (`WorkerEnabled=false`).
 
 ### 2. Grant Cognitive Services User (owner, once)
@@ -78,29 +70,14 @@ az deployment group create --resource-group "$RG" --name ogarniamy-document-read
 
 Omit `developerPrincipalIds` to grant the API identity only. Role assignments can take a few minutes to apply.
 
-### 3. Verify the private path from the API
+### 3. Verify configuration
 
-- From the App Service SSH console (Kudu, `https://<app>.scm.azurewebsites.net/webssh/host`):
-  `nslookup <postgres-server>.postgres.database.azure.com` should return an address in `10.20.2.0/27`.
-- `curl https://<app>.azurewebsites.net/api/health` and the SWA `/api/health` should both return `{"status":"ok"}`.
-- Check that sign-in and opening an original still work.
+- `/api/health` on the SWA host returns `{"status":"ok"}`; sign-in and opening an original still work.
 - In the API log stream, the startup line should read "Document reading is available: AzureManagedIdentity against
   di-ogarniamy-....cognitiveservices.azure.com ..." with the worker disabled.
 
-### 4. Disable public database access (a later PR)
-
-In a separate PR, set `postgresPublicNetworkAccess = 'Disabled'` in `infra/environments/mvp.bicepparam`. Then
-`infra/deploy.sh` skips the firewall comparison and passes `applyFirewallRules=false`. Deployments are incremental,
-so the old firewall rules are not deleted; they stop applying once public access is disabled. After the approved
-apply, repeat step 3.
-
 ## Rollback
 
-- Database connectivity broken after step 1: public access is still enabled, so remove the VNet integration
-  (`az webapp vnet-integration remove`), or revert the PR and redeploy. With integration removed, the host name
-  resolves publicly again.
-- Broken after step 4: set `postgresPublicNetworkAccess = 'Enabled'` and redeploy. If the API's outbound IPs changed,
-  `infra/deploy.sh` re-applies the firewall rules.
 - Reading misconfigured: the API still starts. It logs a warning and reading stays off; originals are unaffected.
-- Returning to F1 removes Always On and VNet integration, so private database access stops working. Do this only
-  while `postgresPublicNetworkAccess` is `Enabled`.
+- To stop reading, set `DocumentReading__WorkerEnabled=false` (or revert and redeploy). Jobs, text and cleanup records
+  stay in the database.

@@ -3,7 +3,7 @@
 @description('Region of the plan and the web app.')
 param location string
 
-@description('App Service plan SKU. F1 (Free) rejects Always On and VNet integration.')
+@description('App Service plan SKU. F1 (Free) rejects Always On.')
 @allowed([
   'F1'
   'B1'
@@ -19,9 +19,6 @@ param storageBlobEndpoint string
 
 @description('Name of the private container holding the originals.')
 param originalsContainerName string
-
-@description('Resource id of the subnet delegated to App Service VNet integration. Ignored on F1, which cannot integrate.')
-param apiSubnetId string
 
 @description('Document Intelligence endpoint, for example https://<account>.cognitiveservices.azure.com/. Not a secret.')
 param documentIntelligenceEndpoint string
@@ -59,14 +56,7 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
     // The API keeps no in-process session state, so instance-affinity cookies (ARRAffinity) are not needed.
     clientAffinityEnabled: false
     httpsOnly: true
-    // Outbound only: the API reaches the database's private endpoint through the VNet. Inbound stays public for the
-    // Static Web Apps linked backend.
-    virtualNetworkSubnetId: appServiceSku != 'F1' ? apiSubnetId : null
     siteConfig: {
-      // Only private (RFC1918) traffic enters the VNet: the database's private endpoint address. DNS already resolves
-      // through the VNet and its linked private zone. Internet-bound calls (Blob, Entra, Document Intelligence) keep
-      // the App Service's own egress, because new subnets have no default outbound internet access.
-      vnetRouteAllEnabled: false
       linuxFxVersion: 'DOTNETCORE|10.0'
       alwaysOn: appServiceSku != 'F1'
       minTlsVersion: '1.2'

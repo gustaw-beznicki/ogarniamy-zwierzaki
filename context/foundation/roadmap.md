@@ -232,6 +232,9 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 - **Database least privilege** — Why parked: planned for milestone M-2, after M-1 closes; security finding. Suggested Change ID `database-least-privilege`. Source: `context/changes/account-and-first-animal/research.md` (gap 3, Database access).
   - The running API reaches the database with only the rights it needs; administration and schema changes use a separate identity.
   - Today, the API identity is the database administrator.
+- **Database private network** — Why parked: planned for milestone M-2, after M-1 closes; moved out of S-03 by the owner on 2026-10-06 to keep the API on F1 (about EUR 19/month saved at one user). Suggested Change ID `database-private-network`. Source: that decision (`context/changes/read-document-content/plan.md`, Plan amendment 2026-10-06) and the shared App Service outbound addresses accepted in `context/foundation/infrastructure.md` (S-01 decisions, Database network and accepted risk). Related: `database-least-privilege` (together they close database network and privilege exposure; plan them together or in sequence).
+  - The API reaches PostgreSQL through App Service VNet integration (requires B1 or higher) and a private endpoint with a linked private DNS zone.
+  - Public database access is disabled only after the private path is verified from the API, in a separate approved apply.
 - **Sharing an animal between caretakers, caretaker role, expiring access** — Why parked: PRD §Non-Goals. Deferred to a later step; S-01 keeps the ownership data shape that makes it cheap.
 - **Medication plans and dose logs** — Why parked: PRD §Non-Goals.
 - **Document type field or automatic type suggestion** — Why parked: PRD §Non-Goals (the product does not guess).

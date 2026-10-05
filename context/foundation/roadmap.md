@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-10-04
+updated: 2026-10-05
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -44,7 +44,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | F-01 | azure-walking-skeleton               | (foundation) empty web app + API run on Azure, auto-deployed from main, budget alert | —             | §NFR (phone + desktop), §Guardrails         | done |
 | F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | done |
-| S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | in-progress |
+| S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | done |
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | proposed |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
 | S-05 | search-filter-and-unavailable-notice | narrow results to one animal; see an explicit notice when search is unavailable      | S-04          | US-02, FR-011, FR-012                       | proposed |
@@ -127,7 +127,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Size and format limits for phone-camera photos and emailed PDFs. — Owner: TBD. Block: no.
 - **Risk:** Brings in private storage of originals as the system of record. Both guardrails (no public address, always retrievable) are proven here, before any reading of content exists that could obscure a failure.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Read document content in the background
 
@@ -251,3 +251,4 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 - **F-01: (foundation) the empty web front end and API run on the Azure hosting target and are deployed automatically after each merge to main. A spending alert is in place against trial-credit expiry.** — Archived 2026-09-27 → `context/archive/2026-09-27-azure-walking-skeleton/`. Lesson: —.
 
 - **S-01: user can register, sign in, and set up their first animal (name only) on an onboarding screen, and sees only their own data.** — Archived 2026-10-03 → `context/archive/2026-09-28-account-and-first-animal/`. Lesson: —.
+- **S-02: user can photograph a document or upload a PDF, assign it to an animal with one tap (the last-used animal is the default), confirm the event date (pre-filled with today), and later open the stored original. The original is never reachable without signing in.** — Archived 2026-10-05 → `context/archive/2026-10-04-capture-document-original/`. Lesson: —.

@@ -35,6 +35,23 @@ firewall_rules_needed() {
   fi
 }
 
+# Prints the postgresPublicNetworkAccess value set in the parameters file (Enabled when it is not set).
+postgres_public_network_access() {
+  local value
+  value="$(sed -n "s/^[[:space:]]*param[[:space:]]\{1,\}postgresPublicNetworkAccess[[:space:]]*=[[:space:]]*'\([A-Za-z]*\)'.*/\1/p" \
+    "${PARAMETERS_FILE}" | tail -n 1)"
+  echo "${value:-Enabled}"
+}
+
+# In private mode the firewall rules are skipped: they only govern the public endpoint, so there is nothing to compare.
+apply_firewall_rules() {
+  if [[ "$(postgres_public_network_access)" == 'Disabled' ]]; then
+    echo false
+  else
+    firewall_rules_needed
+  fi
+}
+
 [[ $# -eq 1 ]] || usage
 
 case "$1" in
@@ -42,10 +59,11 @@ case "$1" in
     az bicep lint --file "${TEMPLATE_FILE}"
     az bicep lint --file "${INFRA_DIR}/bootstrap/main.bicep"
     az bicep lint --file "${INFRA_DIR}/bootstrap/storage-access.bicep"
+    az bicep lint --file "${INFRA_DIR}/bootstrap/document-reading-access.bicep"
     ;;
   what-if)
-    apply_firewall="$(firewall_rules_needed)"
-    echo "PostgreSQL firewall rules: applyFirewallRules=${apply_firewall}" >&2
+    apply_firewall="$(apply_firewall_rules)"
+    echo "PostgreSQL public access: $(postgres_public_network_access); firewall rules: applyFirewallRules=${apply_firewall}" >&2
     # ProviderNoRbac: full validation that needs only read permission, so the read-only PR identity can run it.
     az deployment group what-if \
       --validation-level ProviderNoRbac \
@@ -56,9 +74,9 @@ case "$1" in
       --parameters applyFirewallRules="${apply_firewall}"
     ;;
   apply)
-    apply_firewall="$(firewall_rules_needed)"
+    apply_firewall="$(apply_firewall_rules)"
     # Stderr only: stdout carries the deployment outputs that the deploy workflow parses as JSON.
-    echo "PostgreSQL firewall rules: applyFirewallRules=${apply_firewall}" >&2
+    echo "PostgreSQL public access: $(postgres_public_network_access); firewall rules: applyFirewallRules=${apply_firewall}" >&2
     az deployment group create \
       --resource-group "${RESOURCE_GROUP}" \
       --name "${DEPLOYMENT_NAME}" \

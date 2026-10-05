@@ -15,7 +15,7 @@ param location string
 ])
 param swaLocation string
 
-@description('App Service plan SKU. F1 disables Always On.')
+@description('App Service plan SKU. F1 disables Always On and VNet integration (and so the private database path); reading needs B1 or higher.')
 @allowed([
   'F1'
   'B1'
@@ -26,6 +26,13 @@ param appServiceSku string
 @description('Deploy the PostgreSQL firewall rules. infra/deploy.sh sets false when the existing rules already match the App Service outbound IPs, because re-applying them takes about a minute per rule.')
 param applyFirewallRules bool = true
 
+@description('PostgreSQL public network access. Staged rollout: deploy the private endpoint with Enabled, confirm from the API that the database resolves privately and /api/health is ok, then set Disabled in a later approved deployment. Disabled also skips the firewall rules; existing rules are not deleted but no longer apply.')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
+param postgresPublicNetworkAccess string
+
 // Computed once and passed to both modules, so the API's connection setting does not reference the server
 // (whose Entra administrator in turn needs the API's managed identity).
 var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id)}'
@@ -34,6 +41,27 @@ var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id)}'
 // No role assignment is created here: the API's Blob access is granted once by the owner (storage-access.bicep).
 var storageAccountName = 'stogarniamy${uniqueString(resourceGroup().id)}'
 var originalsContainerName = 'originals'
+
+// Computed here for the same reason; bootstrap/document-reading-access.bicep must use the same value. The API's
+// Cognitive Services User role is granted once by the owner (document-reading-access.bicep), never here.
+var documentIntelligenceName = 'di-ogarniamy-${uniqueString(resourceGroup().id)}'
+var documentReadingModelId = 'prebuilt-read'
+var documentReadingApiVersion = '2024-11-30'
+
+module network 'modules/network.bicep' = {
+  name: 'ogarniamy-network'
+  params: {
+    location: location
+  }
+}
+
+module documentIntelligence 'modules/document-intelligence.bicep' = {
+  name: 'ogarniamy-document-intelligence'
+  params: {
+    accountName: documentIntelligenceName
+    location: location
+  }
+}
 
 module storage 'modules/storage.bicep' = {
   name: 'ogarniamy-storage'
@@ -52,6 +80,10 @@ module appService 'modules/app-service.bicep' = {
     postgresServerName: postgresServerName
     storageBlobEndpoint: storage.outputs.blobEndpoint
     originalsContainerName: storage.outputs.originalsContainerName
+    apiSubnetId: network.outputs.apiSubnetId
+    documentIntelligenceEndpoint: documentIntelligence.outputs.endpoint
+    documentReadingModelId: documentReadingModelId
+    documentReadingApiVersion: documentReadingApiVersion
   }
 }
 
@@ -65,6 +97,18 @@ module postgres 'modules/postgres.bicep' = {
     // Known only at deployment time, so the module loops over it (a template-level loop fails with BCP178).
     allowedIpAddresses: split(appService.outputs.possibleOutboundIpAddresses, ',')
     applyFirewallRules: applyFirewallRules
+    publicNetworkAccess: postgresPublicNetworkAccess
+  }
+}
+
+// After the server module, whose child updates (administrator, database, firewall) must not overlap with the endpoint.
+module postgresPrivateEndpoint 'modules/postgres-private-endpoint.bicep' = {
+  name: 'ogarniamy-postgres-private-endpoint'
+  params: {
+    serverName: postgres.outputs.name
+    location: location
+    vnetId: network.outputs.id
+    subnetId: network.outputs.privateEndpointSubnetId
   }
 }
 
@@ -84,3 +128,5 @@ output staticWebAppName string = staticWebApp.outputs.name
 output staticWebAppDefaultHostName string = staticWebApp.outputs.defaultHostName
 output postgresServerName string = postgres.outputs.name
 output storageAccountName string = storage.outputs.name
+output documentIntelligenceName string = documentIntelligence.outputs.name
+output documentIntelligenceEndpoint string = documentIntelligence.outputs.endpoint

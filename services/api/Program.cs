@@ -10,10 +10,19 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.DocumentReading;
 using ogarniamy_zwierzaki_api.Documents;
 using ogarniamy_zwierzaki_api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Development-only OCR probe (`-- ocr-probe <file>...`): runs before the database and storage are set up, then exits.
+if (OcrProbe.IsRequested(args))
+{
+    Environment.ExitCode = await OcrProbe.RunCommandAsync(
+        args, builder.Configuration, builder.Environment, Console.Out, Console.Error);
+    return;
+}
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -21,6 +30,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddAppDatabase();
 // Originals live in a private Blob container: Azure Storage with the managed identity, Azurite locally and in tests.
 builder.Services.AddOriginalStorage();
+// Reading stored documents with Azure Document Intelligence. Off by default; misconfiguration disables reading
+// with a startup warning instead of stopping the API.
+builder.Services.AddDocumentReading();
 
 // Cookie encryption keys live in PostgreSQL, so sessions survive restarts in every hosting mode.
 builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
@@ -95,6 +107,8 @@ builder.Services.AddScoped<OwnedDocuments>();
 builder.Services.AddScoped<DocumentCaptureService>();
 
 var app = builder.Build();
+
+app.LogDocumentReadingConfiguration();
 
 await app.PrepareOriginalStorageAsync();
 await app.MigrateDatabaseAsync();

@@ -3,7 +3,7 @@
 @description('Region of the plan and the web app.')
 param location string
 
-@description('App Service plan SKU. F1 (Free) rejects Always On.')
+@description('App Service plan SKU. F1 (Free) rejects Always On and VNet integration.')
 @allowed([
   'F1'
   'B1'
@@ -19,6 +19,18 @@ param storageBlobEndpoint string
 
 @description('Name of the private container holding the originals.')
 param originalsContainerName string
+
+@description('Resource id of the subnet delegated to App Service VNet integration. Ignored on F1, which cannot integrate.')
+param apiSubnetId string
+
+@description('Document Intelligence endpoint, for example https://<account>.cognitiveservices.azure.com/. Not a secret.')
+param documentIntelligenceEndpoint string
+
+@description('Document Intelligence model used for reading.')
+param documentReadingModelId string
+
+@description('Document Intelligence REST API version.')
+param documentReadingApiVersion string
 
 // The site's own settings need its name, so it is computed once instead of read back from the resource.
 var siteName = 'app-ogarniamy-api-${uniqueString(subscription().id)}'
@@ -47,7 +59,14 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
     // The API keeps no in-process session state, so instance-affinity cookies (ARRAffinity) are not needed.
     clientAffinityEnabled: false
     httpsOnly: true
+    // Outbound only: the API reaches the database's private endpoint through the VNet. Inbound stays public for the
+    // Static Web Apps linked backend.
+    virtualNetworkSubnetId: appServiceSku != 'F1' ? apiSubnetId : null
     siteConfig: {
+      // Only private (RFC1918) traffic enters the VNet: the database's private endpoint address. DNS already resolves
+      // through the VNet and its linked private zone. Internet-bound calls (Blob, Entra, Document Intelligence) keep
+      // the App Service's own egress, because new subnets have no default outbound internet access.
+      vnetRouteAllEnabled: false
       linuxFxVersion: 'DOTNETCORE|10.0'
       alwaysOn: appServiceSku != 'F1'
       minTlsVersion: '1.2'
@@ -78,6 +97,28 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'Storage__OriginalsContainer'
           value: originalsContainerName
+        }
+        {
+          // No key: the Document Intelligence account disables local auth; the API uses its managed identity.
+          name: 'DocumentReading__Auth'
+          value: 'AzureManagedIdentity'
+        }
+        {
+          name: 'DocumentReading__Endpoint'
+          value: documentIntelligenceEndpoint
+        }
+        {
+          name: 'DocumentReading__ModelId'
+          value: documentReadingModelId
+        }
+        {
+          name: 'DocumentReading__ApiVersion'
+          value: documentReadingApiVersion
+        }
+        {
+          // Reading runs only once a later release enables the worker.
+          name: 'DocumentReading__WorkerEnabled'
+          value: 'false'
         }
       ]
     }

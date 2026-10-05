@@ -24,8 +24,27 @@ public static class TestAccounts
     public static Task<HttpResponseMessage> LoginAsync(this HttpClient client, string email, string password) =>
         client.PostAsJsonAsync("/api/auth/login", new { email, password });
 
+    // Animal mutations need an antiforgery token: a client without a default token header gets a real one per request.
     public static Task<HttpResponseMessage> CreateAnimalAsync(this HttpClient client, string? name) =>
-        client.PostAsJsonAsync("/api/animals", new { name });
+        client.SendJsonAsync(HttpMethod.Post, "/api/animals", new { name });
+
+    // Sends a JSON body with an antiforgery token (unless the client already sends one by default) and optional headers.
+    public static async Task<HttpResponseMessage> SendJsonAsync(
+        this HttpClient client, HttpMethod method, string url, object body, string? ifMatch = null)
+    {
+        using var request = new HttpRequestMessage(method, url) { Content = JsonContent.Create(body) };
+        if (!client.DefaultRequestHeaders.Contains(AntiforgeryHeader))
+        {
+            request.Headers.Add(AntiforgeryHeader, await client.GetAntiforgeryTokenAsync());
+        }
+
+        if (ifMatch is not null)
+        {
+            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
+        }
+
+        return await client.SendAsync(request);
+    }
 
     // Registers a fresh account; the returned client carries its session cookie.
     public static async Task<(HttpClient Client, string Email)> CreateSignedInClientAsync(

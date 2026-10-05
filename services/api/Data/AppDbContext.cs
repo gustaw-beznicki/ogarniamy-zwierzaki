@@ -62,6 +62,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             animal.HasKey(a => a.Id);
             animal.Property(a => a.Name).HasMaxLength(Animal.NameMaxLength).IsRequired();
+            animal.Property(a => a.IsActive).HasDefaultValue(true);
+            animal.Property(a => a.Version).HasDefaultValueSql("gen_random_uuid()");
         });
 
         builder.Entity<AnimalMember>(member =>

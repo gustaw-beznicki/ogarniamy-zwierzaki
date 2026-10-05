@@ -3,9 +3,14 @@ export interface MeResponse {
   hasAnimals: boolean;
 }
 
+// version is the opaque edit version: quoted in If-Match when renaming or changing activity. storedDocumentCount
+// counts Stored documents only.
 export interface Animal {
   id: string;
   name: string;
+  isActive: boolean;
+  version: string;
+  storedDocumentCount: number;
 }
 
 // The animals a capture can be assigned to and the preselected one (the account's last completed capture's animal
@@ -178,6 +183,28 @@ async function captureMutation<T>(path: string, options: RequestOptions, account
   }
 }
 
+// Sends a non-idempotent mutation (animal creation, edits) once with the antiforgery header. Nothing is replayed: after
+// an explicit token rejection the cached token is dropped and the caller must submit again on purpose, so a create
+// is never duplicated and a stale edit is never re-sent behind the user's back.
+async function accountMutation<T>(path: string, options: RequestOptions): Promise<T> {
+  const token = await antiforgeryToken();
+  try {
+    return await request<T>(path, { ...options, headers: { ...options.headers, [token.headerName]: token.token } });
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'invalid_antiforgery_token') antiforgery = null;
+    throw error;
+  }
+}
+
+// If-Match carries the quoted animal version from the last response.
+function versionHeader(version: string): Record<string, string> {
+  return { 'If-Match': `"${version}"` };
+}
+
+function animalPath(id: string): string {
+  return `/api/animals/${encodeURIComponent(id)}`;
+}
+
 function uploadPath(operationId: string): string {
   return `/api/document-uploads/${encodeURIComponent(operationId)}`;
 }
@@ -187,9 +214,14 @@ export const api = {
   register: (email: string, password: string) => request<void>('/api/auth/register', { method: 'POST', json: { email, password } }),
   login: (email: string, password: string) => request<void>('/api/auth/login', { method: 'POST', json: { email, password } }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST', json: {} }),
-  animals: () => request<Animal[]>('/api/animals/'),
-  animal: (id: string) => request<Animal>(`/api/animals/${encodeURIComponent(id)}`),
-  createAnimal: (name: string) => request<Animal>('/api/animals/', { method: 'POST', json: { name } }),
+  // Active animals only unless includeInactive is set.
+  animals: (includeInactive = false) => request<Animal[]>(`/api/animals/${includeInactive ? '?includeInactive=true' : ''}`),
+  animal: (id: string) => request<Animal>(animalPath(id)),
+  createAnimal: (name: string) => accountMutation<Animal>('/api/animals/', { method: 'POST', json: { name } }),
+  renameAnimal: (id: string, version: string, name: string) =>
+    accountMutation<Animal>(`${animalPath(id)}/name`, { method: 'PUT', json: { name }, headers: versionHeader(version) }),
+  setAnimalActivity: (id: string, version: string, isActive: boolean) =>
+    accountMutation<Animal>(`${animalPath(id)}/activity`, { method: 'PUT', json: { isActive }, headers: versionHeader(version) }),
   captureDefaults: () => request<CaptureDefaults>('/api/capture-defaults'),
   createUpload: (operationId: string, manifest: UploadManifest, accountEmail: string) =>
     captureMutation<DocumentUpload>(`${uploadPath(operationId)}/`, { method: 'PUT', json: manifest }, accountEmail),

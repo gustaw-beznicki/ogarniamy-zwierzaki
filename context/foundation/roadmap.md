@@ -48,7 +48,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | planning |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
 | S-05 | search-filter-and-unavailable-notice | narrow results to one animal; see an explicit notice when search is unavailable      | S-04          | US-02, FR-011, FR-012                       | proposed |
-| S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | planning |
+| S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | in-progress |
 
 ## Streams
 
@@ -178,7 +178,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Independent of the search pipeline, so a separate agent run can take it in parallel. An inactive animal drops off the main list and out of the capture default but stays searchable. The one-tap selector from S-02 only becomes meaningful once there is a second animal. The ordering depends on dates that FR-008 admits may be wrong (Open Roadmap Question 2).
-- **Status:** planning
+- **Status:** in-progress
 
 ## Backlog Handoff
 

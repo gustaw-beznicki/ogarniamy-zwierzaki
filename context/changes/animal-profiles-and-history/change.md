@@ -1,9 +1,9 @@
 ---
 change_id: animal-profiles-and-history
 title: Animal profiles and history
-status: planned
+status: implementing
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 archived_at: null
 ---
 

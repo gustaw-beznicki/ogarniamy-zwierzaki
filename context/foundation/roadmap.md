@@ -45,7 +45,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | done |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | done |
-| S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | proposed |
+| S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | planning |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
 | S-05 | search-filter-and-unavailable-notice | narrow results to one animal; see an explicit notice when search is unavailable      | S-04          | US-02, FR-011, FR-012                       | proposed |
 | S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | proposed |
@@ -141,7 +141,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - Which off-the-shelf text-reading (OCR) service and embedding service meet the no-retention, no-training requirement? — Owner: user. Block: no (researched in `/10x-plan`).
   - Does reading survive real phone photos of vet discharge summaries (handwriting, stamps, Latin abbreviations, poor lighting)? — Owner: user. Block: no. This slice exists to answer it.
 - **Risk:** Sequenced right after capture because it tests the project's riskiest assumption: the belief that would sink the product if false, namely that text read from a phone photo is good enough to search. The learning goal also favours bringing OCR and background processing in early. Jobs must be safe to repeat after a restart.
-- **Status:** proposed
+- **Status:** planning
 
 ### S-04: Search by meaning with fragments (north star)
 

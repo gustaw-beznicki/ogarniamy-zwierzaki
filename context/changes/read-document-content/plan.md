@@ -309,9 +309,9 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [x] 1.1 API restore/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`.
-- [x] 1.2 Bicep lint and read-only what-if pass: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; owner access template validates without application.
-- [x] 1.3 Synthetic probe verifies analysis, result retrieval and deletion request without altering originals; no live-provider call runs in ordinary CI.
+- [x] 1.1 API restore/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`. — 9527bea
+- [x] 1.2 Bicep lint and read-only what-if pass: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; owner access template validates without application. — 9527bea
+- [x] 1.3 Synthetic probe verifies analysis, result retrieval and deletion request without altering originals; no live-provider call runs in ordinary CI. — 9527bea
 
 #### Manual
 

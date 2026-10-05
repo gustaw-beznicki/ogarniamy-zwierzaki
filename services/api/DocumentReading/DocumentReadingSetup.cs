@@ -25,6 +25,23 @@ public static class DocumentReadingSetup
                 var timeout = serviceProvider.GetRequiredService<DocumentReadingAvailability>().Options.HttpTimeout;
                 client.Timeout = timeout > TimeSpan.Zero ? timeout : FallbackHttpTimeout;
             });
+
+        // The OCR adapter, the local PDF parser (a child process) and provider cleanup. With reading unavailable the
+        // adapter has no credential and fails every call with provider_config; the worker does not run then anyway.
+        services.AddSingleton<IDocumentTextReader>(serviceProvider =>
+        {
+            var availability = serviceProvider.GetRequiredService<DocumentReadingAvailability>();
+            return new AzureDocumentTextReader(
+                serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(HttpClientName),
+                availability.Credential,
+                availability.Options);
+        });
+        services.AddSingleton<PdfTextReader>();
+        services.AddSingleton<DocumentReadingCleanup>();
+
+        // Hosted services start after Program.cs has migrated the database. The worker exits at once (with one log
+        // line) unless reading is available and DocumentReading:WorkerEnabled is true.
+        services.AddHostedService<DocumentReadingWorker>();
         return services;
     }
 

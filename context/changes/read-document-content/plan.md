@@ -343,17 +343,17 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [x] 2.2 Fresh and S-02 databases migrate additively; Stored backfill excludes Uploading, repeated/concurrent completion schedules one job, and scheduling failure rolls back completion.
-- [x] 2.3 Real PostgreSQL tests prove competing claims, expiry recovery, stale-token fencing and atomic complete-revision publication.
+- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — 6eb0495
+- [x] 2.2 Fresh and S-02 databases migrate additively; Stored backfill excludes Uploading, repeated/concurrent completion schedules one job, and scheduling failure rolls back completion. — 6eb0495
+- [x] 2.3 Real PostgreSQL tests prove competing claims, expiry recovery, stale-token fencing and atomic complete-revision publication. — 6eb0495
 
 ### Phase 3: Extraction worker and recovery
 
 #### Automated
 
-- [ ] 3.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [ ] 3.2 Extraction tests prove local-only PDF routing, mixed-page fallback/provenance, image order, empty/limit failures and no partial success publication.
-- [ ] 3.3 Fault tests prove restart after submission/retrieval, lease loss, bounded retries, independent cleanup recovery and byte-identical original retrieval during reading failure.
+- [x] 3.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 3.2 Extraction tests prove local-only PDF routing, mixed-page fallback/provenance, image order, empty/limit failures and no partial success publication.
+- [x] 3.3 Fault tests prove restart after submission/retrieval, lease loss, bounded retries, independent cleanup recovery and byte-identical original retrieval during reading failure.
 
 #### Manual
 

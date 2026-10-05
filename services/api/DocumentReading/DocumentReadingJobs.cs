@@ -93,6 +93,27 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
         return runFiles;
     }
 
+    // The originals of the claimed document in manifest order, with their storage keys and receipts. Empty when the
+    // lease is no longer current.
+    public async Task<IReadOnlyList<DocumentReadingSource>> ListSourcesAsync(
+        DocumentReadingClaim claim, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        if (!await LockCurrentLeaseAsync(claim, cancellationToken))
+        {
+            return [];
+        }
+
+        var sources = await db.DocumentFiles
+            .AsNoTracking()
+            .Where(f => f.DocumentId == claim.DocumentId && f.ReceiptEtag != null)
+            .OrderBy(f => f.Position)
+            .Select(f => new DocumentReadingSource(f.Id, f.Position, f.ContentType, f.BlobKey, f.ByteLength, f.Sha256))
+            .ToListAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return sources;
+    }
+
     // Starts reading one original of the claimed document in the claim's run generation. selectedPageRanges are the
     // original page numbers to send for OCR in the provider's "pages" syntax, or null for the whole file. Returns the
     // new run file's ID, or null (writing nothing) when the lease is no longer current. The file must belong to the
@@ -154,6 +175,28 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
 
         await transaction.CommitAsync(cancellationToken);
         return held;
+    }
+
+    // Abandons one unfinished (Pending or Submitted) run file of the claim's generation: its saved operation cannot be
+    // resumed (the analysis failed or its result is gone) or its submission outcome is unknown. Any provider operation
+    // keeps its cleanup obligation and becomes due for deletion. False, writing nothing, when the lease is not current.
+    public async Task<bool> AbandonRunFileAsync(
+        DocumentReadingClaim claim, Guid runFileId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        if (!await LockCurrentLeaseAsync(claim, cancellationToken))
+        {
+            return false;
+        }
+
+        await db.Database.ExecuteSqlAsync($"""
+            UPDATE document_reading_run_files
+            SET stage = 'failed', updated_at = now()
+            WHERE id = {runFileId} AND document_id = {claim.DocumentId} AND run_generation = {claim.RunGeneration}
+                AND stage IN ('pending', 'submitted')
+            """, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
     }
 
     // Checkpoints the fetched output of a Pending or Submitted run file (Retrieved). False, writing nothing, when the

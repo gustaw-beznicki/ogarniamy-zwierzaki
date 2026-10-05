@@ -14,6 +14,14 @@ using ogarniamy_zwierzaki_api.DocumentReading;
 using ogarniamy_zwierzaki_api.Documents;
 using ogarniamy_zwierzaki_api.Storage;
 
+// The local PDF parser child process (see PdfTextReader): reads a PDF from standard input, writes JSON, and exits,
+// before any configuration, database or storage is touched.
+if (PdfTextReaderProcess.IsRequested(args))
+{
+    Environment.ExitCode = await PdfTextReaderProcess.RunAsync(Console.OpenStandardInput(), Console.OpenStandardOutput());
+    return;
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Development-only OCR probe (`-- ocr-probe <file>...`): runs before the database and storage are set up, then exits.

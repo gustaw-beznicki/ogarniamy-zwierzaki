@@ -178,9 +178,10 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
             && recorded.ReceiptSha256 == receipt.Sha256;
     }
 
-    // Completes the user's upload operation: in one transaction the document becomes Stored with UploadedAt and the
-    // account's LastCaptureAnimalId becomes its animal. An already Stored document is returned unchanged, without
-    // touching UploadedAt or the preference again. Null when the operation is missing or foreign. Every file must
+    // Completes the user's upload operation: in one transaction the document becomes Stored with UploadedAt, the
+    // account's LastCaptureAnimalId becomes its animal and a Queued reading job is created. An already Stored document
+    // is returned unchanged, without touching UploadedAt, the preference or its reading job again. Null when the
+    // operation is missing or foreign. Every file must
     // already have a receipt (the caller checks this and answers upload_incomplete); otherwise this throws
     // InvalidOperationException and changes nothing.
     public async Task<DocumentDetails?> CompleteAsync(
@@ -236,6 +237,17 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
                     .ExecuteUpdateAsync(
                         setters => setters.SetProperty(u => u.LastCaptureAnimalId, current.AnimalId),
                         cancellationToken);
+
+                // The document's reading job, in the same transaction: a committed original always has durable reading
+                // work, and a failure here rolls the completion back. Only the first completion gets here (the
+                // document lock serializes them), so the insert is unique; a conflict would mean a broken invariant.
+                await db.Database.ExecuteSqlAsync(
+                    $"""
+                    INSERT INTO document_reading_jobs (document_id, state, run_generation, due_at, attempt_count,
+                        owner_retry_count, created_at, updated_at)
+                    VALUES ({operationId}, 'queued', 1, now(), 0, 0, now(), now())
+                    """,
+                    cancellationToken);
             }
 
             await transaction.CommitAsync(cancellationToken);

@@ -15,6 +15,9 @@ public static class DocumentReadingSetup
             serviceProvider.GetRequiredService<IConfiguration>(),
             serviceProvider.GetRequiredService<IHostEnvironment>()));
 
+        // The trusted worker boundary over reading jobs; never used by HTTP handlers (see DocumentReadingJobs).
+        services.AddScoped<DocumentReadingJobs>();
+
         // No resilience or retry handler: an Analyze request whose outcome is unknown must not be sent again.
         services.AddHttpClient(HttpClientName)
             .ConfigureHttpClient((serviceProvider, client) =>

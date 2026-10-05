@@ -309,9 +309,9 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [x] 1.1 API restore/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`. — 9527bea
-- [x] 1.2 Bicep lint and read-only what-if pass: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; owner access template validates without application. — 9527bea
-- [x] 1.3 Synthetic probe verifies analysis, result retrieval and deletion request without altering originals; no live-provider call runs in ordinary CI. — 9527bea
+- [x] 1.1 API restore/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`. — 5cf12cd
+- [x] 1.2 Bicep lint and read-only what-if pass: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; owner access template validates without application. — 5cf12cd
+- [x] 1.3 Synthetic probe verifies analysis, result retrieval and deletion request without altering originals; no live-provider call runs in ordinary CI. — 5cf12cd
 
 #### Manual
 
@@ -321,9 +321,9 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [ ] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [ ] 2.2 Fresh and S-02 databases migrate additively; Stored backfill excludes Uploading, repeated/concurrent completion schedules one job, and scheduling failure rolls back completion.
-- [ ] 2.3 Real PostgreSQL tests prove competing claims, expiry recovery, stale-token fencing and atomic complete-revision publication.
+- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 2.2 Fresh and S-02 databases migrate additively; Stored backfill excludes Uploading, repeated/concurrent completion schedules one job, and scheduling failure rolls back completion.
+- [x] 2.3 Real PostgreSQL tests prove competing claims, expiry recovery, stale-token fencing and atomic complete-revision publication.
 
 ### Phase 3: Extraction worker and recovery
 

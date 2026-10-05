@@ -321,6 +321,229 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingJob", b =>
+                {
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("DueAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_at");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_expires_at");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<int>("OwnerRetryCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("owner_retry_count");
+
+                    b.Property<DateTimeOffset?>("OwnerRetryWindowStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("owner_retry_window_started_at");
+
+                    b.Property<int?>("PublishedRunGeneration")
+                        .HasColumnType("integer")
+                        .HasColumnName("published_run_generation");
+
+                    b.Property<int>("RunGeneration")
+                        .HasColumnType("integer")
+                        .HasColumnName("run_generation");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("DocumentId")
+                        .HasName("pk_document_reading_jobs");
+
+                    b.HasIndex("DueAt")
+                        .HasDatabaseName("ix_document_reading_jobs_due_queued")
+                        .HasFilter("state = 'queued'");
+
+                    b.HasIndex("LeaseExpiresAt")
+                        .HasDatabaseName("ix_document_reading_jobs_lease_reading")
+                        .HasFilter("state = 'reading'");
+
+                    b.ToTable("document_reading_jobs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_document_reading_jobs_completed_at", "(state IN ('read', 'failed')) = (completed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_document_reading_jobs_counters", "run_generation >= 1 AND attempt_count >= 0 AND owner_retry_count >= 0");
+
+                            t.HasCheckConstraint("ck_document_reading_jobs_failure_code", "(state = 'failed') = (failure_code IS NOT NULL) AND (failure_code IS NULL OR failure_code ~ '^[a-z0-9_]{1,64}$')");
+
+                            t.HasCheckConstraint("ck_document_reading_jobs_lease", "(lease_token IS NULL) = (lease_expires_at IS NULL) AND (state = 'reading') = (lease_token IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_document_reading_jobs_published", "(published_run_generation IS NULL OR published_run_generation BETWEEN 1 AND run_generation) AND (state <> 'read' OR published_run_generation IS NOT DISTINCT FROM run_generation)");
+
+                            t.HasCheckConstraint("ck_document_reading_jobs_state", "state IN ('queued', 'reading', 'read', 'failed')");
+                        });
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingRunFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("CleanupAttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("cleanup_attempt_count");
+
+                    b.Property<string>("CleanupState")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("cleanup_state");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("DocumentFileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_file_id");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<string>("FetchedText")
+                        .HasColumnType("text")
+                        .HasColumnName("fetched_text");
+
+                    b.Property<DateTimeOffset?>("NextCleanupAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_cleanup_at");
+
+                    b.Property<string>("ProviderOperationId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("provider_operation_id");
+
+                    b.Property<int>("RunGeneration")
+                        .HasColumnType("integer")
+                        .HasColumnName("run_generation");
+
+                    b.Property<string>("SelectedPageRanges")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("selected_page_ranges");
+
+                    b.Property<string>("Stage")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("stage");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_document_reading_run_files");
+
+                    b.HasIndex("NextCleanupAt")
+                        .HasDatabaseName("ix_document_reading_run_files_cleanup_pending")
+                        .HasFilter("cleanup_state = 'pending'");
+
+                    b.HasIndex("ProviderOperationId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_reading_run_files_provider_operation_id")
+                        .HasFilter("provider_operation_id IS NOT NULL");
+
+                    b.HasIndex("DocumentId", "DocumentFileId")
+                        .HasDatabaseName("ix_document_reading_run_files_document_id_document_file_id");
+
+                    b.HasIndex("DocumentId", "RunGeneration", "DocumentFileId")
+                        .HasDatabaseName("ix_document_reading_run_files_document_id_run_generation_docum");
+
+                    b.ToTable("document_reading_run_files", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_document_reading_run_files_cleanup_state", "cleanup_state IN ('not_needed', 'pending', 'acknowledged')");
+
+                            t.HasCheckConstraint("ck_document_reading_run_files_counters", "run_generation >= 1 AND cleanup_attempt_count >= 0");
+
+                            t.HasCheckConstraint("ck_document_reading_run_files_fetched_text", "stage <> 'retrieved' OR fetched_text IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_document_reading_run_files_operation", "(provider_operation_id IS NULL) = (cleanup_state = 'not_needed') AND (stage <> 'submitted' OR provider_operation_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_document_reading_run_files_stage", "stage IN ('pending', 'submitted', 'retrieved', 'failed')");
+                        });
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentTextPage", b =>
+                {
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<int>("RunGeneration")
+                        .HasColumnType("integer")
+                        .HasColumnName("run_generation");
+
+                    b.Property<Guid>("DocumentFileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_file_id");
+
+                    b.Property<int>("SourcePageNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_page_number");
+
+                    b.Property<string>("ExtractionMethod")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("extraction_method");
+
+                    b.Property<int>("FilePosition")
+                        .HasColumnType("integer")
+                        .HasColumnName("file_position");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text");
+
+                    b.HasKey("DocumentId", "RunGeneration", "DocumentFileId", "SourcePageNumber")
+                        .HasName("pk_document_text_pages");
+
+                    b.HasIndex("DocumentId", "DocumentFileId")
+                        .HasDatabaseName("ix_document_text_pages_document_id_document_file_id");
+
+                    b.ToTable("document_text_pages", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_document_text_pages_extraction_method", "extraction_method IN ('text_layer', 'ocr')");
+
+                            t.HasCheckConstraint("ck_document_text_pages_provenance", "run_generation >= 1 AND source_page_number >= 1 AND file_position >= 0 AND file_position < 10");
+                        });
+                });
+
             modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.Document", b =>
                 {
                     b.Property<Guid>("Id")
@@ -431,6 +654,9 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_document_files");
 
+                    b.HasAlternateKey("DocumentId", "Id")
+                        .HasName("ak_document_files_document_id_id");
+
                     b.HasIndex("BlobKey")
                         .IsUnique()
                         .HasDatabaseName("ix_document_files_blob_key");
@@ -523,6 +749,52 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_auth_sessions_users_user_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingJob", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.Documents.Document", null)
+                        .WithOne()
+                        .HasForeignKey("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingJob", "DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_reading_jobs_documents_document_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingRunFile", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingJob", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_reading_run_files_document_reading_jobs_document_id");
+
+                    b.HasOne("ogarniamy_zwierzaki_api.Documents.DocumentFile", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId", "DocumentFileId")
+                        .HasPrincipalKey("DocumentId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_reading_run_files_document_files_document_id_docum");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentTextPage", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingJob", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_text_pages_document_reading_jobs_document_id");
+
+                    b.HasOne("ogarniamy_zwierzaki_api.Documents.DocumentFile", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId", "DocumentFileId")
+                        .HasPrincipalKey("DocumentId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_text_pages_document_files_document_id_document_fil");
                 });
 
             modelBuilder.Entity("ogarniamy_zwierzaki_api.Documents.Document", b =>

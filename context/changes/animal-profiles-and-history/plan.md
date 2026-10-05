@@ -265,13 +265,13 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 
 #### Automated
 
-- [x] 1.1 API restore/build/test and frontend check/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`, `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
-- [x] 1.2 Migration tests preserve existing animal/membership/document data, initialize activity/version, and retain all-owned onboarding counts.
-- [x] 1.3 API tests prove name limits/duplicates, Stored-only counts, 401/404 isolation, antiforgery rejection, required/malformed/stale versions, atomic competing edits and no-op version behavior.
+- [x] 1.1 API restore/build/test and frontend check/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`, `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`. — 6789443
+- [x] 1.2 Migration tests preserve existing animal/membership/document data, initialize activity/version, and retain all-owned onboarding counts. — 6789443
+- [x] 1.3 API tests prove name limits/duplicates, Stored-only counts, 401/404 isolation, antiforgery rejection, required/malformed/stale versions, atomic competing edits and no-op version behavior. — 6789443
 
 #### Manual
 
-- [x] 1.4 Existing PL/EN registration and first-animal onboarding still work with antiforgery-protected creation.
+- [x] 1.4 Existing PL/EN registration and first-animal onboarding still work with antiforgery-protected creation. — 6789443
 
 ### Phase 2: Capture eligibility and upload races
 

@@ -368,7 +368,7 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Manual
 
-- [ ] 4.3 PL/EN desktop and phone detail views show queued/reading/read/failed, recover through Retry, stop polling correctly and open originals during provider/status failure.
+- [x] 4.3 PL/EN desktop and phone detail views show queued/reading/read/failed, recover through Retry, stop polling correctly and open originals during provider/status failure. — passed 2026-10-11 with the owner (states driven by SQL on a local test database); the account-change Retry path failed first and was fixed in 8ace8cc; the 10-minute polling stop was not exercised manually
 
 ### Phase 5: Deployment verification and documentation
 

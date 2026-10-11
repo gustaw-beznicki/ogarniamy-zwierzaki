@@ -88,22 +88,39 @@ export interface DocumentPage {
   hasMore: boolean;
 }
 
+export type DocumentReadingState = 'queued' | 'reading' | 'read' | 'failed';
+
+// Reading a Stored document's content, fetched separately from the document. failureCode is a sanitized code while
+// failed. canRetry is true when an owner Retry would be accepted now; retryAfter is when the next one will be while the
+// hourly limit blocks it. completedAt is when reading last reached read or failed. "read" means the content was
+// extracted, not that it is searchable.
+export interface DocumentReadingStatus {
+  state: DocumentReadingState;
+  failureCode: string | null;
+  canRetry: boolean;
+  retryAfter: string | null;
+  completedAt: string | null;
+}
+
 interface AntiforgeryToken {
   token: string;
   headerName: string;
 }
 
 // code is the ProblemDetails `code` when the response carried one, otherwise a fallback derived from the HTTP
-// status (proxy-generated errors may have no JSON body). status is 0 when no HTTP response was received.
+// status (proxy-generated errors may have no JSON body). status is 0 when no HTTP response was received. retryAfter is
+// the ProblemDetails `retryAfter` timestamp of a rate-limited request, when it carried one.
 export class ApiError extends Error {
   readonly code: string;
   readonly status: number;
+  readonly retryAfter: string | null;
 
-  constructor(code: string, status = 0) {
+  constructor(code: string, status = 0, retryAfter: string | null = null) {
     super(code);
     this.name = 'ApiError';
     this.code = code;
     this.status = status;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -137,16 +154,20 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const response = await fetch(path, { method: options.method ?? 'GET', headers, body, credentials: 'same-origin' });
   if (!response.ok) {
     let code = fallbackCode(response.status);
+    let retryAfter: string | null = null;
     try {
       const problem: unknown = await response.json();
       if (typeof problem === 'object' && problem !== null && 'code' in problem && typeof problem.code === 'string') {
         code = problem.code;
       }
+      if (typeof problem === 'object' && problem !== null && 'retryAfter' in problem && typeof problem.retryAfter === 'string') {
+        retryAfter = problem.retryAfter;
+      }
     } catch {
       // The response may not contain JSON ProblemDetails (for example a proxy error page).
     }
     if (response.status === 401) antiforgery = null;
-    throw new ApiError(code, response.status);
+    throw new ApiError(code, response.status, retryAfter);
   }
   if (response.status === 204 || response.status === 201 && !response.headers.get('content-type')) {
     return undefined as T;
@@ -197,6 +218,27 @@ async function accountMutation<T>(path: string, options: RequestOptions): Promis
   }
 }
 
+// Sends an owner mutation once, on behalf of the account that loaded the page. Nothing is replayed: after a rejected
+// token, or a 404 (owner routes hide other accounts' resources), the session is checked — another account's session
+// fails with `account_changed` (the click never acted for that account: its token was refused or the resource is not
+// its own), otherwise the original error is returned and the user must click again. A token fetched only at click time
+// already belongs to the new session, so the 404 check is what catches a sign-in from another tab.
+async function ownerMutation<T>(path: string, options: RequestOptions, accountEmail: string): Promise<T> {
+  const token = await antiforgeryToken();
+  try {
+    return await request<T>(path, { ...options, headers: { ...options.headers, [token.headerName]: token.token } });
+  } catch (error) {
+    if (!(error instanceof ApiError) || (error.code !== 'invalid_antiforgery_token' && error.status !== 404)) throw error;
+    if (error.code === 'invalid_antiforgery_token') antiforgery = null;
+    const me = await request<MeResponse>('/api/me');
+    if (me.email !== accountEmail) {
+      antiforgery = null;
+      throw new ApiError('account_changed', 401);
+    }
+    throw error;
+  }
+}
+
 // If-Match carries the quoted animal version from the last response.
 function versionHeader(version: string): Record<string, string> {
   return { 'If-Match': `"${version}"` };
@@ -236,4 +278,7 @@ export const api = {
   animalDocuments: (animalId: string, offset: number, limit: number) =>
     request<DocumentPage>(`/api/animals/${encodeURIComponent(animalId)}/documents?offset=${offset}&limit=${limit}`),
   document: (id: string) => request<StoredDocument>(`/api/documents/${encodeURIComponent(id)}`),
+  documentReading: (id: string) => request<DocumentReadingStatus>(`/api/documents/${encodeURIComponent(id)}/reading`),
+  retryDocumentReading: (id: string, accountEmail: string) =>
+    ownerMutation<DocumentReadingStatus>(`/api/documents/${encodeURIComponent(id)}/reading/retry`, { method: 'POST' }, accountEmail),
 };

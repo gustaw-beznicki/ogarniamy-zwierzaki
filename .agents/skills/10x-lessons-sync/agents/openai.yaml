@@ -1,0 +1,4 @@
+interface:
+  display_name: "10x Lessons Sync"
+  short_description: "Pobiera nowe lekcje i aktualizuje portal PL/EN"
+  default_prompt: "Użyj $10x-lessons-sync, aby pobrać brakujące odblokowane lekcje bez nadpisywania eksportów i automatycznie zaktualizować istniejący portal streszczeń PL/EN wraz z diagramami."

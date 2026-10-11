@@ -20,6 +20,15 @@ param storageBlobEndpoint string
 @description('Name of the private container holding the originals.')
 param originalsContainerName string
 
+@description('Document Intelligence endpoint, for example https://<account>.cognitiveservices.azure.com/. Not a secret.')
+param documentIntelligenceEndpoint string
+
+@description('Document Intelligence model used for reading.')
+param documentReadingModelId string
+
+@description('Document Intelligence REST API version.')
+param documentReadingApiVersion string
+
 // The site's own settings need its name, so it is computed once instead of read back from the resource.
 var siteName = 'app-ogarniamy-api-${uniqueString(subscription().id)}'
 
@@ -78,6 +87,28 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
         {
           name: 'Storage__OriginalsContainer'
           value: originalsContainerName
+        }
+        {
+          // No key: the Document Intelligence account disables local auth; the API uses its managed identity.
+          name: 'DocumentReading__Auth'
+          value: 'AzureManagedIdentity'
+        }
+        {
+          name: 'DocumentReading__Endpoint'
+          value: documentIntelligenceEndpoint
+        }
+        {
+          name: 'DocumentReading__ModelId'
+          value: documentReadingModelId
+        }
+        {
+          name: 'DocumentReading__ApiVersion'
+          value: documentReadingApiVersion
+        }
+        {
+          // Reading runs only once a later release enables the worker.
+          name: 'DocumentReading__WorkerEnabled'
+          value: 'false'
         }
       ]
     }

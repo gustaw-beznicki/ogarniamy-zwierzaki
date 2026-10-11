@@ -30,6 +30,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["ConnectionStrings:Storage"] = _azurite.GetConnectionString(),
                 ["Storage:Auth"] = "ConnectionString",
                 ["Storage:OriginalsContainer"] = "originals",
+                // Pinned so a developer's user secrets can never make tests call Azure or start the background worker;
+                // reading tests construct the worker themselves with a fake provider.
+                ["DocumentReading:Auth"] = "Disabled",
+                ["DocumentReading:WorkerEnabled"] = "false",
             }));
     }
 

@@ -114,6 +114,9 @@ label.chip:focus-within { outline: 3px solid var(--color-text); outline-offset: 
 .document-fields dt { color: var(--color-text-muted); font-size: 14px; }
 .document-fields dd { margin: 2px 0 0; font-weight: 600; }
 .stored-notice { margin: 0 0 24px; }
+.reading-status { margin: 0 0 24px; }
+.reading-status h2 { margin: 0 0 8px; font-size: 18px; }
+.reading-status > :last-child { margin-bottom: 0; }
 .original-pages { display: grid; gap: 16px; padding: 0; margin: 0; list-style: none; }
 .original-page figure { margin: 0 0 12px; }
 .original-page img { display: block; width: 100%; max-height: 80vh; border-radius: var(--radius-control); background: var(--color-bg); object-fit: contain; }

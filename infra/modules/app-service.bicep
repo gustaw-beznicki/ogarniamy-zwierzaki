@@ -106,9 +106,10 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
           value: documentReadingApiVersion
         }
         {
-          // Reading runs only once a later release enables the worker.
+          // Background reading is on. To pause it, set this back to 'false' and deploy; jobs, text and pending
+          // cleanup stay in the database (see context/changes/read-document-content/notes/reading-runbook.md).
           name: 'DocumentReading__WorkerEnabled'
-          value: 'false'
+          value: 'true'
         }
       ]
     }

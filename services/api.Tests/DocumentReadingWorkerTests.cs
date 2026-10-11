@@ -336,6 +336,30 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
     }
 
     [Fact]
+    public async Task A_document_of_an_animal_marked_inactive_is_still_read()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider();
+        var (document, client) = await CaptureAsync(SampleOriginals.Png());
+        var animalId = document.GetProperty("animalId").GetGuid();
+        var animal = await client.GetJsonAsync($"/api/animals/{animalId}");
+        using (var inactivated = await client.SendJsonAsync(
+            HttpMethod.Put, $"/api/animals/{animalId}/activity", new { isActive = false },
+            $"\"{animal.GetProperty("version").GetGuid()}\""))
+        {
+            Assert.Equal(HttpStatusCode.OK, inactivated.StatusCode);
+        }
+
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+
+        Assert.Equal(DocumentReadingState.Read, (await JobAsync(document)).State);
+        Assert.Equal(["OCR text 1"], (await PagesAsync(document)).Select(p => p.Text));
+        var status = await client.GetJsonAsync($"/api/documents/{IdOf(document)}/reading");
+        Assert.Equal("read", status.GetProperty("state").GetString());
+        Assert.False((await client.GetJsonAsync($"/api/animals/{animalId}")).GetProperty("isActive").GetBoolean());
+    }
+
+    [Fact]
     public async Task A_storage_outage_while_reading_the_original_is_transient()
     {
         await ParkExistingJobsAsync();

@@ -1,7 +1,7 @@
 import type { Locale } from './index';
 import type { Messages } from './en';
 
-type CountedKey = 'fileCount' | 'photoCount';
+type CountedKey = 'fileCount' | 'photoCount' | 'documentCount';
 type PluralCategory = 'one' | 'few' | 'many' | 'other';
 
 // Replaces {name} placeholders in a translated template.

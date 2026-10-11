@@ -54,7 +54,7 @@ public static class DocumentTestData
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var documents = scope.ServiceProvider.GetRequiredService<OwnedDocuments>();
-        Assert.True(await documents.AddUploadAsync(userId, manifest));
+        Assert.Equal(UploadAcceptance.Accepted, await documents.AddUploadAsync(userId, manifest));
         return manifest.Id;
     }
 

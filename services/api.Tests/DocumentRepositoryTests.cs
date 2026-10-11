@@ -80,7 +80,7 @@ public sealed class DocumentRepositoryTests(ApiFactory factory) : IClassFixture<
         Assert.Null(await documents.FindUploadAsync(otherId, pendingId));
         Assert.Null(await documents.FindUploadAsync(otherId, stored.Id));
         Assert.Null(await documents.CompleteAsync(otherId, pendingId));
-        Assert.False(await documents.AddUploadAsync(
+        Assert.Equal(UploadAcceptance.AnimalNotFound, await documents.AddUploadAsync(
             otherId, DocumentTestData.NewManifest(animalId, EventDate, DocumentFile.PngContentType)));
 
         // The owner still sees exactly what was there, and the other account's preference is untouched.

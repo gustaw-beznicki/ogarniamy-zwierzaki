@@ -44,6 +44,7 @@ Generated outputs such as `apps/web/node_modules/`, `apps/web/dist/`, `apps/web/
 - Do not change strict TypeScript, nullable reference types, or implicit usings unless the task explicitly requires an intentional configuration migration.
 - Never add credentials, API keys, or connection strings to tracked files. If a feature requires a secret and no storage convention exists, stop and ask where it should be stored.
 - One type per file (C#): every class, record, enum, interface and struct in `services/` lives in its own file named after the type (generated EF Core migration files excepted). TypeScript in `apps/web` may group related types in one module, as `src/lib/api.ts` does.
+- Never write `SELECT *` in hand-written SQL (`FromSql`, `SqlQuery`, `ExecuteSql`, migrations, scripts). List the needed columns explicitly, including the full mapped column list when `FromSql` returns an entity type. Prefer LINQ, where EF Core generates explicit column lists; use raw SQL only when LINQ can't express the query (for example, `FOR UPDATE` row locks).
 - NuGet package versions live only in the root `Directory.Packages.props` (central package management). A `.csproj` references packages without a `Version` attribute; add or bump a version by editing `Directory.Packages.props`.
 - Edit only files required by the current task. Do not revert, format, stage, or commit unrelated changes or untracked files.
 

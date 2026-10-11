@@ -15,9 +15,9 @@ The project is in early development. What runs today:
 - An Astro frontend and an ASP.NET Core API, deployed to Azure by CI/CD.
 - A PostgreSQL database that the API migrates at startup; `GET /api/health` is healthy only when the database is reachable.
 - Email and password registration, sign-in and sign-out with cookie sessions.
-- First-animal onboarding and an Animals list isolated by owner.
-- Document capture on the Add page: take a photo or choose one PDF or 1–10 JPEG/PNG photos (each at most 10 MiB, 10,485,760 bytes), reorder the photos, pick the animal and the date of the veterinary event (today or earlier), and save. The animal defaults to the one used in the account's last saved capture.
-- Originals are stored byte for byte in a private Blob Storage container and are never public: a per-animal document list and a document view open them only through the signed-in owner's session. The event date and the upload time are shown separately.
+- First-animal onboarding and animal profiles isolated by owner. On Animals, owners add more name-only animals and see each one's number of stored documents; an animal's profile shows its document history, and owners can rename it or mark it inactive and active again. Inactive animals are grouped in a collapsed section and keep their full history and originals, but new documents can only be added to active animals. Animals and documents cannot be deleted.
+- Document capture on the Add page: take a photo or choose one PDF or 1–10 JPEG/PNG photos (each at most 10 MiB, 10,485,760 bytes), reorder the photos, pick an active animal and the date of the veterinary event (today or earlier), and save. The animal defaults to the one used in the account's last saved capture while it is active, otherwise to the earliest-created active animal. An upload that was already accepted still finishes if its animal is marked inactive meanwhile.
+- Originals are stored byte for byte in a private Blob Storage container and are never public: an animal's document history and a document view open them only through the signed-in owner's session. The history is ordered by the event date the owner entered, which is shown separately from the upload time; it is a list of stored documents, not a verified medical timeline.
 - Background reading of stored documents: PDFs with a usable text layer are read locally, and scanned pages and photos go to Azure Document Intelligence OCR. The text is kept with its source file and page for later search; the original is never changed. The document view shows whether the content is queued, being read, read or failed, with Retry after a failure, and the originals stay openable whatever the reading status. On the free App Service plan, reading waits while the app is asleep and resumes on the next visit.
 - A Polish and English interface, with bottom navigation on phones and a sidebar on desktop. Search is a placeholder.
 - An integration test suite that runs against real PostgreSQL and Azurite (Blob Storage emulator) containers.
@@ -25,7 +25,6 @@ The project is in early development. What runs today:
 Everything else in the MVP is planned, not built yet:
 
 - Password reset, email verification and additional sign-in methods.
-- Animal profile editing, inactive status and a full animal profile.
 - Editing or deleting documents after they are saved, and HEIC/HEIF photos.
 - Semantic search across document content, optionally filtered by animal, showing the matching fragment and opening the original. Read documents are not searchable yet.
 
@@ -57,7 +56,7 @@ npm ci --prefix apps/web
 npm run dev --prefix apps/web
 ```
 
-Open `http://localhost:4321/signin/` for Polish or `http://localhost:4321/en/signin/` for English. The frontend proxies `/api/*` to the local API at `http://localhost:5180`. Register, save the first animal's name, then add a document from Add and open it from the animal's documents in Animals.
+Open `http://localhost:4321/signin/` for Polish or `http://localhost:4321/en/signin/` for English. The frontend proxies `/api/*` to the local API at `http://localhost:5180`. Register, save the first animal's name, then add a document from Add and open it from the animal's profile in Animals.
 
 ## Verification
 
@@ -70,13 +69,13 @@ npm run check --prefix apps/web
 npm run build --prefix apps/web
 ```
 
-The tests use disposable PostgreSQL and Azurite containers and cover authentication, animals, document capture and retrieval, document reading with a fake OCR provider, isolation between accounts, and recovery from storage, database and provider failures. They never call Azure. Pull-request CI also lints Bicep and previews infrastructure changes. See [tests and checks](docs/testing.md) for details.
+The tests use disposable PostgreSQL and Azurite containers and cover authentication, animal profiles and their lifecycle, document capture and retrieval, document reading with a fake OCR provider, isolation between accounts, and recovery from storage, database and provider failures. They never call Azure. Pull-request CI also lints Bicep and previews infrastructure changes. See [tests and checks](docs/testing.md) for details.
 
 After deployment, `scripts/smoke.sh <swa-host> <api-host>` checks both locale sign-in pages, API and database health through the proxy (with a 600-second retry window), 401 responses without a redirect for anonymous `/api/me`, document, original and reading status/Retry requests, and refusal of direct API access. It creates no accounts and changes no data.
 
 ## Rollback
 
-Revert the offending commit on `main` and approve the resulting deployment, or re-run an earlier successful deployment. This restores code only: accounts, animals, documents, read text, reading jobs, session keys, the migrated database schema and every stored original remain. Background reading can also be paused on its own without a rollback. Use forward-only, backward-compatible migrations (expand first, contract later) so the previous release can still read the current data. Database recovery is a separate operation. See the [deployment guide](docs/deployment.md).
+Revert the offending commit on `main` and approve the resulting deployment, or re-run an earlier successful deployment. This restores code only: accounts, animals, documents, read text, reading jobs, session keys, the migrated database schema and every stored original remain. Background reading can also be paused on its own without a rollback. Use forward-only, backward-compatible migrations (expand first, contract later) so the previous release can still read the current data. A release older than animal activity ignores the inactive status and would accept new documents for inactive animals, so pause new captures until a forward fix is deployed; originals stay retrievable throughout. Database recovery is a separate operation. See the [deployment guide](docs/deployment.md).
 
 ## Further reading
 

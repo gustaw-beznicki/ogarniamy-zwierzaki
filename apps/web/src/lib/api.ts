@@ -13,8 +13,9 @@ export interface Animal {
   storedDocumentCount: number;
 }
 
-// The animals a capture can be assigned to and the preselected one (the account's last completed capture's animal
-// while it is still eligible). defaultAnimalId is null only when the account has no animals.
+// The active animals a fresh capture can be assigned to and the preselected one (the account's last completed
+// capture's animal while it is still active). Both are empty/null when the account has no active animal, which is
+// not the same as having no animals (see MeResponse.hasAnimals).
 export interface CaptureDefaults {
   animals: Animal[];
   defaultAnimalId: string | null;

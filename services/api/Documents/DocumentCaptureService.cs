@@ -22,7 +22,8 @@ public sealed partial class DocumentCaptureService(
 {
     private const string EventDateFormat = "yyyy-MM-dd";
 
-    // Creates the upload operation from its manifest. An identical retry returns the existing operation in any state;
+    // Creates the upload operation from its manifest. An identical retry returns the existing operation in any state,
+    // whether or not its animal is still active; a fresh manifest for an inactive animal is refused;
     // a different manifest under the same operation ID is a conflict. The event date is compared with today in the
     // supplied time zone only when the operation is first created, never again on a retry.
     public async Task<CaptureResult<DocumentUploadResponse>> CreateUploadAsync(
@@ -49,9 +50,14 @@ public sealed partial class DocumentCaptureService(
 
             try
             {
-                if (!await documents.AddUploadAsync(userId, manifest, cancellationToken))
+                switch (await documents.AddUploadAsync(userId, manifest, cancellationToken))
                 {
-                    return CaptureResult<DocumentUploadResponse>.Fail(DocumentCaptureFailure.NotFound);
+                    case UploadAcceptance.AnimalNotFound:
+                        return CaptureResult<DocumentUploadResponse>.Fail(DocumentCaptureFailure.NotFound);
+                    case UploadAcceptance.AnimalInactive:
+                        logger.LogInformation(
+                            "Upload operation {OperationId} refused: its animal is inactive.", operationId);
+                        return CaptureResult<DocumentUploadResponse>.Fail(DocumentCaptureFailure.AnimalInactive);
                 }
             }
             catch (DbUpdateException exception) when (

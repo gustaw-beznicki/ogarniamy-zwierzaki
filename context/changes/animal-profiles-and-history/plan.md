@@ -277,33 +277,33 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 
 #### Automated
 
-- [ ] 2.1 API build/test and frontend check/build pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
-- [ ] 2.2 Real PostgreSQL tests prove both upload/inactivation race orders, accepted-manifest retry/completion, active default fallback and all-inactive archive access.
+- [x] 2.1 API build/test and frontend check/build pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`. — fbf7e1c
+- [x] 2.2 Real PostgreSQL tests prove both upload/inactivation race orders, accepted-manifest retry/completion, active default fallback and all-inactive archive access. — fbf7e1c
 
 #### Manual
 
-- [ ] 2.3 Two tabs prove that inactivation removes fresh capture choices, preserves selected files when rejected, and does not strand an accepted upload.
+- [x] 2.3 Two tabs prove that inactivation removes fresh capture choices, preserves selected files when rejected, and does not strand an accepted upload. — fbf7e1c
 
 ### Phase 3: Animal management and profile UI
 
 #### Automated
 
-- [ ] 3.1 Frontend check/build and API regression suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [ ] 3.2 Existing document ordering/pagination/isolation tests remain green; API conflict tests prove rename and activity cannot silently overwrite a newer version.
+- [x] 3.1 Frontend check/build and API regression suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — fcd174a
+- [x] 3.2 Existing document ordering/pagination/isolation tests remain green; API conflict tests prove rename and activity cannot silently overwrite a newer version. — fcd174a
 
 #### Manual
 
-- [ ] 3.3 PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history, with keyboard-accessible controls and retained locale resource selection.
-- [ ] 3.4 Two-tab stale rename/activity conflicts preserve drafts, require refresh/reapply and never silently overwrite newer edits; all-inactive accounts keep archive access.
+- [x] 3.3 PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history, with keyboard-accessible controls and retained locale resource selection. — fcd174a
+- [x] 3.4 Two-tab stale rename/activity conflicts preserve drafts, require refresh/reapply and never silently overwrite newer edits; all-inactive accounts keep archive access. — fcd174a
 
 ### Phase 4: Integrated verification and documentation
 
 #### Automated
 
-- [ ] 4.1 Full component checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
-- [ ] 4.2 After S-03 integration, the combined migration model has no pending changes and lifecycle/reading/original isolation regression tests pass.
+- [x] 4.1 Full component checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`. — 5912bed
+- [x] 4.2 After S-03 integration, the combined migration model has no pending changes and lifecycle/reading/original isolation regression tests pass. — 20de61d
 
 #### Manual
 
 - [ ] 4.3 After separately approved deployment, two synthetic accounts verify management isolation, stale-edit rejection, all-inactive access and completion/retrieval of an upload accepted before inactivation.
-- [ ] 4.4 Owner reviews the lifecycle/rollback notes and confirms no deletion action or misleading event-date timeline promise appears in the interface.
+- [x] 4.4 Owner reviews the lifecycle/rollback notes and confirms no deletion action or misleading event-date timeline promise appears in the interface. — 5912bed

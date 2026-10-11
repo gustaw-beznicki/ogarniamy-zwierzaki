@@ -10,8 +10,10 @@ public sealed class PdfTextReader
 {
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(60);
 
-    // Room for the 10,000,000-character limit in UTF-8 plus JSON overhead; more is treated as a parser failure.
-    public long MaxOutputBytes { get; init; } = 48L * 1024 * 1024;
+    // The child's JSON output is parsed as it arrives, never buffered. More is treated as a parser failure, which lets
+    // the provider read the file instead. Room for a large text layer, not for the full 10,000,000-character document
+    // limit: JSON escaping can take up to six bytes per non-ASCII character.
+    public long MaxOutputBytes { get; init; } = 24L * 1024 * 1024;
 
     // A page's text layer can be used as is when it has a letter or digit, no replacement, null or control characters
     // (other than whitespace) that betray a broken font mapping, and no raster image that may hold scanned text.
@@ -50,13 +52,14 @@ public sealed class PdfTextReader
         timeout.CancelAfter(Timeout);
         try
         {
-            var stdout = ReadCappedAsync(process.StandardOutput.BaseStream, timeout);
+            // Read concurrently with writing the input, so neither pipe can fill up and stall the child.
+            var stdout = ParseOutputAsync(process.StandardOutput.BaseStream, timeout);
             var stderr = process.StandardError.BaseStream.CopyToAsync(Stream.Null, timeout.Token);
             await WriteInputAsync(process, pdf, timeout.Token);
             var output = await stdout;
             await stderr;
             await process.WaitForExitAsync(timeout.Token);
-            if (output is null || process.ExitCode != 0)
+            if (process.ExitCode != 0)
             {
                 throw DocumentReadFailure.LocalParserFailed();
             }
@@ -83,18 +86,28 @@ public sealed class PdfTextReader
         }
     }
 
-    private static IReadOnlyList<PdfLocalPage> Interpret(byte[] output)
+    // Oversized output fails the parse and cancels the rest of it (the child is killed on the way out); so does output
+    // that is not the expected JSON.
+    private async Task<PdfTextHelperOutput?> ParseOutputAsync(Stream stdout, CancellationTokenSource timeout)
     {
-        PdfTextHelperOutput? result;
         try
         {
-            result = JsonSerializer.Deserialize<PdfTextHelperOutput>(output, PdfTextReaderProcess.JsonOptions);
+            await using var capped = new LengthLimitedStream(stdout, MaxOutputBytes, () =>
+            {
+                timeout.Cancel();
+                return DocumentReadFailure.LocalParserFailed();
+            });
+            return await JsonSerializer.DeserializeAsync<PdfTextHelperOutput>(
+                capped, PdfTextReaderProcess.JsonOptions, timeout.Token);
         }
         catch (JsonException)
         {
             throw DocumentReadFailure.LocalParserFailed();
         }
+    }
 
+    private static IReadOnlyList<PdfLocalPage> Interpret(PdfTextHelperOutput? result)
+    {
         return result?.Status switch
         {
             PdfTextHelperOutput.Ok when result.Pages is { Count: > 0 } pages
@@ -123,26 +136,6 @@ public sealed class PdfTextReader
                 // The child already exited; its output tells what happened.
             }
         }
-    }
-
-    // Null when the output exceeds the cap; the child is then killed.
-    private async Task<byte[]?> ReadCappedAsync(Stream stdout, CancellationTokenSource timeout)
-    {
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81_920];
-        int read;
-        while ((read = await stdout.ReadAsync(chunk, timeout.Token)) > 0)
-        {
-            if (buffer.Length + read > MaxOutputBytes)
-            {
-                await timeout.CancelAsync();
-                return null;
-            }
-
-            buffer.Write(chunk, 0, read);
-        }
-
-        return buffer.ToArray();
     }
 
     // The child keeps only these variables: what the .NET host and temporary files need. Everything else (connection

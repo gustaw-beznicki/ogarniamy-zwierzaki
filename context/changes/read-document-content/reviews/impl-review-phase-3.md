@@ -49,7 +49,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
   - Tradeoff: Very verbose provider JSON for a legitimate large document could hit the lower cap and fail as `result_limit_exceeded`.
   - Confidence: MED — cap sizes need confirmation against real Read result sizes (3.4 live run).
   - Blind spot: Actual F1 memory headroom under load has not been measured.
-- **Decision**: DEFERRED until manual 3.4: cap sizes are set from real result sizes observed there.
+- **Decision**: FIXED 2026-10-11: OCR results and the child's output are parsed straight from their streams through a length-limiting stream (no buffered copy); caps lowered to 64 MiB (OCR JSON, about 38 bytes per recognised character per the 3.4 measurement) and 24 MiB (child output, which falls back to OCR when exceeded). Verified live with the worker on the synthetic 8-page scan.
 
 ### F3 — Every retry or resume re-runs the local PDF parse
 

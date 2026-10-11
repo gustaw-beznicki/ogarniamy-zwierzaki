@@ -13,8 +13,10 @@ namespace ogarniamy_zwierzaki_api.DocumentReading;
 public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? credential, DocumentReadingOptions options)
     : IDocumentTextReader
 {
-    // A larger analysis result is refused instead of being buffered.
-    public long MaxResultBytes { get; init; } = 256L * 1024 * 1024;
+    // A larger analysis result is refused. The JSON is about 38 bytes per recognised character (words carry polygons and
+    // spans; measured 2026-10-11), so 64 MiB holds several hundred dense pages while keeping the parsed document well
+    // within F1 memory.
+    public long MaxResultBytes { get; init; } = 64L * 1024 * 1024;
 
     public async Task<string> SubmitAsync(
         Stream content, string contentType, string? pages, CancellationToken cancellationToken)
@@ -302,6 +304,8 @@ public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? cr
         return read;
     }
 
+    // Parses the response body straight from the network stream; the cap bounds what the parser may consume, so no
+    // copy of the body is buffered first.
     private async Task<JsonDocument> ParseCappedAsync(
         HttpResponseMessage response, CancellationToken cancellationToken, long? maxBytes = null)
     {
@@ -311,35 +315,21 @@ public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? cr
             throw DocumentReadFailure.Terminal(DocumentReadFailure.ResultLimitExceeded, abandonsOperation: true);
         }
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81_920];
-        int read;
         try
         {
-            while ((read = await stream.ReadAsync(chunk, cancellationToken)) > 0)
-            {
-                if (buffer.Length + read > cap)
-                {
-                    throw DocumentReadFailure.Terminal(DocumentReadFailure.ResultLimitExceeded, abandonsOperation: true);
-                }
-
-                buffer.Write(chunk, 0, read);
-            }
+            await using var body = new LengthLimitedStream(
+                await response.Content.ReadAsStreamAsync(cancellationToken), cap,
+                () => DocumentReadFailure.Terminal(DocumentReadFailure.ResultLimitExceeded, abandonsOperation: true));
+            return await JsonDocument.ParseAsync(body, cancellationToken: cancellationToken);
+        }
+        catch (JsonException)
+        {
+            throw DocumentReadFailure.Terminal(DocumentReadFailure.ProviderProtocol, abandonsOperation: true);
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException
                                               || (exception is TaskCanceledException && !cancellationToken.IsCancellationRequested))
         {
             throw DocumentReadFailure.Transient(DocumentReadFailure.ProviderUnavailable);
-        }
-
-        try
-        {
-            return JsonDocument.Parse(buffer.ToArray());
-        }
-        catch (JsonException)
-        {
-            throw DocumentReadFailure.Terminal(DocumentReadFailure.ProviderProtocol, abandonsOperation: true);
         }
     }
 

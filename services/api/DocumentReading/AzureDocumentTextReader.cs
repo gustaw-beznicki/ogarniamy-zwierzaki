@@ -10,7 +10,8 @@ namespace ogarniamy_zwierzaki_api.DocumentReading;
 // saved result ID and Delete Analyze Result, with an Entra token. No retry handler: a submission is sent exactly once
 // and the worker decides about later attempts. Only the provider's error codes are interpreted; its messages, the
 // request and the result are never logged.
-public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? credential, DocumentReadingOptions options)
+public sealed class AzureDocumentTextReader(
+    HttpClient http, TokenCredential? credential, DocumentReadingOptions options, TimeProvider? time = null)
     : IDocumentTextReader
 {
     // A larger analysis result is refused. The JSON is about 38 bytes per recognised character (words carry polygons and
@@ -333,9 +334,10 @@ public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? cr
         }
     }
 
-    private static TimeSpan? RetryAfterOf(HttpResponseMessage response) =>
+    // An absolute Retry-After date is measured against the injected clock.
+    private TimeSpan? RetryAfterOf(HttpResponseMessage response) =>
         response.Headers.RetryAfter is { } retryAfter
-            ? retryAfter.Delta ?? (retryAfter.Date is { } date ? date - DateTimeOffset.UtcNow : null)
+            ? retryAfter.Delta ?? (retryAfter.Date is { } date ? date - (time ?? TimeProvider.System).GetUtcNow() : null)
             : null;
 
     // The result ID is the last path segment of .../analyzeResults/{resultId}.

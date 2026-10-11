@@ -113,6 +113,7 @@ builder.Services.TryAddSingleton(TimeProvider.System);
 builder.Services.AddScoped<OwnedAnimals>();
 builder.Services.AddScoped<OwnedDocuments>();
 builder.Services.AddScoped<DocumentCaptureService>();
+builder.Services.AddScoped<OwnedDocumentReading>();
 
 var app = builder.Build();
 
@@ -152,5 +153,6 @@ app.MapMeEndpoint();
 app.MapAnimalEndpoints();
 app.MapAntiforgeryEndpoints();
 app.MapDocumentEndpoints();
+app.MapDocumentReadingEndpoints();
 
 app.Run();

@@ -47,6 +47,31 @@ public sealed class AzureDocumentTextReaderTests
         Assert.Equal(["op-gone"], provider.DeletedIds);
     }
 
+    [Fact]
+    public async Task An_absolute_retry_after_date_is_measured_against_the_injected_clock()
+    {
+        var now = new DateTimeOffset(2030, 1, 2, 3, 4, 5, TimeSpan.Zero);
+        var provider = new FakeOcrProvider
+        {
+            BeforePoll = _ =>
+            {
+                var response = FakeOcrProvider.Error(HttpStatusCode.ServiceUnavailable, "ServiceUnavailable");
+                response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(now.AddMinutes(7));
+                return Task.FromResult<HttpResponseMessage?>(response);
+            },
+        };
+        var reader = new AzureDocumentTextReader(
+            new HttpClient(provider), new FakeTokenCredential(),
+            new DocumentReadingOptions { Auth = DocumentReadingAuthMode.AzureManagedIdentity, Endpoint = new Uri(FakeOcrProvider.Endpoint) },
+            new FixedTimeProvider(now));
+
+        var failure = await Assert.ThrowsAsync<DocumentReadFailure>(
+            () => reader.GetAnalysisAsync("op-throttled", CancellationToken.None));
+
+        Assert.True(failure.IsTransient);
+        Assert.Equal(TimeSpan.FromMinutes(7), failure.RetryAfter);
+    }
+
     private static AzureDocumentTextReader Reader(FakeOcrProvider provider, long maxResultBytes = 64L * 1024 * 1024) =>
         new(new HttpClient(provider), new FakeTokenCredential(),
             new DocumentReadingOptions { Auth = DocumentReadingAuthMode.AzureManagedIdentity, Endpoint = new Uri(FakeOcrProvider.Endpoint) })

@@ -34,7 +34,8 @@ public static class DocumentReadingSetup
             return new AzureDocumentTextReader(
                 serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(HttpClientName),
                 availability.Credential,
-                availability.Options);
+                availability.Options,
+                serviceProvider.GetRequiredService<TimeProvider>());
         });
         services.AddSingleton<PdfTextReader>();
         services.AddSingleton<DocumentReadingCleanup>();

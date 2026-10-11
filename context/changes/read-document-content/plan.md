@@ -337,7 +337,7 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Manual
 
-- [ ] 1.4 Owner confirms the five-photo quality verdict and reviews S0/B1 cost implications, privacy assurance and staged network/RBAC diff before any production mutation.
+- [x] 1.4 Owner confirms the five-photo quality verdict and reviews S0/B1 cost implications, privacy assurance and staged network/RBAC diff before any production mutation. — accepted 2026-10-11, see notes/ocr-feasibility.md
 
 ### Phase 2: Durable jobs and text model
 

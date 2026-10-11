@@ -301,7 +301,7 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 #### Automated
 
 - [x] 4.1 Full component checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`. — 5912bed
-- [ ] 4.2 After S-03 integration, the combined migration model has no pending changes and lifecycle/reading/original isolation regression tests pass.
+- [x] 4.2 After S-03 integration, the combined migration model has no pending changes and lifecycle/reading/original isolation regression tests pass.
 
 #### Manual
 

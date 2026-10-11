@@ -29,16 +29,14 @@ Manual browser checks (local, two tabs):
 - Phase 2: inactivation in one tab removes the animal from fresh capture choices in the other; a rejected fresh capture keeps the selected files and date and asks for an eligible animal; an accepted upload is not stranded.
 - Phase 3: stale rename, inactivate and reactivate from a second tab are rejected with the draft kept and an explicit refresh/reapply; an all-inactive account keeps archive and original access; switching to EN keeps `animalId`; PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history with keyboard-accessible controls.
 
-## PENDING: S-03 integration checks
+## S-03 integration checks (2026-10-12)
 
-S-03 (`read-document-content`: reading/OCR jobs and document status) is not integrated on this branch, so none of this has been exercised yet. After S-03 is rebased onto S-06 and its migration is generated against the combined model:
+S-03 (`read-document-content`, PR #28) was merged into this branch from `main` in `d163e8e`. Migrations run in the planned order: `20261005180733_AnimalActivity`, then `20261005194436_DocumentReading`.
 
-- [ ] The combined EF Core model has no pending changes.
-- [ ] Reading/OCR jobs are created and processed for documents of inactive animals, and no activity check is added to job authorization or candidate selection.
-- [ ] The document status shown in the UI stays available for documents of inactive animals.
-- [ ] Lifecycle, reading and original isolation regression tests pass together.
-
-Evidence: _not yet recorded_.
+- [x] The combined EF Core model has no pending changes (`dotnet ef migrations has-pending-model-changes`: "No changes have been made to the model since the last migration").
+- [x] Reading/OCR jobs are created and processed for documents of inactive animals, and no activity check is added to job authorization or candidate selection. `DocumentReadingWorkerTests.A_document_of_an_animal_marked_inactive_is_still_read` captures a document, marks its animal inactive through the API, runs the worker and gets a `read` job, published text and a `read` status. Adding an active-animal filter to `ClaimNextAsync` turns the test red. `IsActive` appears nowhere in `services/api/DocumentReading/`.
+- [x] The document status shown in the UI stays available for documents of inactive animals. S-03's `DocumentReadingStatusTests.An_inactive_animals_document_keeps_its_status_and_retry` covers status and Retry through the API; a local browser check (worker disabled) shows "Treść czeka na odczytanie." / "Waiting to read the content." on the document page after the animal was marked inactive.
+- [x] Lifecycle, reading and original isolation regression tests pass together: 213/213 `dotnet test`, plus `npm run check` and `npm run build` in `apps/web`.
 
 ## PENDING: post-deployment two-account evidence
 

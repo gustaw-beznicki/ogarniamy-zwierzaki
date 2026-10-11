@@ -54,4 +54,4 @@ Evidence (date, release/commit, environment host, account labels, results): _not
 
 ## Owner review
 
-- [ ] Owner reviewed these lifecycle and rollback notes.
+- [x] Owner reviewed these lifecycle and rollback notes (2026-10-11).

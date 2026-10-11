@@ -288,13 +288,13 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 
 #### Automated
 
-- [ ] 3.1 Frontend check/build and API regression suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [ ] 3.2 Existing document ordering/pagination/isolation tests remain green; API conflict tests prove rename and activity cannot silently overwrite a newer version.
+- [x] 3.1 Frontend check/build and API regression suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
+- [x] 3.2 Existing document ordering/pagination/isolation tests remain green; API conflict tests prove rename and activity cannot silently overwrite a newer version.
 
 #### Manual
 
-- [ ] 3.3 PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history, with keyboard-accessible controls and retained locale resource selection.
-- [ ] 3.4 Two-tab stale rename/activity conflicts preserve drafts, require refresh/reapply and never silently overwrite newer edits; all-inactive accounts keep archive access.
+- [x] 3.3 PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history, with keyboard-accessible controls and retained locale resource selection.
+- [x] 3.4 Two-tab stale rename/activity conflicts preserve drafts, require refresh/reapply and never silently overwrite newer edits; all-inactive accounts keep archive access.
 
 ### Phase 4: Integrated verification and documentation
 

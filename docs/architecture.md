@@ -9,15 +9,17 @@ Azure Static Web Apps (Standard)        apps/web      Astro, static output
    v
 Azure App Service (Linux)               services/api  ASP.NET Core 10
    |  Entra tokens of the App Service managed identity
-   +------------------------------------+
-   v                                    v
-Azure Database for PostgreSQL           Azure Blob Storage
-Flexible Server 17, Entra-only auth     private `originals` container, no keys or SAS
+   +------------------------------------+------------------------------------+
+   v                                    v                                    v
+Azure Database for PostgreSQL           Azure Blob Storage                   Azure Document Intelligence
+Flexible Server 17, Entra-only auth     private `originals` container,       S0, `prebuilt-read`, Entra-only
+                                        no keys or SAS                       (OCR for the background reader)
 ```
 
 - The page and `/api/*` share one origin, so there is no CORS configuration. The App Service accepts traffic only through the Static Web App.
 - The API never stores a database password or storage key in Azure: it signs in to both with its managed identity. Locally and in tests it uses a password connection string for PostgreSQL and an Azurite connection string for Blob Storage.
-- Planned additions: OCR, pgvector search, and background indexing. Original retrieval will not depend on them, and `/api/health` checks only the database.
+- Background reading (text extraction and OCR) runs inside the API process; see [Document reading](#document-reading). Original retrieval does not depend on it, and `/api/health` checks only the database.
+- Planned additions: pgvector semantic search over the read text. It does not exist yet.
 
 ## Accounts and sessions
 
@@ -54,15 +56,38 @@ All three require an antiforgery token (`GET /api/antiforgery`, sent back in the
 
 Capture logs carry operation, document and file IDs, positions, states and failure codes, never file names or contents.
 
+## Document reading
+
+Completing a capture creates a durable reading job in the same transaction (exactly one per document; a repeated completion leaves it unchanged). The migration that introduced reading queued every document that was already `Stored`. Reading status is separate from storage state: an original stays retrievable whatever happens to reading.
+
+A `BackgroundService` in the API (`DocumentReadingWorker`) processes one job at a time. There is no separate queue service or WebJob: jobs live in PostgreSQL.
+
+- **Claims and leases.** A worker claims a due job (`FOR UPDATE SKIP LOCKED`) with a two-minute lease that it renews while working. No database transaction is held during parsing or OCR. Only the holder of the current lease and run generation may write progress or publish, so competing instances and expired workers cannot overwrite each other.
+- **Extraction.** A PDF's own text layer is read locally by a child process: the API's own assembly started with a hidden `pdf-text-helper` command, so it ships with the API. The child has a 60-second timeout, a 256 MiB heap limit and no access to the API's credentials. Pages without usable text, and every JPEG/PNG photo, go to Azure Document Intelligence `prebuilt-read` (API `2024-11-30`). The original bytes are sent with the API's managed identity; there is no public URL or SAS.
+- **Durable progress.** Each original of a run has a run file that records its stage, the provider operation ID and the checkpointed output. After a restart a saved operation is polled again instead of being submitted twice, and checkpointed output is not fetched twice.
+- **Publication.** All originals' text is published at once as one revision in `document_text_pages`, with the source file, its position and the page number, and whether the page came from the text layer or OCR. A document with no text, more than 2,000 PDF pages or more than 10,000,000 characters fails explicitly; nothing is published partially or truncated.
+- **Retries.** Transient failures (throttling, provider or storage outages, timeouts) are retried up to five attempts, after 30 seconds, 2, 10 and 30 minutes. Other failures stop the job with a sanitized failure code.
+- **Provider cleanup.** After the output is saved, the API asks the provider to delete the analysis result. Failed deletions are retried with backoff after restarts, independently of the job's outcome. An acknowledged deletion is a request, not verified erasure. A submission whose response was lost cannot be deleted early and expires under the provider's retention (up to 24 hours). This is the retention exception recorded in the PRD.
+- **F1 hosting.** The API runs on App Service F1, which has no Always On and unloads after idle time. When the app starts or wakes, the worker first retries due cleanup, then picks up due and lease-expired jobs. While the app sleeps, new jobs, retries and cleanup wait until the next request wakes it.
+
+Owner routes (session required, 401 otherwise; another account's, missing and `Uploading` documents answer 404):
+
+- `GET /api/documents/{documentId}/reading` returns `state` (`queued`, `reading`, `read` or `failed`), `failureCode` (only when failed), `canRetry`, `retryAfter` and `completedAt`. The document view polls it every five seconds while the content is queued or being read, for at most ten minutes.
+- `POST /api/documents/{documentId}/reading/retry` (antiforgery token required) queues a failed job again in a new run generation. Repeated clicks coalesce, and at most three retries per document per hour are accepted; more answer 429 `retry_limited` with `retryAfter`.
+
+"Read" means the text was extracted and stored, not that the document is searchable. Reading is configured with the `DocumentReading` settings ([local development](local-development.md#configuration)). Misconfiguration turns reading off with a startup warning instead of stopping the API, and `DocumentReading:WorkerEnabled` switches the worker on and off separately. Reading logs carry document, file and run-file IDs, states, failure codes and timings, never extracted text, file names, provider payloads or tokens.
+
 ## Repository layout
 
 ```text
 apps/web/            Astro frontend (strict TypeScript)
 services/api/        ASP.NET Core API; EF Core model and migrations in Data/, capture and originals in
-                     Documents/, the Blob Storage adapter in Storage/
+                     Documents/, the Blob Storage adapter in Storage/, background reading and its routes
+                     in DocumentReading/
 services/api.Tests/  xUnit integration tests (WebApplicationFactory + Testcontainers)
 infra/               Bicep templates and deploy.sh (lint / what-if / apply)
-  bootstrap/         One-time, hand-applied setup: CI identities, resource group, budget, API storage access
+  bootstrap/         One-time, hand-applied setup: CI identities, resource group, budget, API storage and
+                     Document Intelligence access
 scripts/smoke.sh     End-to-end, read-only check of a deployed environment
 compose.yaml         Local PostgreSQL and Azurite
 docs/                Developer documentation (this folder)

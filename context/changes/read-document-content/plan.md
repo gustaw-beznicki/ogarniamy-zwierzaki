@@ -374,9 +374,9 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [ ] 5.1 Full documented checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `infra/deploy.sh lint`.
+- [x] 5.1 Full documented checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `infra/deploy.sh lint`.
 - [ ] 5.2 Read-only what-if matches the staged infrastructure scope and post-deployment non-mutating smoke checks pass.
-- [ ] 5.3 Integrated S-03/S-06 tests retain inactive archive access, stale-edit rejection and repeat-completion behavior after both migrations.
+- [x] 5.3 Integrated S-03/S-06 tests retain inactive archive access, stale-edit rejection and repeat-completion behavior after both migrations.
 
 #### Manual
 

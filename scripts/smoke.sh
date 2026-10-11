@@ -30,6 +30,13 @@ fetch() {
   echo "${status:-000}"
 }
 
+# Like fetch, but sends an empty POST (no cookies, no redirects followed).
+fetch_post() {
+  local status
+  status="$(curl --silent --show-error --max-time 60 --request POST --data '' --output "${BODY_FILE}" --write-out '%{http_code}' "$1")" || true
+  echo "${status:-000}"
+}
+
 # Check 1: both locale sign-in pages are served and carry the app marker.
 for path in /signin/ /en/signin/; do
   url="https://${SWA_HOST}${path}"
@@ -76,6 +83,18 @@ for path in \
   [[ "${status}" == "401" ]] || fail "check 2c: ${url} returned ${status}, expected 401 without a session"
   echo "PASS: check 2c: ${url} returned 401 without a session"
 done
+
+# Check 2d: the reading status and Retry routes refuse anonymous requests without redirecting. The Retry POST has an
+# empty body and no session or antiforgery token, so it is refused before any lookup and changes nothing.
+url="https://${SWA_HOST}/api/documents/${PROBE_ID}/reading"
+status="$(fetch "${url}")"
+[[ "${status}" == "401" ]] || fail "check 2d: ${url} returned ${status}, expected 401 without a session"
+echo "PASS: check 2d: GET ${url} returned 401 without a session"
+
+url="https://${SWA_HOST}/api/documents/${PROBE_ID}/reading/retry"
+status="$(fetch_post "${url}")"
+[[ "${status}" == "401" ]] || fail "check 2d: POST ${url} returned ${status}, expected 401 without a session"
+echo "PASS: check 2d: POST ${url} returned 401 without a session"
 
 # Check 3: the App Service refuses direct traffic because it is a linked backend.
 url="https://${API_HOST}/api/health"

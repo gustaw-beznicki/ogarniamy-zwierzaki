@@ -8,7 +8,7 @@ npm run build --prefix apps/web
 infra/deploy.sh lint                                                  # needs the Azure CLI with Bicep
 ```
 
-The tests boot the real API against throwaway PostgreSQL 17 and Azurite containers (the Azurite image is pinned to the version in `compose.yaml`). Each test class gets its own containers; startup applies the normal migrations and creates the private originals container, and the production Blob Storage adapter is used. No local database, emulator or Azure credentials are involved. Pull-request CI runs all of the above plus an infrastructure `what-if`.
+The tests boot the real API against throwaway PostgreSQL 17 and Azurite containers (the Azurite image is pinned to the version in `compose.yaml`). Each test class gets its own containers; startup applies the normal migrations and creates the private originals container, and the production Blob Storage adapter is used. No local database, emulator or Azure credentials are involved: the test host pins `DocumentReading:Auth` to `Disabled` and never starts the background worker, so tests never call Azure. Pull-request CI runs all of the above plus an infrastructure `what-if`.
 
 ## What the API tests cover
 
@@ -17,8 +17,11 @@ The tests boot the real API against throwaway PostgreSQL 17 and Azurite containe
 - Antiforgery: every capture mutation without a valid token for the signed-in account is refused before anything changes.
 - Originals: returned byte for byte in their confirmed order with private, non-cacheable headers and byte ranges, after an API restart and a fresh sign-in, with no content-processing service.
 - Retries and failures: repeated and concurrent create, upload and completion produce one document; failures are injected at the storage adapter (`FaultyOriginalStorage`) and the EF Core boundary (`InjectedDatabaseFaults`) to cover a blob written before a database failure, a lost storage response, a lost completion response, a storage outage during upload, completion and reading, and a missing blob. Each answers with a retryable 503 and keeps the records.
-- Logs: capture logs carry IDs and failure codes, never file names or contents.
+- Document reading: completion schedules exactly one job in the same transaction (also under concurrent and repeated completion) and a scheduling failure rolls the completion back; competing claims, lease expiry, stale-lease fencing and atomic publication run against real PostgreSQL. The worker is driven one job at a time (`RunOnceAsync`) with a fake OCR provider (`FakeOcrProvider`) and synthetic PDFs generated with PdfPig. It covers local-only PDF routing, mixed text/OCR pages, photo order, empty and over-limit documents, parser time limits, restarts after submission and retrieval, bounded retries, provider cleanup retry and byte-identical originals during reading failures.
+- Reading status and Retry: owner isolation (401 anonymous, 404 for other accounts, missing and uploading documents), antiforgery, coalesced repeats, the durable hourly retry limit, and unchanged completion and detail responses.
+- Reading with animal profiles (`DocumentReadingAcceptanceTests`), on a database migrated through both changes: an inactive animal's document keeps its original, status and Retry and is still read; a stale animal edit (old `If-Match`) is rejected with 412 and leaves reading untouched; a repeated completion returns the same document and keeps exactly one job.
+- Logs: capture and reading logs carry IDs, states and failure codes, never file names, extracted text or provider payloads.
 
-Test files are synthetic: `SampleOriginals` holds small well-formed PNG, JPEG and multi-page PDF files and `TestOriginal` generates bodies of exact sizes. Never use real veterinary records or production credentials in tests.
+Test files are synthetic: `SampleOriginals` holds small well-formed PNG, JPEG and multi-page PDF files, `TestOriginal` generates bodies of exact sizes, and `ReadingFixtures` builds text, scanned and mixed PDFs (plus a committed fictional note image and a password-protected PDF). Never use real veterinary records or production credentials in tests.
 
 The frontend has type and build checks only; there is no frontend test framework.

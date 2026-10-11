@@ -45,7 +45,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | F-02 | whole-app-ui-mockup                  | (foundation) low-fidelity mockup of every primary-flow screen, phone + desktop       | —             | §Success Criteria Primary, US-01, US-02, §NFR (phone + desktop) | done |
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | done |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | done |
-| S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | planning |
+| S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | in-progress |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
 | S-05 | search-filter-and-unavailable-notice | narrow results to one animal; see an explicit notice when search is unavailable      | S-04          | US-02, FR-011, FR-012                       | proposed |
 | S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | in-progress |
@@ -141,7 +141,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - Which off-the-shelf text-reading (OCR) service and embedding service meet the no-retention, no-training requirement? — Owner: user. Block: no (researched in `/10x-plan`).
   - Does reading survive real phone photos of vet discharge summaries (handwriting, stamps, Latin abbreviations, poor lighting)? — Owner: user. Block: no. This slice exists to answer it.
 - **Risk:** Sequenced right after capture because it tests the project's riskiest assumption: the belief that would sink the product if false, namely that text read from a phone photo is good enough to search. The learning goal also favours bringing OCR and background processing in early. Jobs must be safe to repeat after a restart.
-- **Status:** planning
+- **Status:** in-progress
 
 ### S-04: Search by meaning with fragments (north star)
 
@@ -232,6 +232,9 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 - **Database least privilege** — Why parked: planned for milestone M-2, after M-1 closes; security finding. Suggested Change ID `database-least-privilege`. Source: `context/changes/account-and-first-animal/research.md` (gap 3, Database access).
   - The running API reaches the database with only the rights it needs; administration and schema changes use a separate identity.
   - Today, the API identity is the database administrator.
+- **Database private network** — Why parked: planned for milestone M-2, after M-1 closes; moved out of S-03 by the owner on 2026-10-06 to keep the API on F1 (about EUR 19/month saved at one user). Suggested Change ID `database-private-network`. Source: that decision (`context/changes/read-document-content/plan.md`, Plan amendment 2026-10-06) and the shared App Service outbound addresses accepted in `context/foundation/infrastructure.md` (S-01 decisions, Database network and accepted risk). Related: `database-least-privilege` (together they close database network and privilege exposure; plan them together or in sequence).
+  - The API reaches PostgreSQL through App Service VNet integration (requires B1 or higher) and a private endpoint with a linked private DNS zone.
+  - Public database access is disabled only after the private path is verified from the API, in a separate approved apply.
 - **Sharing an animal between caretakers, caretaker role, expiring access** — Why parked: PRD §Non-Goals. Deferred to a later step; S-01 keeps the ownership data shape that makes it cheap.
 - **Medication plans and dose logs** — Why parked: PRD §Non-Goals.
 - **Document type field or automatic type suggestion** — Why parked: PRD §Non-Goals (the product does not guess).

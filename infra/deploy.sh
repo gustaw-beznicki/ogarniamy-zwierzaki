@@ -42,6 +42,7 @@ case "$1" in
     az bicep lint --file "${TEMPLATE_FILE}"
     az bicep lint --file "${INFRA_DIR}/bootstrap/main.bicep"
     az bicep lint --file "${INFRA_DIR}/bootstrap/storage-access.bicep"
+    az bicep lint --file "${INFRA_DIR}/bootstrap/document-reading-access.bicep"
     ;;
   what-if)
     apply_firewall="$(firewall_rules_needed)"

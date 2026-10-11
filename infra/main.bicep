@@ -35,6 +35,20 @@ var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id)}'
 var storageAccountName = 'stogarniamy${uniqueString(resourceGroup().id)}'
 var originalsContainerName = 'originals'
 
+// Computed here for the same reason; bootstrap/document-reading-access.bicep must use the same value. The API's
+// Cognitive Services User role is granted once by the owner (document-reading-access.bicep), never here.
+var documentIntelligenceName = 'di-ogarniamy-${uniqueString(resourceGroup().id)}'
+var documentReadingModelId = 'prebuilt-read'
+var documentReadingApiVersion = '2024-11-30'
+
+module documentIntelligence 'modules/document-intelligence.bicep' = {
+  name: 'ogarniamy-document-intelligence'
+  params: {
+    accountName: documentIntelligenceName
+    location: location
+  }
+}
+
 module storage 'modules/storage.bicep' = {
   name: 'ogarniamy-storage'
   params: {
@@ -52,6 +66,9 @@ module appService 'modules/app-service.bicep' = {
     postgresServerName: postgresServerName
     storageBlobEndpoint: storage.outputs.blobEndpoint
     originalsContainerName: storage.outputs.originalsContainerName
+    documentIntelligenceEndpoint: documentIntelligence.outputs.endpoint
+    documentReadingModelId: documentReadingModelId
+    documentReadingApiVersion: documentReadingApiVersion
   }
 }
 
@@ -84,3 +101,5 @@ output staticWebAppName string = staticWebApp.outputs.name
 output staticWebAppDefaultHostName string = staticWebApp.outputs.defaultHostName
 output postgresServerName string = postgres.outputs.name
 output storageAccountName string = storage.outputs.name
+output documentIntelligenceName string = documentIntelligence.outputs.name
+output documentIntelligenceEndpoint string = documentIntelligence.outputs.endpoint

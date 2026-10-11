@@ -15,6 +15,9 @@ public sealed class InjectedDatabaseFaults : IDbCommandInterceptor, IDbTransacti
     // The next completion commits, but the commit acknowledgement is lost.
     public bool LoseNextCompletionCommit { get; set; }
 
+    // The next reading-job insert (scheduled by completion) fails before it reaches the database.
+    public bool FailNextReadingJobInsert { get; set; }
+
     public ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
         DbCommand command, CommandEventData eventData, InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
@@ -24,6 +27,12 @@ public sealed class InjectedDatabaseFaults : IDbCommandInterceptor, IDbTransacti
         {
             FailNextReceiptUpdate = false;
             throw Transient("receipt update");
+        }
+
+        if (FailNextReadingJobInsert && sql.StartsWith("INSERT INTO document_reading_jobs", StringComparison.Ordinal))
+        {
+            FailNextReadingJobInsert = false;
+            throw Transient("reading job insert");
         }
 
         if (LoseNextCompletionCommit && sql.StartsWith("UPDATE documents", StringComparison.Ordinal))

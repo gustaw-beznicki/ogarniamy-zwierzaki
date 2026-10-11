@@ -67,8 +67,31 @@ To look at stored originals, list the `originals` container with [Azure Storage 
 | `ConnectionStrings:Storage` | Azure Storage connection string | `ConnectionString` mode only. At startup the API creates the originals container in the emulator if it is missing. |
 | `Storage:BlobServiceUri` | `https://<account>.blob.core.windows.net/` | `AzureManagedIdentity` only. The container is provisioned by Bicep and must already exist. |
 | `Storage:OriginalsContainer` | container name, default `originals` | Private container holding the original files. |
+| `DocumentReading:Auth` | `Disabled` (default), `AzureManagedIdentity`, `DeveloperCredential` | How the API authenticates to Azure Document Intelligence. `Disabled` turns reading off; `DeveloperCredential` uses your `az login` identity and is refused outside the `Development` environment. Azure sets `AzureManagedIdentity` through App Service settings. Invalid reading settings log a warning at startup and turn reading off; the API still starts and `/api/health` still reports only the database. |
+| `DocumentReading:Endpoint` | `https://<account>.cognitiveservices.azure.com/` | Required unless reading is `Disabled`. Not a secret: the resource accepts only Entra ID tokens, never keys. |
+| `DocumentReading:ModelId`, `DocumentReading:ApiVersion`, `DocumentReading:TokenScope`, `DocumentReading:HttpTimeout` | model id, API version, scope URI, `hh:mm:ss` | Provider call settings. Defaults (`prebuilt-read`, `2024-11-30`, the Cognitive Services scope, 30 seconds) are in `appsettings.json`. |
+| `DocumentReading:WorkerEnabled` | `false` (default), `true` | Whether background reading runs, separately from `Auth`. |
 
 Secrets never go into tracked files: local passwords and connection strings live in `.env` (gitignored) and user secrets; Azure uses managed identities.
+
+## Reading probe (optional)
+
+`ocr-probe` sends local files to Azure Document Intelligence `prebuilt-read`, prints what it recovered, and asks the provider to delete each analysis result. It needs neither PostgreSQL nor Azurite, and runs only in the `Development` environment. It needs an existing Document Intelligence resource and an account that holds the **Cognitive Services User** role on it.
+
+```bash
+az login                                # the account with Cognitive Services User on the resource
+dotnet user-secrets set DocumentReading:Auth DeveloperCredential --project services/api
+dotnet user-secrets set DocumentReading:Endpoint "https://<account>.cognitiveservices.azure.com/" --project services/api
+dotnet run --project services/api -- ocr-probe "$PWD/services/api.Tests/Fixtures/Reading/synthetic-note.png"
+```
+
+Pass absolute paths: `dotnet run` starts the API in its project directory, so a relative path is reported as `file not found`.
+
+For each file (`.jpg`, `.jpeg`, `.png` or `.pdf`) it reports page, line, word and character counts, average word confidence, elapsed time, the result deletion status and whether the file is unchanged. A `204` deletion status means the provider accepted the request, not that erasure was verified. It submits each file once and never retries a submission.
+
+Extracted text is printed to the console only with `--print-text` (`ocr-probe --print-text <file>...`) and is never written to disk or logs. Never commit it or paste it into the repository. To return to the default, remove the two secrets with `dotnet user-secrets remove`.
+
+Ordinary tests never call Azure: reading is `Disabled` by default, and the probe's tests use a fake provider.
 
 ## Database migrations
 

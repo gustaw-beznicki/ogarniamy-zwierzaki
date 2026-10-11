@@ -3,6 +3,7 @@ import type { Locale, Messages } from '../i18n';
 import { formatEventDate, formatTimestamp, interpolate, uuidQueryParameter } from '../i18n/format';
 import { clientLocalePath } from '../i18n/paths';
 import { ApiError, api, type StoredDocument } from '../lib/api';
+import { DocumentReadingStatus } from './DocumentReadingStatus';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'failed';
 
@@ -61,6 +62,8 @@ export function DocumentDetails({ locale, messages }: { locale: Locale; messages
       <div><dt>{messages.uploadedOn}</dt><dd>{formatTimestamp(locale, document.uploadedAt)}</dd></div>
     </dl>
     <p className="stored-notice"><span aria-hidden="true">✓</span> {messages.storedNotice}</p>
+    {/* Fetched and polled on its own: a status failure never hides the details or the originals below. */}
+    <DocumentReadingStatus documentId={document.id} locale={locale} messages={messages} />
     <h2>{messages.originals}</h2>
     {pdf
       ? <div className="card pdf-original">

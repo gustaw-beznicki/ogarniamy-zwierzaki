@@ -4,11 +4,12 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
+using ogarniamy_zwierzaki_api.DocumentReading;
 using ogarniamy_zwierzaki_api.Documents;
 
 namespace ogarniamy_zwierzaki_api.Data;
 
-// Identity accounts, their sign-in sessions, data-protection keys, animals and documents. The naming convention is set where the context is configured.
+// Identity accounts, their sign-in sessions, data-protection keys, animals, documents and their derived reading state. The naming convention is set where the context is configured.
 // IdentityUserContext leaves out Identity's account-level roles: the product's roles are per animal (animal_members.role).
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityUserContext<AppUser>(options), IDataProtectionKeyContext
@@ -22,6 +23,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Document> Documents => Set<Document>();
 
     public DbSet<DocumentFile> DocumentFiles => Set<DocumentFile>();
+
+    // Derived reading state and text. Written by OwnedDocuments.CompleteAsync (scheduling) and DocumentReadingJobs, the
+    // trusted worker boundary; owner-facing reads must still go through the user's animal memberships.
+    public DbSet<DocumentReadingJob> DocumentReadingJobs => Set<DocumentReadingJob>();
+
+    public DbSet<DocumentReadingRunFile> DocumentReadingRunFiles => Set<DocumentReadingRunFile>();
+
+    public DbSet<DocumentTextPage> DocumentTextPages => Set<DocumentTextPage>();
 
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -144,6 +153,119 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             file.HasIndex(f => new { f.DocumentId, f.Position }).IsUnique();
             file.HasIndex(f => f.BlobKey).IsUnique();
         });
+
+        builder.Entity<DocumentReadingJob>(job =>
+        {
+            job.ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_document_reading_jobs_state", "state IN ('queued', 'reading', 'read', 'failed')");
+                table.HasCheckConstraint(
+                    "ck_document_reading_jobs_counters",
+                    "run_generation >= 1 AND attempt_count >= 0 AND owner_retry_count >= 0");
+                // A lease is all-or-nothing and held exactly while Reading.
+                table.HasCheckConstraint(
+                    "ck_document_reading_jobs_lease",
+                    "(lease_token IS NULL) = (lease_expires_at IS NULL) AND (state = 'reading') = (lease_token IS NOT NULL)");
+                table.HasCheckConstraint(
+                    "ck_document_reading_jobs_failure_code",
+                    "(state = 'failed') = (failure_code IS NOT NULL) AND (failure_code IS NULL OR failure_code ~ '^[a-z0-9_]{1,64}$')");
+                table.HasCheckConstraint(
+                    "ck_document_reading_jobs_completed_at",
+                    "(state IN ('read', 'failed')) = (completed_at IS NOT NULL)");
+                // Read means the current generation is published; an older revision stays until it is replaced.
+                table.HasCheckConstraint(
+                    "ck_document_reading_jobs_published",
+                    "(published_run_generation IS NULL OR published_run_generation BETWEEN 1 AND run_generation) " +
+                    "AND (state <> 'read' OR published_run_generation IS NOT DISTINCT FROM run_generation)");
+            });
+            job.HasKey(j => j.DocumentId);
+            job.Property(j => j.DocumentId).ValueGeneratedNever();
+            job.Property(j => j.State)
+                .HasConversion(state => ToDatabase(state), value => ReadingStateFromDatabase(value))
+                .HasColumnType("text")
+                .IsRequired();
+            job.Property(j => j.FailureCode).HasMaxLength(DocumentReadingJob.FailureCodeMaxLength);
+            // Claims: due Queued jobs, and Reading jobs whose lease expired.
+            job.HasIndex(j => j.DueAt).HasDatabaseName("ix_document_reading_jobs_due_queued").HasFilter("state = 'queued'");
+            job.HasIndex(j => j.LeaseExpiresAt)
+                .HasDatabaseName("ix_document_reading_jobs_lease_reading")
+                .HasFilter("state = 'reading'");
+            // One job per document; the MVP never deletes documents.
+            job.HasOne<Document>().WithOne().HasForeignKey<DocumentReadingJob>(j => j.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<DocumentReadingRunFile>(runFile =>
+        {
+            runFile.ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_document_reading_run_files_stage", "stage IN ('pending', 'submitted', 'retrieved', 'failed')");
+                table.HasCheckConstraint(
+                    "ck_document_reading_run_files_cleanup_state",
+                    "cleanup_state IN ('not_needed', 'pending', 'acknowledged')");
+                table.HasCheckConstraint(
+                    "ck_document_reading_run_files_counters", "run_generation >= 1 AND cleanup_attempt_count >= 0");
+                // A known provider operation always carries a deletion obligation, whatever happens to the run.
+                table.HasCheckConstraint(
+                    "ck_document_reading_run_files_operation",
+                    "(provider_operation_id IS NULL) = (cleanup_state = 'not_needed') " +
+                    "AND (stage <> 'submitted' OR provider_operation_id IS NOT NULL)");
+                table.HasCheckConstraint(
+                    "ck_document_reading_run_files_fetched_text", "stage <> 'retrieved' OR fetched_text IS NOT NULL");
+            });
+            runFile.HasKey(r => r.Id);
+            runFile.Property(r => r.Id).ValueGeneratedNever();
+            runFile.Property(r => r.Stage)
+                .HasConversion(stage => ToDatabase(stage), value => RunFileStageFromDatabase(value))
+                .HasColumnType("text")
+                .IsRequired();
+            runFile.Property(r => r.CleanupState)
+                .HasConversion(state => ToDatabase(state), value => CleanupStateFromDatabase(value))
+                .HasColumnType("text")
+                .IsRequired();
+            runFile.Property(r => r.SelectedPageRanges).HasMaxLength(DocumentReadingRunFile.SelectedPageRangesMaxLength);
+            runFile.Property(r => r.ProviderOperationId).HasMaxLength(DocumentReadingRunFile.ProviderOperationIdMaxLength);
+            runFile.HasIndex(r => new { r.DocumentId, r.RunGeneration, r.DocumentFileId });
+            runFile.HasIndex(r => r.ProviderOperationId).IsUnique().HasFilter("provider_operation_id IS NOT NULL");
+            runFile.HasIndex(r => r.NextCleanupAt)
+                .HasDatabaseName("ix_document_reading_run_files_cleanup_pending")
+                .HasFilter("cleanup_state = 'pending'");
+            runFile.HasOne<DocumentReadingJob>().WithMany().HasForeignKey(r => r.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // The original must belong to the same document.
+            runFile.HasOne<DocumentFile>().WithMany()
+                .HasForeignKey(r => new { r.DocumentId, r.DocumentFileId })
+                .HasPrincipalKey(f => new { f.DocumentId, f.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<DocumentTextPage>(page =>
+        {
+            page.ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_document_text_pages_extraction_method", "extraction_method IN ('text_layer', 'ocr')");
+                table.HasCheckConstraint(
+                    "ck_document_text_pages_provenance",
+                    $"run_generation >= 1 AND source_page_number >= 1 " +
+                    $"AND file_position >= 0 AND file_position < {Document.MaxImageFiles}");
+            });
+            // Unique within the revision and source page.
+            page.HasKey(p => new { p.DocumentId, p.RunGeneration, p.DocumentFileId, p.SourcePageNumber });
+            page.Property(p => p.ExtractionMethod)
+                .HasConversion(method => ToDatabase(method), value => ExtractionMethodFromDatabase(value))
+                .HasColumnType("text")
+                .IsRequired();
+            page.Property(p => p.Text).IsRequired();
+            page.HasOne<DocumentReadingJob>().WithMany().HasForeignKey(p => p.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            page.HasOne<DocumentFile>().WithMany()
+                .HasForeignKey(p => new { p.DocumentId, p.DocumentFileId })
+                .HasPrincipalKey(f => new { f.DocumentId, f.Id })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static string ToDatabase(AnimalRole role) => role switch
@@ -170,5 +292,71 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         "uploading" => DocumentStorageState.Uploading,
         "stored" => DocumentStorageState.Stored,
         _ => throw new InvalidOperationException($"Unknown document storage state '{value}'."),
+    };
+
+    private static string ToDatabase(DocumentReadingState state) => state switch
+    {
+        DocumentReadingState.Queued => "queued",
+        DocumentReadingState.Reading => "reading",
+        DocumentReadingState.Read => "read",
+        DocumentReadingState.Failed => "failed",
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "Unknown document reading state."),
+    };
+
+    private static DocumentReadingState ReadingStateFromDatabase(string value) => value switch
+    {
+        "queued" => DocumentReadingState.Queued,
+        "reading" => DocumentReadingState.Reading,
+        "read" => DocumentReadingState.Read,
+        "failed" => DocumentReadingState.Failed,
+        _ => throw new InvalidOperationException($"Unknown document reading state '{value}'."),
+    };
+
+    private static string ToDatabase(DocumentReadingRunFileStage stage) => stage switch
+    {
+        DocumentReadingRunFileStage.Pending => "pending",
+        DocumentReadingRunFileStage.Submitted => "submitted",
+        DocumentReadingRunFileStage.Retrieved => "retrieved",
+        DocumentReadingRunFileStage.Failed => "failed",
+        _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown run file stage."),
+    };
+
+    private static DocumentReadingRunFileStage RunFileStageFromDatabase(string value) => value switch
+    {
+        "pending" => DocumentReadingRunFileStage.Pending,
+        "submitted" => DocumentReadingRunFileStage.Submitted,
+        "retrieved" => DocumentReadingRunFileStage.Retrieved,
+        "failed" => DocumentReadingRunFileStage.Failed,
+        _ => throw new InvalidOperationException($"Unknown run file stage '{value}'."),
+    };
+
+    private static string ToDatabase(DocumentReadingCleanupState state) => state switch
+    {
+        DocumentReadingCleanupState.NotNeeded => "not_needed",
+        DocumentReadingCleanupState.Pending => "pending",
+        DocumentReadingCleanupState.Acknowledged => "acknowledged",
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "Unknown cleanup state."),
+    };
+
+    private static DocumentReadingCleanupState CleanupStateFromDatabase(string value) => value switch
+    {
+        "not_needed" => DocumentReadingCleanupState.NotNeeded,
+        "pending" => DocumentReadingCleanupState.Pending,
+        "acknowledged" => DocumentReadingCleanupState.Acknowledged,
+        _ => throw new InvalidOperationException($"Unknown cleanup state '{value}'."),
+    };
+
+    private static string ToDatabase(DocumentTextExtractionMethod method) => method switch
+    {
+        DocumentTextExtractionMethod.TextLayer => "text_layer",
+        DocumentTextExtractionMethod.Ocr => "ocr",
+        _ => throw new ArgumentOutOfRangeException(nameof(method), method, "Unknown extraction method."),
+    };
+
+    private static DocumentTextExtractionMethod ExtractionMethodFromDatabase(string value) => value switch
+    {
+        "text_layer" => DocumentTextExtractionMethod.TextLayer,
+        "ocr" => DocumentTextExtractionMethod.Ocr,
+        _ => throw new InvalidOperationException($"Unknown extraction method '{value}'."),
     };
 }

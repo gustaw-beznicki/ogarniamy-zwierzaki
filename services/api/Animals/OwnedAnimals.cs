@@ -109,7 +109,7 @@ public sealed class OwnedAnimals(AppDbContext db)
     {
         var query = db.Animals
             .FromSql($"""
-                SELECT * FROM animals
+                SELECT id, name, created_at, is_active, version FROM animals
                 WHERE id = {animalId} AND id IN (SELECT animal_id FROM animal_members WHERE user_id = {userId})
                 FOR UPDATE
                 """);

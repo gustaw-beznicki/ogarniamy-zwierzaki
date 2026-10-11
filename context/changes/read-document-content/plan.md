@@ -363,8 +363,8 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [x] 4.1 Frontend check/build and API suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [x] 4.2 API tests prove status/retry owner isolation, antiforgery rejection, retry coalescing, durable cooldown, inactive-animal access and unchanged completion responses.
+- [x] 4.1 Frontend check/build and API suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — ab3846e
+- [x] 4.2 API tests prove status/retry owner isolation, antiforgery rejection, retry coalescing, durable cooldown, inactive-animal access and unchanged completion responses. — ab3846e
 
 #### Manual
 

@@ -288,19 +288,19 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 
 #### Automated
 
-- [x] 3.1 Frontend check/build and API regression suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`.
-- [x] 3.2 Existing document ordering/pagination/isolation tests remain green; API conflict tests prove rename and activity cannot silently overwrite a newer version.
+- [x] 3.1 Frontend check/build and API regression suite pass: `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — fcd174a
+- [x] 3.2 Existing document ordering/pagination/isolation tests remain green; API conflict tests prove rename and activity cannot silently overwrite a newer version. — fcd174a
 
 #### Manual
 
-- [x] 3.3 PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history, with keyboard-accessible controls and retained locale resource selection.
-- [x] 3.4 Two-tab stale rename/activity conflicts preserve drafts, require refresh/reapply and never silently overwrite newer edits; all-inactive accounts keep archive access.
+- [x] 3.3 PL/EN phone and desktop flows add, rename, inactivate/reactivate and browse active/inactive history, with keyboard-accessible controls and retained locale resource selection. — fcd174a
+- [x] 3.4 Two-tab stale rename/activity conflicts preserve drafts, require refresh/reapply and never silently overwrite newer edits; all-inactive accounts keep archive access. — fcd174a
 
 ### Phase 4: Integrated verification and documentation
 
 #### Automated
 
-- [ ] 4.1 Full component checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
+- [x] 4.1 Full component checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
 - [ ] 4.2 After S-03 integration, the combined migration model has no pending changes and lifecycle/reading/original isolation regression tests pass.
 
 #### Manual

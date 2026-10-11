@@ -22,8 +22,9 @@ namespace ogarniamy_zwierzaki_api.DocumentReading;
 public sealed partial class DocumentReadingJobs(AppDbContext db)
 {
     // Claims the next due job: a Queued job whose DueAt has passed, or a Reading job whose lease expired. Concurrent
-    // claimers skip each other's locked rows, so each job goes to at most one of them. Increments AttemptCount.
-    // Null when nothing is due.
+    // claimers skip each other's locked rows, so each job goes to at most one of them. Increments AttemptCount without
+    // an upper bound (a reclaim after a crash counts too); the worker fails a claim beyond its budget. Null when nothing
+    // is due.
     public async Task<DocumentReadingClaim?> ClaimNextAsync(TimeSpan leaseDuration, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(leaseDuration, TimeSpan.Zero);
@@ -115,12 +116,13 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
     }
 
     // Starts reading one original of the claimed document in the claim's run generation. selectedPageRanges are the
-    // original page numbers to send for OCR in the provider's "pages" syntax, or null for the whole file. Returns the
-    // new run file's ID, or null (writing nothing) when the lease is no longer current. The file must belong to the
-    // document; otherwise the database rejects it.
+    // original page numbers to send for OCR in the provider's "pages" syntax, or null for the whole file. localCheckpoint
+    // is the worker's serialized local parse of a PDF, kept in fetched_text until the run file is Retrieved (when the
+    // fetched output replaces it). Returns the new run file's ID, or null (writing nothing) when the lease is no longer
+    // current. The file must belong to the document; otherwise the database rejects it.
     public async Task<Guid?> StartRunFileAsync(
         DocumentReadingClaim claim, Guid documentFileId, string? selectedPageRanges,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, string? localCheckpoint = null)
     {
         if (selectedPageRanges is not null
             && (selectedPageRanges.Length == 0 || selectedPageRanges.Length > DocumentReadingRunFile.SelectedPageRangesMaxLength))
@@ -137,9 +139,10 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
         var id = Guid.CreateVersion7();
         await db.Database.ExecuteSqlAsync($"""
             INSERT INTO document_reading_run_files (id, document_id, run_generation, document_file_id, stage,
-                selected_page_ranges, cleanup_state, cleanup_attempt_count, created_at, updated_at)
+                selected_page_ranges, fetched_text, cleanup_state, cleanup_attempt_count, created_at, updated_at)
             VALUES ({id}, {claim.DocumentId}, {claim.RunGeneration}, {documentFileId}, 'pending',
-                NULLIF({selectedPageRanges ?? string.Empty}, ''), 'not_needed', 0, now(), now())
+                NULLIF({selectedPageRanges ?? string.Empty}, ''), NULLIF({localCheckpoint ?? string.Empty}, ''),
+                'not_needed', 0, now(), now())
             """, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return id;
@@ -289,9 +292,11 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
     }
 
     // A transient failure: the job goes back to Queued, due after delay (database time), keeping its run generation and
-    // run files so saved operations and checkpoints can be resumed. False when the lease is no longer current.
+    // run files so saved operations and checkpoints can be resumed. With countAttempt false (a graceful shutdown, not a
+    // failure) the claim's attempt is handed back, so platform interruptions do not use up the retry budget. False when
+    // the lease is no longer current.
     public async Task<bool> RequeueAsync(
-        DocumentReadingClaim claim, TimeSpan delay, CancellationToken cancellationToken = default)
+        DocumentReadingClaim claim, TimeSpan delay, CancellationToken cancellationToken = default, bool countAttempt = true)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(delay, TimeSpan.Zero);
 
@@ -303,7 +308,8 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
 
         await db.Database.ExecuteSqlAsync($"""
             UPDATE document_reading_jobs
-            SET state = 'queued', due_at = now() + {delay}, lease_token = NULL, lease_expires_at = NULL, updated_at = now()
+            SET state = 'queued', due_at = now() + {delay}, lease_token = NULL, lease_expires_at = NULL,
+                attempt_count = GREATEST(attempt_count - {(countAttempt ? 0 : 1)}, 0), updated_at = now()
             WHERE document_id = {claim.DocumentId}
             """, cancellationToken);
         await transaction.CommitAsync(cancellationToken);

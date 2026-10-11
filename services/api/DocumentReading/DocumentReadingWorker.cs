@@ -111,6 +111,23 @@ public sealed class DocumentReadingWorker(
         }
 
         var started = Stopwatch.GetTimestamp();
+        if (claim.AttemptCount > MaxAttempts)
+        {
+            // Only a reclaim after the lease expired gets here: earlier attempts ended without handing the job back,
+            // typically because the process crashed while reading it. Stop before doing any work, so a document that
+            // kills the process cannot burn the daily CPU quota on every wake-up.
+            if (await UseJobsAsync(jobs => jobs.FailAsync(claim, DocumentReadFailure.AttemptsExhausted, CancellationToken.None)))
+            {
+                logger.LogWarning(
+                    "Document {DocumentId} was claimed for attempt {Attempt} after earlier attempts ended without a result; " +
+                    "it failed ({FailureCode}).",
+                    claim.DocumentId, claim.AttemptCount, DocumentReadFailure.AttemptsExhausted);
+            }
+
+            await RunCleanupAfterJobAsync(claim, cancellationToken);
+            return true;
+        }
+
         logger.LogInformation(
             "Reading document {DocumentId}: run {RunGeneration}, attempt {Attempt}.",
             claim.DocumentId, claim.RunGeneration, claim.AttemptCount);
@@ -135,7 +152,8 @@ public sealed class DocumentReadingWorker(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // Shutting down: hand the job back at once instead of waiting for the lease to expire.
+            // Shutting down: hand the job back at once instead of waiting for the lease to expire, without counting the
+            // attempt (the platform stopped it; nothing failed).
             await TryRequeueOnShutdownAsync(claim);
             throw;
         }
@@ -165,7 +183,13 @@ public sealed class DocumentReadingWorker(
             await heartbeat;
         }
 
-        // Provider results of this job (checkpointed, abandoned or of a failed run) are deleted promptly.
+        await RunCleanupAfterJobAsync(claim, cancellationToken);
+        return true;
+    }
+
+    // Provider results of this job (checkpointed, abandoned or of a failed run) are deleted promptly.
+    private async Task RunCleanupAfterJobAsync(DocumentReadingClaim claim, CancellationToken cancellationToken)
+    {
         try
         {
             await cleanup.RunDueAsync(cancellationToken);
@@ -175,8 +199,6 @@ public sealed class DocumentReadingWorker(
             logger.LogWarning("Provider cleanup after document {DocumentId} failed ({ExceptionType}); it is retried later.",
                 claim.DocumentId, exception.GetType().Name);
         }
-
-        return true;
     }
 
     // Renews the lease until stopped. A refused renewal means the lease is gone: processing is cancelled at once.
@@ -270,32 +292,36 @@ public sealed class DocumentReadingWorker(
                 break;
         }
 
-        return await ReadFreshAsync(context, source, cancellationToken);
+        return await ReadFreshAsync(context, source, LocalCheckpointOf(runFiles), cancellationToken);
     }
 
+    // A PDF is parsed locally at most once per run generation: a saved local parse (from an earlier attempt's OCR run
+    // file) is reused, including a parser failure, which goes straight to whole-file OCR.
     private async Task<IReadOnlyList<ReadPageResult>> ReadFreshAsync(
-        DocumentReadingJobContext context, DocumentReadingSource source, CancellationToken cancellationToken)
+        DocumentReadingJobContext context, DocumentReadingSource source, PdfLocalCheckpoint? saved,
+        CancellationToken cancellationToken)
     {
         if (source.ContentType != DocumentFile.PdfContentType)
         {
-            return await OcrAsync(context, source, null, null, cancellationToken);
+            return await OcrAsync(context, source, null, null, null, cancellationToken);
         }
 
-        IReadOnlyList<PdfLocalPage>? local = null;
-        try
-        {
-            local = await ReadLocalAsync(source, cancellationToken);
-        }
-        catch (DocumentReadFailure failure) when (failure.CanFallBackToProvider)
+        var parsed = saved;
+        if (parsed is not null)
         {
             logger.LogInformation(
-                "The local parser could not read file {DocumentFileId} of document {DocumentId}; reading it with OCR.",
+                "Reusing the saved local parse of file {DocumentFileId} of document {DocumentId}.",
                 source.DocumentFileId, context.Claim.DocumentId);
         }
+        else
+        {
+            parsed = await ParseLocalAsync(context, source, cancellationToken);
+        }
 
+        var local = parsed.Pages;
         if (local is null)
         {
-            return await OcrAsync(context, source, null, null, cancellationToken);
+            return await OcrAsync(context, source, null, null, parsed, cancellationToken);
         }
 
         var ocrPages = local.Where(page => !PdfTextReader.IsUsable(page)).Select(page => page.PageNumber).ToList();
@@ -312,16 +338,35 @@ public sealed class DocumentReadingWorker(
 
         var ranges = PageRanges(ocrPages);
         return ranges.Length <= DocumentReadingRunFile.SelectedPageRangesMaxLength
-            ? await OcrAsync(context, source, ranges, local, cancellationToken)
+            ? await OcrAsync(context, source, ranges, local, parsed, cancellationToken)
             // Too fragmented to name: read the whole file with OCR.
-            : await OcrAsync(context, source, null, null, cancellationToken);
+            : await OcrAsync(context, source, null, null, parsed, cancellationToken);
     }
 
+    // The local parse of a PDF; a parser failure that the provider may read instead is recorded as no pages.
+    private async Task<PdfLocalCheckpoint> ParseLocalAsync(
+        DocumentReadingJobContext context, DocumentReadingSource source, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return new PdfLocalCheckpoint(await ReadLocalAsync(source, cancellationToken));
+        }
+        catch (DocumentReadFailure failure) when (failure.CanFallBackToProvider)
+        {
+            logger.LogInformation(
+                "The local parser could not read file {DocumentFileId} of document {DocumentId}; reading it with OCR.",
+                source.DocumentFileId, context.Claim.DocumentId);
+            return new PdfLocalCheckpoint(null);
+        }
+    }
+
+    // The local parse travels with the OCR run file (saved before the submission), so a retry or resume can reuse it.
     private async Task<IReadOnlyList<ReadPageResult>> OcrAsync(
         DocumentReadingJobContext context, DocumentReadingSource source, string? ranges, IReadOnlyList<PdfLocalPage>? local,
-        CancellationToken cancellationToken)
+        PdfLocalCheckpoint? parsed, CancellationToken cancellationToken)
     {
-        var runFileId = await StartRunFileAsync(context, source, ranges, cancellationToken);
+        var localCheckpoint = parsed is null ? null : JsonSerializer.Serialize(parsed, CheckpointJson);
+        var runFileId = await StartRunFileAsync(context, source, ranges, cancellationToken, localCheckpoint);
         string operationId;
         await using (var content = await OpenOriginalAsync(source, cancellationToken))
         {
@@ -340,6 +385,14 @@ public sealed class DocumentReadingWorker(
         return await CompleteOcrAsync(context, source, runFileId, operationId, ranges, local, cancellationToken);
     }
 
+    // The latest local parse saved for this original in this run generation, on any run file not yet Retrieved (an
+    // abandoned one included). Null when there is none.
+    private static PdfLocalCheckpoint? LocalCheckpointOf(IEnumerable<DocumentReadingRunFile> runFiles) =>
+        runFiles.LastOrDefault(r => r.Stage != DocumentReadingRunFileStage.Retrieved && r.FetchedText is not null)
+            is { } runFile
+            ? JsonSerializer.Deserialize<PdfLocalCheckpoint>(runFile.FetchedText!, CheckpointJson)
+            : null;
+
     // A saved operation after a restart or requeue: poll it instead of submitting again.
     private async Task<IReadOnlyList<ReadPageResult>> ResumeAsync(
         DocumentReadingJobContext context, DocumentReadingSource source, DocumentReadingRunFile runFile, CancellationToken cancellationToken)
@@ -347,14 +400,14 @@ public sealed class DocumentReadingWorker(
         IReadOnlyList<PdfLocalPage>? local = null;
         if (runFile.SelectedPageRanges is not null)
         {
-            try
-            {
-                local = await ReadLocalAsync(source, cancellationToken);
-            }
-            catch (DocumentReadFailure failure) when (failure.CanFallBackToProvider)
+            // The local parse saved with the operation; a run file from before such checkpoints existed parses again.
+            local = runFile.FetchedText is null
+                ? (await ParseLocalAsync(context, source, cancellationToken)).Pages
+                : JsonSerializer.Deserialize<PdfLocalCheckpoint>(runFile.FetchedText, CheckpointJson)!.Pages;
+            if (local is null)
             {
                 await AbandonAsync(context, runFile, cancellationToken);
-                return await ReadFreshAsync(context, source, cancellationToken);
+                return await ReadFreshAsync(context, source, new PdfLocalCheckpoint(null), cancellationToken);
             }
         }
 
@@ -494,10 +547,11 @@ public sealed class DocumentReadingWorker(
         ?? throw DocumentReadFailure.Terminal(DocumentReadFailure.OriginalUnavailable);
 
     private async Task<Guid> StartRunFileAsync(
-        DocumentReadingJobContext context, DocumentReadingSource source, string? ranges, CancellationToken cancellationToken)
+        DocumentReadingJobContext context, DocumentReadingSource source, string? ranges, CancellationToken cancellationToken,
+        string? localCheckpoint = null)
     {
         var runFileId = await UseJobsAsync(jobs => jobs.StartRunFileAsync(
-            context.Claim, source.DocumentFileId, ranges, cancellationToken));
+            context.Claim, source.DocumentFileId, ranges, cancellationToken, localCheckpoint));
         if (runFileId is null)
         {
             await LeaseLostAsync(context.LeaseLost);
@@ -587,7 +641,7 @@ public sealed class DocumentReadingWorker(
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            await UseJobsAsync(jobs => jobs.RequeueAsync(claim, TimeSpan.Zero, timeout.Token));
+            await UseJobsAsync(jobs => jobs.RequeueAsync(claim, TimeSpan.Zero, timeout.Token, countAttempt: false));
         }
         catch (Exception exception)
         {

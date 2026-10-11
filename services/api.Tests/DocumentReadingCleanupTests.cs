@@ -57,6 +57,23 @@ public sealed class DocumentReadingCleanupTests(ApiFactory factory) : IClassFixt
     }
 
     [Fact]
+    public async Task A_not_found_from_a_wrong_endpoint_or_path_keeps_the_cleanup_pending()
+    {
+        await ParkExistingCleanupsAsync();
+        var runFileId = await AbandonedOperationAsync("op-wrong-path");
+        // The body observed from the real service for an unknown path (2026-10-11), unlike its result-not-found body.
+        var provider = new FakeOcrProvider
+        {
+            Delete = _ => FakeOcrProvider.Json(HttpStatusCode.NotFound, """{"error":{"code":"404","message":"Resource not found"}}"""),
+        };
+
+        Assert.Equal(0, await Cleanup(provider).RunDueAsync(CancellationToken.None));
+
+        var runFile = await RunFileAsync(runFileId);
+        Assert.Equal((DocumentReadingCleanupState.Pending, 1), (runFile.CleanupState, runFile.CleanupAttemptCount));
+    }
+
+    [Fact]
     public async Task A_rejected_identity_does_not_acknowledge_anything()
     {
         await ParkExistingCleanupsAsync();

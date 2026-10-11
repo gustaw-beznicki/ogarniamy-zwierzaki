@@ -331,9 +331,9 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [x] 1.1 API restore/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`. — 5cf12cd
-- [x] 1.2 Bicep lint and read-only what-if pass: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; owner access template validates without application. — 5cf12cd
-- [x] 1.3 Synthetic probe verifies analysis, result retrieval and deletion request without altering originals; no live-provider call runs in ordinary CI. — 5cf12cd
+- [x] 1.1 API restore/build pass: `dotnet restore services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet build services/api/ogarniamy-zwierzaki-api.csproj --no-restore`. — 5f41587
+- [x] 1.2 Bicep lint and read-only what-if pass: `infra/deploy.sh lint` and `infra/deploy.sh what-if`; owner access template validates without application. — 5f41587
+- [x] 1.3 Synthetic probe verifies analysis, result retrieval and deletion request without altering originals; no live-provider call runs in ordinary CI. — 5f41587
 
 #### Manual
 
@@ -343,17 +343,17 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Automated
 
-- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — 6eb0495
-- [x] 2.2 Fresh and S-02 databases migrate additively; Stored backfill excludes Uploading, repeated/concurrent completion schedules one job, and scheduling failure rolls back completion. — 6eb0495
-- [x] 2.3 Real PostgreSQL tests prove competing claims, expiry recovery, stale-token fencing and atomic complete-revision publication. — 6eb0495
+- [x] 2.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — cabacb8
+- [x] 2.2 Fresh and S-02 databases migrate additively; Stored backfill excludes Uploading, repeated/concurrent completion schedules one job, and scheduling failure rolls back completion. — cabacb8
+- [x] 2.3 Real PostgreSQL tests prove competing claims, expiry recovery, stale-token fencing and atomic complete-revision publication. — cabacb8
 
 ### Phase 3: Extraction worker and recovery
 
 #### Automated
 
-- [x] 3.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — 95c23b2
-- [x] 3.2 Extraction tests prove local-only PDF routing, mixed-page fallback/provenance, image order, empty/limit failures and no partial success publication. — 95c23b2
-- [x] 3.3 Fault tests prove restart after submission/retrieval, lease loss, bounded retries, independent cleanup recovery and byte-identical original retrieval during reading failure. — 95c23b2
+- [x] 3.1 API build and integration suite pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` and `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`. — 9f33c56
+- [x] 3.2 Extraction tests prove local-only PDF routing, mixed-page fallback/provenance, image order, empty/limit failures and no partial success publication. — 9f33c56
+- [x] 3.3 Fault tests prove restart after submission/retrieval, lease loss, bounded retries, independent cleanup recovery and byte-identical original retrieval during reading failure. — 9f33c56
 
 #### Manual
 

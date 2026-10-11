@@ -27,7 +27,8 @@ public sealed class DocumentReadingRunFile
     // The provider's Analyze result ID, recorded as soon as it is known; set exactly when cleanup is not NotNeeded.
     public string? ProviderOperationId { get; set; }
 
-    // The checkpointed per-page output of this file, serialized by the reader. Set when Retrieved.
+    // The checkpointed per-page output of this file, serialized by the reader. Set when Retrieved. Before that, a PDF's
+    // run file may hold the serialized PdfLocalCheckpoint taken before its OCR submission (kept if it is abandoned).
     public string? FetchedText { get; set; }
 
     public DocumentReadingCleanupState CleanupState { get; set; }

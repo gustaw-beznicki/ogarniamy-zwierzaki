@@ -80,7 +80,15 @@ public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? cr
     {
         using var request = await RequestAsync(HttpMethod.Delete, ResultUri(operationId), cancellationToken);
         using var response = await SendAsync(request, cancellationToken);
-        if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.OK or HttpStatusCode.NotFound)
+        if (response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.OK)
+        {
+            return;
+        }
+
+        // Only the provider's own "result does not exist" counts as deleted. Any other 404 comes from a wrong endpoint or
+        // path; acknowledging it would silently drop the obligation. (The 2024-11-30 API was observed answering 204 for
+        // a missing result, so this is a safeguard.)
+        if (response.StatusCode == HttpStatusCode.NotFound && await IsResultNotFoundAsync(response, cancellationToken))
         {
             return;
         }
@@ -178,6 +186,24 @@ public sealed class AzureDocumentTextReader(HttpClient http, TokenCredential? cr
         }
 
         return ContentFailure(root) ?? DocumentReadFailure.Terminal(DocumentReadFailure.ProviderRejected);
+    }
+
+    // The provider's result-not-found body: {"code":"NotFound"} or {"error":{"code":"NotFound"}}.
+    private async Task<bool> IsResultNotFoundAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var document = await ParseCappedAsync(response, cancellationToken, maxBytes: 64 * 1024);
+            var root = document.RootElement;
+            var code = CodeOf(root) ?? (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("error", out var error)
+                ? CodeOf(error)
+                : null);
+            return code == "NotFound";
+        }
+        catch (DocumentReadFailure)
+        {
+            return false;
+        }
     }
 
     // A failed analysis: unreadable content is terminal; a provider-side fault is transient but needs a new submission.

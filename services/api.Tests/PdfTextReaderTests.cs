@@ -122,4 +122,26 @@ public sealed class PdfTextReaderTests
 
     private static Task<IReadOnlyList<PdfLocalPage>> ReadAsync(byte[] pdf) =>
         new PdfTextReader().ReadAsync(new MemoryStream(pdf), CancellationToken.None);
+
+    [Fact]
+    public void The_parser_child_gets_an_allowlisted_environment_without_credentials()
+    {
+        Environment.SetEnvironmentVariable("IDENTITY_ENDPOINT", "http://localhost:42356/msi/token");
+        Environment.SetEnvironmentVariable("IDENTITY_HEADER", "synthetic-header");
+        try
+        {
+            var environment = PdfTextReader.HelperStartInfo().Environment;
+
+            Assert.DoesNotContain("IDENTITY_ENDPOINT", environment.Keys);
+            Assert.DoesNotContain("IDENTITY_HEADER", environment.Keys);
+            Assert.DoesNotContain(environment.Keys, key => key.StartsWith("ConnectionStrings", StringComparison.OrdinalIgnoreCase));
+            Assert.Equal("1", environment["DOTNET_PROCESSOR_COUNT"]);
+            Assert.Equal(Environment.GetEnvironmentVariable("PATH"), environment["PATH"]);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("IDENTITY_ENDPOINT", null);
+            Environment.SetEnvironmentVariable("IDENTITY_HEADER", null);
+        }
+    }
 }

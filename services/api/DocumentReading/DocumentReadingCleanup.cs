@@ -2,7 +2,7 @@ namespace ogarniamy_zwierzaki_api.DocumentReading;
 
 // Deletes provider analysis results that are no longer needed: right after their output is checkpointed (called by
 // the worker) and on a periodic pass that is independent of job state, so obligations left by a crash, a lost lease
-// or a terminal failure are retried after a restart. A 204 or a "not found" from the authenticated provider marks the
+// or a terminal failure are retried after a restart. A 204 or the authenticated provider's result-not-found marks the
 // run file's cleanup Acknowledged, which is a deletion request, not verified erasure. Run-file records are never
 // deleted. A submission whose response was lost has no known result ID; it cannot be deleted early and relies on the
 // provider's bounded retention.
@@ -55,8 +55,9 @@ public sealed class DocumentReadingCleanup(
             await UseJobsAsync(jobs => jobs.DeferCleanupAsync(work.RunFileId, delay, cancellationToken));
             logger.LogWarning(
                 "Provider result deletion for run file {RunFileId} of document {DocumentId} failed ({FailureCode}); " +
-                "retrying in {RetryDelay}.",
-                work.RunFileId, work.DocumentId, failure.Code, delay);
+                "retrying in {RetryDelay}.{ConfigurationHint}",
+                work.RunFileId, work.DocumentId, failure.Code, delay,
+                failure.IsConfiguration ? " Check DocumentReading:Endpoint and the Cognitive Services User role." : string.Empty);
             return false;
         }
 

@@ -35,7 +35,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
   - Tradeoff: A job interrupted by crashes (not graceful shutdown) still counts each crash, which is the intended safety bound.
   - Confidence: HIGH — the claim SQL and the single `MaxAttempts` check were verified in code.
   - Blind spot: F1 recycles may not always deliver a graceful shutdown; those still count.
-- **Decision**: PENDING
+- **Decision**: FIXED 2026-10-11: a claim beyond MaxAttempts fails as `attempts_exhausted` before any work; the graceful shutdown requeue hands its attempt back (`countAttempt: false`).
 
 ### F2 — OCR result buffered up to 256 MiB in the API process
 
@@ -49,7 +49,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
   - Tradeoff: Very verbose provider JSON for a legitimate large document could hit the lower cap and fail as `result_limit_exceeded`.
   - Confidence: MED — cap sizes need confirmation against real Read result sizes (3.4 live run).
   - Blind spot: Actual F1 memory headroom under load has not been measured.
-- **Decision**: PENDING
+- **Decision**: DEFERRED until manual 3.4: cap sizes are set from real result sizes observed there.
 
 ### F3 — Every retry or resume re-runs the local PDF parse
 
@@ -68,7 +68,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
   - Tradeoff: Needs durable per-day accounting and delays legitimate work.
   - Confidence: MED — more moving parts than the checkpoint.
   - Blind spot: Interaction with Retry-After and the attempt budget.
-- **Decision**: PENDING
+- **Decision**: FIXED 2026-10-11 (Fix A): the local parse (or the parser failure) is saved on the OCR run file before submission and reused by later attempts and resumes of the same run generation; no schema change.
 
 ### F4 — Cleanup acknowledges any 404, including a misconfigured endpoint
 
@@ -78,7 +78,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
 - **Location**: services/api/DocumentReading/AzureDocumentTextReader.cs:83
 - **Detail**: `DeleteResultAsync` treats any 404 (and 200) as acknowledged. Elsewhere the adapter treats 404 as `provider_config` (wrong endpoint/model). With a wrong endpoint or model, cleanup obligations are silently marked acknowledged. The plan requires an authenticated result-not-found.
 - **Fix**: Acknowledge 404 only when the error body's code identifies a missing result (for example `NotFound`/`ModelNotFound` distinction per the v4 error schema); otherwise keep cleanup pending with backoff and log a configuration warning.
-- **Decision**: PENDING
+- **Decision**: FIXED 2026-10-11: only a 404 whose body code is `NotFound` is acknowledged; any other 404 keeps the cleanup pending with a configuration hint. Live check on 2026-10-11: the service answers 204 to DELETE of a missing result (even with a wrong model id) and `{"error":{"code":"404"}}` for a wrong path.
 
 ### F5 — Child environment uses a denylist
 
@@ -88,7 +88,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
 - **Location**: services/api/DocumentReading/PdfTextReader.cs:289-298
 - **Detail**: Only `ConnectionStrings*`, `CUSTOMCONNSTR_`, `POSTGRESQLCONNSTR_` and `APPSETTING_` are removed. Managed-identity variables (`IDENTITY_ENDPOINT`, `IDENTITY_HEADER`, `MSI_*`) and other prefixes pass through, so a parser exploit in the child could mint tokens for Blob Storage or Document Intelligence.
 - **Fix**: Clear the environment and add back an allowlist (`PATH`, `HOME`, `TMPDIR`, `DOTNET_ROOT`, the `DOTNET_*` limits).
-- **Decision**: PENDING
+- **Decision**: FIXED 2026-10-11: the child environment is cleared and rebuilt from an allowlist.
 
 ### F6 — Attempt deadline classified as transient
 
@@ -98,7 +98,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
 - **Location**: services/api/DocumentReading/DocumentReadFailure.cs:67
 - **Detail**: `attempt_deadline_exceeded` (30-minute attempt deadline) is retried. The plan lists processing-limit errors as terminal; the deadline is more likely provider slowness than document size, so transient is defensible, but it is undocumented.
 - **Fix**: Keep transient and document the choice in the Phase 5 runbook (or make it terminal if the owner reads the deadline as a processing limit).
-- **Decision**: PENDING
+- **Decision**: KEEP transient; document in the Phase 5 runbook.
 
 ### F7 — Idle polling every 5 s on F1
 
@@ -108,7 +108,7 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
 - **Location**: services/api/DocumentReading/DocumentReadingWorker.cs:61-101
 - **Detail**: While awake, every idle tick runs a cleanup query and a claim query. Cheap, but steady CPU and database traffic against the F1 quota.
 - **Fix**: Back off the idle poll (5 s growing to 60 s, reset after a claim) and run the cleanup listing every N ticks or after a job.
-- **Decision**: PENDING
+- **Decision**: DEFERRED (low impact; revisit with the Phase 5 F1 CPU measurement).
 
 ### F8 — Test gaps around startup and ambiguous submissions
 
@@ -118,4 +118,4 @@ Success criteria: `dotnet build` (0 warnings) and `dotnet test` (185/185) pass a
 - **Location**: services/api.Tests/DocumentReadingWorkerTests.cs
 - **Detail**: No test drives the hosted loop's start (cleanup before claim, F1 wake-up behaviour) or the abandonment of an ambiguous Pending submission. Absolute-date Retry-After uses `DateTimeOffset.UtcNow` instead of the injected `TimeProvider`.
 - **Fix**: Add the two tests and use `time.GetUtcNow()` for the Retry-After date.
-- **Decision**: PENDING
+- **Decision**: DEFERRED to Phase 4 test work.

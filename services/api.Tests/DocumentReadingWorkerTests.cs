@@ -258,6 +258,84 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
     }
 
     [Fact]
+    public async Task A_document_that_keeps_crashing_the_process_fails_once_its_attempts_are_used_up()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider { RunningPolls = int.MaxValue };
+        var (document, _) = await CaptureAsync(SampleOriginals.Png());
+        // Each crash leaves the job Reading with a lease that later expires; a reclaim counts as a new attempt.
+        await UseDatabaseAsync(db => db.Database.ExecuteSqlAsync($"""
+            UPDATE document_reading_jobs
+            SET state = 'reading', lease_token = gen_random_uuid(), lease_expires_at = now() - interval '1 second',
+                attempt_count = {DocumentReadingWorker.MaxAttempts}
+            WHERE document_id = {IdOf(document)}
+            """));
+
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+
+        var job = await JobAsync(document);
+        Assert.Equal((DocumentReadingState.Failed, "attempts_exhausted", DocumentReadingWorker.MaxAttempts + 1),
+            (job.State, job.FailureCode, job.AttemptCount));
+        Assert.Empty(provider.Requests);
+        Assert.False(await Worker(provider).RunOnceAsync(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task A_retry_after_a_failed_submission_reuses_the_saved_local_parse_of_a_mixed_pdf()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider
+        {
+            BeforeSubmit = (_, index) => index == 1 ? FakeOcrProvider.Error(HttpStatusCode.ServiceUnavailable, "ServiceUnavailable") : null,
+            Analyze = (_, _) => FakeOcrProvider.Succeeded((2, "Scanned line")),
+        };
+        var pdf = ReadingFixtures.Pdf(PdfPageSpec.Text("Typed page one"), PdfPageSpec.Scan());
+        var (document, _) = await CaptureAsync(ReadingFixtures.PdfOriginal(pdf));
+
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+        Assert.Equal(DocumentReadingState.Queued, (await JobAsync(document)).State);
+        var pending = Assert.Single(await RunFilesAsync(document));
+        Assert.Equal(DocumentReadingRunFileStage.Pending, pending.Stage);
+        Assert.NotNull(pending.FetchedText);
+        Assert.DoesNotContain(_logs.Entries, e => e.Contains("Reusing the saved local parse"));
+
+        await MakeDueAsync(document);
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+
+        Assert.Contains(_logs.Entries, e => e.Contains("Reusing the saved local parse"));
+        Assert.Equal(["2", "2"], provider.Posts.Select(FakeOcrProvider.PagesOf));
+        Assert.Equal(DocumentReadingState.Read, (await JobAsync(document)).State);
+        var pages = await PagesAsync(document);
+        Assert.Equal([DocumentTextExtractionMethod.TextLayer, DocumentTextExtractionMethod.Ocr], pages.Select(p => p.ExtractionMethod));
+        Assert.Contains("Typed page one", pages[0].Text);
+        Assert.Equal("Scanned line", pages[1].Text);
+        Assert.Equal(
+            [DocumentReadingRunFileStage.Failed, DocumentReadingRunFileStage.Retrieved],
+            (await RunFilesAsync(document)).Select(r => r.Stage));
+    }
+
+    [Fact]
+    public async Task A_retry_of_an_unparsable_pdf_goes_straight_to_whole_file_ocr()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider
+        {
+            BeforeSubmit = (_, index) => index == 1 ? FakeOcrProvider.Error(HttpStatusCode.ServiceUnavailable, "ServiceUnavailable") : null,
+            Analyze = (_, _) => FakeOcrProvider.Succeeded((1, "Recovered by OCR")),
+        };
+        var (document, _) = await CaptureAsync(TestOriginal.Pdf(5_000, "damaged.pdf"));
+
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+        await MakeDueAsync(document);
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+
+        Assert.Single(_logs.Entries, e => e.Contains("The local parser could not read file"));
+        Assert.Contains(_logs.Entries, e => e.Contains("Reusing the saved local parse"));
+        Assert.All(provider.Posts, p => Assert.Null(FakeOcrProvider.PagesOf(p)));
+        Assert.Equal(["Recovered by OCR"], (await PagesAsync(document)).Select(p => p.Text));
+    }
+
+    [Fact]
     public async Task A_storage_outage_while_reading_the_original_is_transient()
     {
         await ParkExistingJobsAsync();
@@ -317,7 +395,9 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
 
         var runFile = Assert.Single(await RunFilesAsync(document));
         Assert.Equal((DocumentReadingRunFileStage.Submitted, provider.IdOf(1)), (runFile.Stage, runFile.ProviderOperationId));
-        Assert.Equal(DocumentReadingState.Queued, (await JobAsync(document)).State);
+        var requeued = await JobAsync(document);
+        // A graceful shutdown hands the attempt back: platform interruptions do not use up the retry budget.
+        Assert.Equal((DocumentReadingState.Queued, 0), (requeued.State, requeued.AttemptCount));
         Assert.Empty(provider.DeletedIds);
 
         provider.BeforePoll = null;

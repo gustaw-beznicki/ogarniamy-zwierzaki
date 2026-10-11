@@ -13,7 +13,8 @@ public interface IDocumentTextReader
     // The analysis of a saved result ID: running, or complete with the text of each analysed page.
     Task<OcrAnalysis> GetAnalysisAsync(string operationId, CancellationToken cancellationToken);
 
-    // Requests deletion of the result. Completes when the provider acknowledged it (204) or reports it missing (404);
-    // an acknowledgement is not proof of physical erasure. Throws a DocumentReadFailure otherwise.
+    // Requests deletion of the result. Completes when the provider acknowledged it (204) or reports the result itself
+    // missing (a 404 with its NotFound code, not any 404); an acknowledgement is not proof of physical erasure. Throws a
+    // DocumentReadFailure otherwise.
     Task DeleteResultAsync(string operationId, CancellationToken cancellationToken);
 }

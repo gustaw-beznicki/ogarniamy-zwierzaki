@@ -145,8 +145,14 @@ public sealed class PdfTextReader
         return buffer.ToArray();
     }
 
+    // The child keeps only these variables: what the .NET host and temporary files need. Everything else (connection
+    // strings, app settings, managed-identity endpoints and headers) stays out of reach of a parser exploit.
+    private static readonly string[] HelperEnvironmentAllowlist =
+        ["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "DOTNET_ROOT", "DOTNET_BUNDLE_EXTRACT_BASE_DIR",
+         "SystemRoot", "windir", "TEMP", "TMP", "USERPROFILE"];
+
     // The API's own assembly in its hidden helper mode, run by the same .NET host as the API.
-    private static ProcessStartInfo HelperStartInfo()
+    public static ProcessStartInfo HelperStartInfo()
     {
         var assemblyPath = typeof(PdfTextReaderProcess).Assembly.Location;
         var processPath = Environment.ProcessPath;
@@ -172,6 +178,17 @@ public sealed class PdfTextReader
         }
 
         startInfo.ArgumentList.Add(PdfTextReaderProcess.Command);
+        // An allowlist, not a denylist: the parser reads no configuration and needs no credentials.
+        var kept = HelperEnvironmentAllowlist
+            .Select(name => (name, value: Environment.GetEnvironmentVariable(name)))
+            .Where(variable => variable.value is not null)
+            .ToList();
+        startInfo.Environment.Clear();
+        foreach (var (name, value) in kept)
+        {
+            startInfo.Environment[name] = value;
+        }
+
         // Bounds the child's managed heap (256 MiB, within the F1 plan's memory), so a pathological PDF fails the parse
         // instead of the app.
         startInfo.Environment["DOTNET_GCHeapHardLimit"] = "0x10000000";
@@ -179,16 +196,6 @@ public sealed class PdfTextReader
         // most about a minute of the F1 daily CPU quota (exhausting it stops the app and its originals).
         startInfo.Environment["DOTNET_PROCESSOR_COUNT"] = "1";
         startInfo.Environment["DOTNET_gcConcurrent"] = "0";
-        // The parser reads no configuration, so it gets none of the API's connection strings or app settings.
-        foreach (var name in startInfo.Environment.Keys
-            .Where(key => key.StartsWith("ConnectionStrings", StringComparison.OrdinalIgnoreCase)
-                || key.StartsWith("CUSTOMCONNSTR_", StringComparison.OrdinalIgnoreCase)
-                || key.StartsWith("POSTGRESQLCONNSTR_", StringComparison.OrdinalIgnoreCase)
-                || key.StartsWith("APPSETTING_", StringComparison.OrdinalIgnoreCase))
-            .ToList())
-        {
-            startInfo.Environment.Remove(name);
-        }
 
         return startInfo;
     }

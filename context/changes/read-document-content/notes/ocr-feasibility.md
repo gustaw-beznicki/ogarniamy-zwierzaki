@@ -20,9 +20,9 @@ dotnet user-secrets set DocumentReading:Auth DeveloperCredential --project servi
 dotnet user-secrets set DocumentReading:Endpoint "https://<account>.cognitiveservices.azure.com/" --project services/api
 
 # 1. Synthetic fixture (fictional content, safe to discuss)
-dotnet run --project services/api -- ocr-probe --print-text services/api.Tests/Fixtures/Reading/synthetic-note.png
+dotnet run --project services/api -- ocr-probe --print-text "$PWD/services/api.Tests/Fixtures/Reading/synthetic-note.png"
 
-# 2. Five owner-selected real photos, kept OUTSIDE the repository
+# 2. Five owner-selected real photos, kept OUTSIDE the repository (absolute paths: dotnet run starts in services/api)
 dotnet run --project services/api -- ocr-probe --print-text <path>/photo-1.jpg ... <path>/photo-5.jpg
 ```
 

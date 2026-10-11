@@ -82,8 +82,10 @@ Secrets never go into tracked files: local passwords and connection strings live
 az login                                # the account with Cognitive Services User on the resource
 dotnet user-secrets set DocumentReading:Auth DeveloperCredential --project services/api
 dotnet user-secrets set DocumentReading:Endpoint "https://<account>.cognitiveservices.azure.com/" --project services/api
-dotnet run --project services/api -- ocr-probe services/api.Tests/Fixtures/Reading/synthetic-note.png
+dotnet run --project services/api -- ocr-probe "$PWD/services/api.Tests/Fixtures/Reading/synthetic-note.png"
 ```
+
+Pass absolute paths: `dotnet run` starts the API in its project directory, so a relative path is reported as `file not found`.
 
 For each file (`.jpg`, `.jpeg`, `.png` or `.pdf`) it reports page, line, word and character counts, average word confidence, elapsed time, the result deletion status and whether the file is unchanged. A `204` deletion status means the provider accepted the request, not that erasure was verified. It submits each file once and never retries a submission.
 

@@ -65,5 +65,6 @@ public sealed class DocumentReadFailure : Exception
     public const string StorageUnavailable = "storage_unavailable";
     public const string OriginalUnavailable = "original_unavailable";
     public const string AttemptDeadlineExceeded = "attempt_deadline_exceeded";
+    public const string AttemptsExhausted = "attempts_exhausted";
     public const string UnexpectedError = "unexpected_error";
 }

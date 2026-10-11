@@ -18,11 +18,12 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
 
     public const int MaxPageSize = 100;
 
-    // The capture animals and the account's default. The saved preference counts only while the animal is still
-    // one of the user's; otherwise the earliest-created animal (then lowest ID) is the default, as in the animal list.
+    // The capture animals and the account's default: only the user's active animals are eligible. The saved
+    // preference counts only while that animal is still eligible; otherwise the earliest-created active animal
+    // (then lowest ID) is the default, as in the animal list. No eligible animal means [] and a null default.
     public async Task<CaptureDefaults> GetCaptureDefaultsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var owned = await animals.ListAsync(userId, cancellationToken);
+        var owned = await animals.ListActiveAsync(userId, cancellationToken);
         var saved = await db.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
@@ -89,16 +90,24 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
 
     // Persists a new, frozen manifest as an Uploading document. The caller supplies the operation ID (Document.Id),
     // AnimalId, EventDate, CaptureTimeZone and the files' manifest fields in order; this method assigns file IDs,
-    // positions, blob keys, the state and CreatedAt. Returns false, writing nothing, when the animal is not the user's.
+    // positions, blob keys, the state and CreatedAt. The animal's row is locked and its activity checked inside the
+    // insertion transaction, so a manifest and an inactivation are strictly ordered: an insert that locks first is
+    // accepted, an inactivation that commits first makes this return AnimalInactive. Writes nothing, returning
+    // AnimalNotFound, when the animal is not the user's.
     // The file set must already be validated: an invalid one throws ArgumentException. An existing operation ID
     // (the user's own or another account's) makes SaveChanges throw DbUpdateException; the caller then resolves the
     // operation through FindUploadAsync, which returns null for a foreign one.
-    public async Task<bool> AddUploadAsync(string userId, Document document, CancellationToken cancellationToken = default)
+    public async Task<UploadAcceptance> AddUploadAsync(string userId, Document document, CancellationToken cancellationToken = default)
     {
         EnsureValidFileSet(document.Files);
-        if (!await IsOwnedAnimalAsync(userId, document.AnimalId, cancellationToken))
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        switch (await animals.LockIsActiveAsync(userId, document.AnimalId, cancellationToken))
         {
-            return false;
+            case null:
+                return UploadAcceptance.AnimalNotFound;
+            case false:
+                return UploadAcceptance.AnimalInactive;
         }
 
         document.StorageState = DocumentStorageState.Uploading;
@@ -120,6 +129,7 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
         try
         {
             await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException)
         {
@@ -128,7 +138,7 @@ public sealed class OwnedDocuments(AppDbContext db, OwnedAnimals animals)
             throw;
         }
 
-        return true;
+        return UploadAcceptance.Accepted;
     }
 
     // The user's upload operation in any state, tracked, with files in position order.

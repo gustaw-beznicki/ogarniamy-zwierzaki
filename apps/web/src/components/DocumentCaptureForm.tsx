@@ -320,6 +320,11 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
         setStatus('sessionExpired');
         return;
       }
+      if (stage === 'create' && apiError?.code === 'animal_inactive') {
+        // Only a manifest that was never accepted can hit this (an accepted one is retried whatever the animal's state).
+        await recoverFromInactiveAnimal(current.manifest.animalId);
+        return;
+      }
       let code = apiError?.code ?? 'upload_interrupted';
       if (code === 'not_found') code = stage === 'create' ? 'animal_unavailable' : 'upload_not_found';
       if (code === 'unsupported_media_type') code = 'unsupported_file_type';
@@ -330,6 +335,22 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       }
       setStatus('failed');
       setErrorCode(code);
+    }
+  }
+
+  // The animal became inactive before its manifest was accepted. The files and date stay; the operation is dropped
+  // (the next Save gets a new operation ID) and nothing is reassigned until the user picks an eligible animal.
+  async function recoverFromInactiveAnimal(inactiveId: string) {
+    setAttempt(null);
+    setProgress(null);
+    setAnimalId('');
+    setStatus('editing');
+    setErrorCode('animal_inactive');
+    try {
+      const defaults = await api.captureDefaults();
+      setAnimals(defaults.animals);
+    } catch {
+      setAnimals((current) => current.filter((animal) => animal.id !== inactiveId));
     }
   }
 
@@ -367,6 +388,15 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       <h1>{messages.captureTitle}</h1>
       <p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.session_expired}</p>
       <a className="primary button-link" href={clientLocalePath(locale, 'signin')}>{messages.signInAgain}</a>
+    </section></main>;
+  }
+
+  // Inactive animals take no fresh capture. This is not onboarding: the account may still own inactive animals.
+  if (animals.length === 0 && !attempt) {
+    return <main className="content"><section className="card capture-card">
+      <h1>{messages.captureTitle}</h1>
+      <p className="muted">{messages.noActiveAnimals}</p>
+      <a className="primary button-link" href={clientLocalePath(locale, 'animals')}>{messages.noActiveAnimalsAction}</a>
     </section></main>;
   }
 

@@ -7,6 +7,10 @@ public enum DocumentCaptureFailure
     // 404 without a body: the operation, document, file slot or animal is missing or belongs to another account.
     NotFound,
 
+    // 409 animal_inactive: a fresh manifest names an owned animal that is inactive. An already accepted operation is
+    // never refused for this reason.
+    AnimalInactive,
+
     // 400 animal_required
     AnimalRequired,
 

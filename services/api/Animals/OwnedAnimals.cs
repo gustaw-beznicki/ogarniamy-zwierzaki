@@ -70,6 +70,12 @@ public sealed class OwnedAnimals(AppDbContext db)
             return true;
         }, cancellationToken);
 
+    // Locks the user's animal row (FOR UPDATE) inside the caller's open transaction and reports whether it is active;
+    // null when the animal does not exist or is not the user's. Fresh upload manifests call this, so inserting a
+    // manifest and changing the animal's activity run one after another, never interleaved.
+    public async Task<bool?> LockIsActiveAsync(string userId, Guid animalId, CancellationToken cancellationToken = default) =>
+        (await LockOwnedAsync(userId, animalId, track: false, cancellationToken))?.IsActive;
+
     // Locks the owned animal row (FOR UPDATE), so concurrent edits of one animal run one after another and the second
     // sees the first one's new version. Fresh upload manifests lock the same row, which serializes them with activity
     // changes. Ownership is resolved before the version is compared, so a foreign animal's version is never disclosed.
@@ -77,14 +83,7 @@ public sealed class OwnedAnimals(AppDbContext db)
         string userId, Guid animalId, Guid expectedVersion, Func<Animal, bool> apply, CancellationToken cancellationToken)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var locked = await db.Animals
-            .FromSql($"""
-                SELECT * FROM animals
-                WHERE id = {animalId} AND id IN (SELECT animal_id FROM animal_members WHERE user_id = {userId})
-                FOR UPDATE
-                """)
-            .ToListAsync(cancellationToken);
-        var animal = locked.SingleOrDefault();
+        var animal = await LockOwnedAsync(userId, animalId, track: true, cancellationToken);
         if (animal is null)
         {
             return new AnimalMutationResult(AnimalMutationOutcome.NotFound);
@@ -104,6 +103,18 @@ public sealed class OwnedAnimals(AppDbContext db)
         await transaction.CommitAsync(cancellationToken);
         var current = await FindAsync(userId, animalId, cancellationToken);
         return new AnimalMutationResult(AnimalMutationOutcome.Updated, current);
+    }
+
+    private async Task<Animal?> LockOwnedAsync(string userId, Guid animalId, bool track, CancellationToken cancellationToken)
+    {
+        var query = db.Animals
+            .FromSql($"""
+                SELECT * FROM animals
+                WHERE id = {animalId} AND id IN (SELECT animal_id FROM animal_members WHERE user_id = {userId})
+                FOR UPDATE
+                """);
+        var locked = await (track ? query : query.AsNoTracking()).ToListAsync(cancellationToken);
+        return locked.SingleOrDefault();
     }
 
     // Counts Stored documents inside the same scoped query, so a list never reads documents per animal.

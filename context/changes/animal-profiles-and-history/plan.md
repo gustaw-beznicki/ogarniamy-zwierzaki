@@ -277,12 +277,12 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 
 #### Automated
 
-- [ ] 2.1 API build/test and frontend check/build pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
-- [ ] 2.2 Real PostgreSQL tests prove both upload/inactivation race orders, accepted-manifest retry/completion, active default fallback and all-inactive archive access.
+- [x] 2.1 API build/test and frontend check/build pass: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `npm run check --prefix apps/web` and `npm run build --prefix apps/web`.
+- [x] 2.2 Real PostgreSQL tests prove both upload/inactivation race orders, accepted-manifest retry/completion, active default fallback and all-inactive archive access.
 
 #### Manual
 
-- [ ] 2.3 Two tabs prove that inactivation removes fresh capture choices, preserves selected files when rejected, and does not strand an accepted upload.
+- [x] 2.3 Two tabs prove that inactivation removes fresh capture choices, preserves selected files when rejected, and does not strand an accepted upload.
 
 ### Phase 3: Animal management and profile UI
 

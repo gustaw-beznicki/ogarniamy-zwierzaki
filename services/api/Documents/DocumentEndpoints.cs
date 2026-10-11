@@ -150,6 +150,7 @@ public static class DocumentEndpoints
 
     private static ProblemHttpResult ToProblem(DocumentCaptureFailure? failure) => failure switch
     {
+        DocumentCaptureFailure.AnimalInactive => Problem(StatusCodes.Status409Conflict, "animal_inactive"),
         DocumentCaptureFailure.AnimalRequired => Problem(StatusCodes.Status400BadRequest, "animal_required"),
         DocumentCaptureFailure.InvalidEventDate => Problem(StatusCodes.Status400BadRequest, "invalid_event_date"),
         DocumentCaptureFailure.FutureEventDate => Problem(StatusCodes.Status400BadRequest, "future_event_date"),

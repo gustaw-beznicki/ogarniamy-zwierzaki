@@ -218,17 +218,22 @@ async function accountMutation<T>(path: string, options: RequestOptions): Promis
 }
 
 // Sends an owner mutation once, on behalf of the account that loaded the page. Nothing is replayed: after a rejected
-// token the cached token is dropped and the session is checked — another account's session fails with `account_changed`
-// (so the click never acts for that account), otherwise the rejection is returned and the user must click again.
+// token, or a 404 (owner routes hide other accounts' resources), the session is checked — another account's session
+// fails with `account_changed` (the click never acted for that account: its token was refused or the resource is not
+// its own), otherwise the original error is returned and the user must click again. A token fetched only at click time
+// already belongs to the new session, so the 404 check is what catches a sign-in from another tab.
 async function ownerMutation<T>(path: string, options: RequestOptions, accountEmail: string): Promise<T> {
   const token = await antiforgeryToken();
   try {
     return await request<T>(path, { ...options, headers: { ...options.headers, [token.headerName]: token.token } });
   } catch (error) {
-    if (!(error instanceof ApiError) || error.code !== 'invalid_antiforgery_token') throw error;
-    antiforgery = null;
+    if (!(error instanceof ApiError) || (error.code !== 'invalid_antiforgery_token' && error.status !== 404)) throw error;
+    if (error.code === 'invalid_antiforgery_token') antiforgery = null;
     const me = await request<MeResponse>('/api/me');
-    if (me.email !== accountEmail) throw new ApiError('account_changed', 401);
+    if (me.email !== accountEmail) {
+      antiforgery = null;
+      throw new ApiError('account_changed', 401);
+    }
     throw error;
   }
 }

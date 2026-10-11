@@ -357,7 +357,7 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Manual
 
-- [ ] 3.4 A controlled live-provider run verifies saved operation recovery and early deletion acknowledgement using non-sensitive fixtures; sanitized evidence records any provider limitations.
+- [x] 3.4 A controlled live-provider run verifies saved operation recovery and early deletion acknowledgement using non-sensitive fixtures; sanitized evidence records any provider limitations. — passed 2026-10-11, see notes/live-provider-run.md
 
 ### Phase 4: Reading status and Retry
 

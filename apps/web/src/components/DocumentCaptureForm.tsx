@@ -107,6 +107,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
   const [progress, setProgress] = useState<Progress | null>(null);
   const [errorCode, setErrorCode] = useState('');
   const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const [refreshingAnimals, setRefreshingAnimals] = useState(false);
   const completedRef = useRef(false);
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
@@ -354,6 +355,18 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
     }
   }
 
+  // Reloads eligible animals without leaving the page, so the kept files and date survive.
+  async function refreshAnimals() {
+    setRefreshingAnimals(true);
+    try {
+      setAnimals((await api.captureDefaults()).animals);
+    } catch {
+      // The current list stays; the user can try again.
+    } finally {
+      setRefreshingAnimals(false);
+    }
+  }
+
   function startOver() {
     setAttempt(null);
     setProgress(null);
@@ -392,7 +405,8 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
   }
 
   // Inactive animals take no fresh capture. This is not onboarding: the account may still own inactive animals.
-  if (animals.length === 0 && !attempt) {
+  // After a capture was rejected because its animal became inactive, the form stays so the kept files remain visible.
+  if (animals.length === 0 && !attempt && errorCode !== 'animal_inactive') {
     return <main className="content"><section className="card capture-card">
       <h1>{messages.captureTitle}</h1>
       <p className="muted">{messages.noActiveAnimals}</p>
@@ -448,6 +462,13 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
             <input type="radio" name="animal" value={animal.id} checked={animal.id === animalId} onChange={() => setAnimalId(animal.id)} className="visually-hidden" />
             {animal.id === animalId && <span aria-hidden="true">✓ </span>}{animal.name}
           </label>)}</div>
+          {animals.length === 0 && <div className="notice">
+            <p>{messages.noActiveAnimalsKeepFiles}</p>
+            <div className="notice-actions">
+              <a className="secondary button-link" href={clientLocalePath(locale, 'animals')} target="_blank" rel="noopener">{messages.openAnimalsNewTab}</a>
+              <button type="button" className="secondary" disabled={refreshingAnimals} onClick={() => void refreshAnimals()}>{refreshingAnimals ? messages.loadingContent : messages.refreshAnimals}</button>
+            </div>
+          </div>}
         </fieldset>
 
         <label className="date-field">{messages.eventDate}

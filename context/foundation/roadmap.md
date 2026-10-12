@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-10-05
+updated: 2026-10-12
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -48,7 +48,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | in-progress |
 | S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
 | S-05 | search-filter-and-unavailable-notice | narrow results to one animal; see an explicit notice when search is unavailable      | S-04          | US-02, FR-011, FR-012                       | proposed |
-| S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | in-progress |
+| S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | done |
 
 ## Streams
 
@@ -178,7 +178,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Independent of the search pipeline, so a separate agent run can take it in parallel. An inactive animal drops off the main list and out of the capture default but stays searchable. The one-tap selector from S-02 only becomes meaningful once there is a second animal. The ordering depends on dates that FR-008 admits may be wrong (Open Roadmap Question 2).
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -255,3 +255,4 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 
 - **S-01: user can register, sign in, and set up their first animal (name only) on an onboarding screen, and sees only their own data.** — Archived 2026-10-03 → `context/archive/2026-09-28-account-and-first-animal/`. Lesson: —.
 - **S-02: user can photograph a document or upload a PDF, assign it to an animal with one tap (the last-used animal is the default), confirm the event date (pre-filled with today), and later open the stored original. The original is never reachable without signing in.** — Archived 2026-10-05 → `context/archive/2026-10-04-capture-document-original/`. Lesson: —.
+- **S-06: user can keep several animals, edit an animal's profile or mark it inactive, and see each animal's documents on its profile, ordered by event date with the newest first.** — Archived 2026-10-12 → `context/archive/2026-10-04-animal-profiles-and-history/`. Lesson: —.

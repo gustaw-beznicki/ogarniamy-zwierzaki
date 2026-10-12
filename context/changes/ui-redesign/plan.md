@@ -831,11 +831,11 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [x] 2.1 Type check passes: `npm run check` in `apps/web`
-- [x] 2.2 Build passes: `npm run build` in `apps/web`
-- [x] 2.3 Every new message key exists in both catalogues
-- [x] 2.4 No Unicode icon glyphs remain in the files changed in this phase
-- [x] 2.5 No Polish outside `pl.ts`
+- [x] 2.1 Type check passes: `npm run check` in `apps/web` — e061f7e
+- [x] 2.2 Build passes: `npm run build` in `apps/web` — e061f7e
+- [x] 2.3 Every new message key exists in both catalogues — e061f7e
+- [x] 2.4 No Unicode icon glyphs remain in the files changed in this phase — e061f7e
+- [x] 2.5 No Polish outside `pl.ts` — e061f7e
 
 #### Manual
 
@@ -850,9 +850,9 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [ ] 3.1 Type check passes: `npm run check` in `apps/web`
-- [ ] 3.2 Build passes: `npm run build` in `apps/web`
-- [ ] 3.3 No Unicode icon glyphs remain in `AnimalsList.tsx` and `AnimalDocuments.tsx`
+- [x] 3.1 Type check passes: `npm run check` in `apps/web`
+- [x] 3.2 Build passes: `npm run build` in `apps/web`
+- [x] 3.3 No Unicode icon glyphs remain in `AnimalsList.tsx` and `AnimalDocuments.tsx`
 
 #### Manual
 

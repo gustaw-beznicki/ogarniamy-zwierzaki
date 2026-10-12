@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Dokument</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4D3F}a:hover{color:#173B30}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.disp{font-family:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;letter-spacing:-0.02em}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes tabIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,158,107,.6)}70%{box-shadow:0 0 0 12px rgba(242,158,107,0)}100%{box-shadow:0 0 0 0 rgba(242,158,107,0)}}
+@keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+@keyframes scan{0%{top:8%}50%{top:88%}100%{top:8%}}
+@keyframes pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+@keyframes draw{from{stroke-dashoffset:26}to{stroke-dashoffset:0}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+.r0{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.r1{animation:rise .45s .06s cubic-bezier(.2,.8,.2,1) both}
+.r2{animation:rise .45s .12s cubic-bezier(.2,.8,.2,1) both}
+.r3{animation:rise .45s .18s cubic-bezier(.2,.8,.2,1) both}
+.r4{animation:rise .45s .24s cubic-bezier(.2,.8,.2,1) both}
+.r5{animation:rise .45s .30s cubic-bezier(.2,.8,.2,1) both}
+.pulse{animation:pulse 1.6s ease-out infinite}
+.indet{animation:indet 1.4s cubic-bezier(.4,0,.2,1) infinite}
+.scan{animation:scan 2.4s ease-in-out infinite}
+.pop{animation:pop .45s cubic-bezier(.3,1.4,.5,1) both}
+.draw{stroke-dasharray:26;stroke-dashoffset:26;animation:draw .45s .25s cubic-bezier(.6,0,.2,1) forwards}
+.shake{animation:shake .45s ease-in-out both}
+.fade{animation:fadeIn .3s cubic-bezier(.2,.8,.2,1) both}
+.breathe{animation:breathe 2s ease-in-out infinite}
+.btn{transition:transform .12s,background-color .2s}
+.btn:active{transform:scale(.97)}
+.btn.p:hover{background:#173B30;color:#FFFFFF}
+.btn.s:hover{background:#DCE8E1}
+.retry:hover svg{transform:rotate(180deg)}
+.retry svg{transition:transform .4s cubic-bezier(.34,1.3,.5,1)}
+.thumb{transition:transform .2s}
+.thumb:hover{transform:translateY(-3px)}
+.back:hover .bc{background:#1F4D3F;color:#FFFFFF}
+.bc{transition:background-color .2s,color .2s}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:20px;color:#3A413D;font-size:12px;font-weight:600;text-decoration:none;min-height:56px;transition:background-color .2s}
+.tab:hover{background:#F3F2EC;color:#1A1F1C}
+.tab.on{background:#1F4D3F;color:#FFFFFF;animation:tabIn .32s cubic-bezier(.34,1.3,.5,1) both}
+.tab.on:hover{color:#FFFFFF}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}.draw{stroke-dashoffset:0}}
+</style>
+</helmet>
+<div style="width: 390px; height: 1080px; position: relative; overflow: hidden; background: #F7F5EF; color: #1A1F1C; font-family: Figtree, 'Segoe UI', system-ui, sans-serif">
+<div style="padding: 16px 16px 120px; display: flex; flex-direction: column; gap: 18px">
+
+<div class="r0" style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<a class="back" href="Mobile-Profile.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; color: #1A1F1C; font-size: 15px; font-weight: 600; text-decoration: none">
+<span class="bc" style="width: 40px; height: 40px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(26,31,28,.06)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><path d="m15 6-6 6 6 6"></path></svg></span>Wróć do dokumentów</a>
+<nav aria-label="Język" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(26,31,28,.06)">
+<a href="#" aria-current="true" style="min-width: 36px; padding: 7px 8px; border-radius: 999px; background: #1F4D3F; color: #FFFFFF; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none">PL</a>
+<a href="#" style="min-width: 36px; padding: 7px 8px; border-radius: 999px; color: #1A1F1C; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none">EN</a>
+</nav>
+</div>
+
+<div class="r1" style="display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0; font-size: 14px; font-weight: 700; color: #5B635E">Czarek</p>
+<h1 class="disp" style="margin: 0; font-size: 38px; line-height: 1; font-weight: 800">Dokument</h1>
+</div>
+
+<dl class="r2" style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: #FFFFFF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<dt style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #5B635E"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; color: #1F4D3F"><rect x="3.5" y="5" width="17" height="15" rx="2.5"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>Data zdarzenia</dt>
+<dd style="margin: 0; font-size: 16px; font-weight: 700">14 września 2026</dd>
+</div>
+<div style="background: #FFFFFF; border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<dt style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #5B635E"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; color: #1F4D3F"><path d="M12 20V9M7 14l5-5 5 5M5 4h14"></path></svg>Data dodania</dt>
+<dd style="margin: 0; font-size: 16px; font-weight: 700">15 września 2026</dd>
+</div>
+</dl>
+
+<p class="r2" style="margin: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #E2F1EA; color: #1F6E52; font-size: 15px; font-weight: 700"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 3 7.7 7 9.5 4-1.8 7-5.2 7-9.5V6z"></path><path d="m9 12 2.2 2.2L15.5 10"></path></svg>Oryginał jest bezpiecznie zapisany.</p>
+
+<section class="r3" aria-live="polite" style="background: #FFFFFF; border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(26,31,28,.04), 0 6px 18px rgba(26,31,28,.05)">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">Odczytywanie treści</h2>
+
+<sc-if value="{{isReading}}" hint-placeholder-val="{{ true }}">
+<div class="fade" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="pulse" style="width: 44px; height: 44px; border-radius: 14px; background: #FDE7D8; color: #8A4317; display: grid; place-items: center; flex: none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"></path><path d="M8 10h8M8 14h5"></path></svg></span>
+<span style="font-size: 15px; font-weight: 600">Trwa odczytywanie treści…</span>
+</div>
+<div style="height: 6px; border-radius: 3px; background: #F3F2EC; overflow: hidden"><div class="indet" style="width: 40%; height: 6px; border-radius: 3px; background: #F29E6B"></div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isQueued}}" hint-placeholder-val="{{ false }}">
+<div class="fade" style="display: flex; align-items: center; gap: 12px">
+<span class="breathe" style="width: 44px; height: 44px; border-radius: 14px; background: #F3F2EC; color: #3A413D; display: grid; place-items: center; flex: none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+<span style="font-size: 15px; font-weight: 600; line-height: 1.4">Treść czeka na odczytanie. Oryginały są już dostępne.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{isRead}}" hint-placeholder-val="{{ false }}">
+<div class="fade" style="display: flex; align-items: center; gap: 12px">
+<span class="pop" style="width: 44px; height: 44px; border-radius: 14px; background: #1F6E52; color: #FFFFFF; display: grid; place-items: center; flex: none"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path class="draw" d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 700">Treść została odczytana.</span><span style="font-size: 13px; color: #5B635E">Treść odczytano 15 września 2026, 14:35.</span></span>
+</div>
+</sc-if>
+
+<sc-if value="{{isFailed}}" hint-placeholder-val="{{ false }}">
+<div class="fade" style="display: flex; flex-direction: column; gap: 12px">
+<div class="shake" role="alert" style="display: flex; align-items: flex-start; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 14px; background: #FBE3E0; color: #B3261E; display: grid; place-items: center; flex: none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 700; color: #8C1D16; line-height: 1.4">Nie udało się odczytać treści. Oryginały pozostają dostępne.</span><span style="font-size: 13px; color: #5B635E">W dokumencie nie znaleziono tekstu.</span></span>
+</div>
+<button class="btn s retry" onClick="{{retry}}" style="align-self: flex-start; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 14px; background: #EEF1EC; color: #1F4D3F; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8.5"></path><path d="M4 3.5v5h5"></path><path d="M4 13a8 8 0 0 0 14.6 4.5l1.4-2"></path><path d="M20 20.5v-5h-5"></path></svg>Odczytaj ponownie</button>
+</div>
+</sc-if>
+</section>
+
+<section class="r4" style="display: flex; flex-direction: column; gap: 12px">
+<h2 class="disp" style="margin: 0; font-size: 24px; font-weight: 800">Oryginały</h2>
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 8px">
+<div style="height: 270px; border-radius: 22px; background: #E7E3D8; display: grid; place-items: center; overflow: hidden">
+<div style="position: relative; width: 168px; height: 226px; border-radius: 6px; background: #FFFFFF; box-shadow: 0 10px 30px rgba(26,31,28,.16); transform: rotate(-2deg); padding: 22px 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 9px; overflow: hidden">
+<span style="height: 8px; width: 55%; border-radius: 3px; background: #1F4D3F; opacity: .8"></span>
+<span style="height: 4px; border-radius: 2px; background: #D3D7D2"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 88%"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 94%"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 70%"></span>
+<span style="height: 4px; border-radius: 2px; background: #D3D7D2; margin-top: 8px"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 82%"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 60%"></span>
+<span style="height: 4px; border-radius: 2px; background: #D3D7D2; margin-top: 8px; width: 90%"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 76%"></span>
+<sc-if value="{{isReading}}" hint-placeholder-val="{{ true }}"><span class="scan" aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 8%; height: 2px; background: #F29E6B; box-shadow: 0 0 12px 3px rgba(242,158,107,.55)"></span></sc-if>
+</div>
+</div>
+<figcaption style="font-size: 13px; color: #5B635E">Strona 1 z 3</figcaption>
+</figure>
+<div style="display: flex; gap: 10px">
+<button class="thumb" aria-label="Strona 1 z 3" aria-current="true" style="width: 52px; height: 64px; border: 2px solid #1F4D3F; border-radius: 12px; background: #FFFFFF; padding: 0; cursor: pointer"></button>
+<button class="thumb" aria-label="Strona 2 z 3" style="width: 52px; height: 64px; border: 2px solid transparent; border-radius: 12px; background: #ECE7DC; padding: 0; cursor: pointer"></button>
+<button class="thumb" aria-label="Strona 3 z 3" style="width: 52px; height: 64px; border: 2px solid transparent; border-radius: 12px; background: #E4E9E3; padding: 0; cursor: pointer"></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<a class="btn p" href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; border-radius: 16px; background: #1F4D3F; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M14 4h6v6M20 4l-8.5 8.5"></path><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"></path></svg>Otwórz oryginał</a>
+<a class="btn s" href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; border-radius: 16px; background: #FFFFFF; color: #1F4D3F; font-size: 15px; font-weight: 700; text-decoration: none; box-shadow: inset 0 0 0 1.5px #D9DDD6"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Pobierz oryginał</a>
+</div>
+</section>
+</div>
+
+<nav aria-label="Nawigacja główna" style="position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 6px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 2px 4px rgba(26,31,28,.04), 0 16px 40px rgba(26,31,28,.14); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 60px; gap: 4px">
+<a class="tab" href="Mobile-Search.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Szukaj</a>
+<a class="tab" href="Mobile-Add.dc.html"><span style="width: 28px; height: 28px; border-radius: 50%; background: #F29E6B; color: #1A1F1C; display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; stroke-width: 2.25"><path d="M12 5v14M5 12h14"></path></svg></span>Dodaj</a>
+<a class="tab on" href="Mobile-Animals.dc.html" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="10.2" r="2"></circle><circle cx="9.2" cy="5.6" r="2"></circle><circle cx="14.8" cy="5.6" r="2"></circle><circle cx="18.4" cy="10.2" r="2"></circle><path d="M12 12c-2.8 0-5.5 3.2-5.5 5.6 0 1.6 1.2 2.4 2.6 2.4 1.2 0 1.9-.6 2.9-.6s1.7.6 2.9.6c1.4 0 2.6-.8 2.6-2.4 0-2.4-2.7-5.6-5.5-5.6z"></path></svg>Zwierzęta</a>
+<a class="tab" href="Mobile-Signin.dc.html" aria-label="Wyloguj się"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"status":{"editor":"enum","options":["queued","reading","read","failed"],"default":"reading","section":"Odczyt OCR"},"$preview":{"width":390,"height":1080}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { override: null };
+this.timer = null;
+}
+componentDidUpdate(prev) {
+if (prev.status !== this.props.status && this.state.override !== null) this.setState({ override: null });
+}
+componentWillUnmount() {
+if (this.timer) clearTimeout(this.timer);
+}
+renderVals() {
+const s = this.state.override ?? this.props.status ?? 'reading';
+return {
+isQueued: s === 'queued',
+isReading: s === 'reading',
+isRead: s === 'read',
+isFailed: s === 'failed',
+retry: () => {
+this.setState({ override: 'reading' });
+if (this.timer) clearTimeout(this.timer);
+this.timer = setTimeout(() => this.setState({ override: 'read' }), 3200);
+}
+};
+}
+}
+</script>
+</body>
+</html>

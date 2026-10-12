@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>System wizualny - Ogarniamy Zwierzaki</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4D3F}a:hover{color:#173B30}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.disp{font-family:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;letter-spacing:-0.02em}
+.tile{transition:transform .2s cubic-bezier(.2,.8,.2,1),background-color .2s,color .2s}
+.tile:hover{transform:translateY(-3px);background:#1F4D3F;color:#FFFFFF}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes riseLoop{0%,8%{opacity:0;transform:translateY(14px)}22%,85%{opacity:1;transform:none}100%{opacity:0;transform:none}}
+@keyframes tabSlide{0%,15%{transform:translateX(0)}35%,60%{transform:translateX(64px)}80%,100%{transform:translateX(128px)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,158,107,.6)}70%{box-shadow:0 0 0 12px rgba(242,158,107,0)}100%{box-shadow:0 0 0 0 rgba(242,158,107,0)}}
+@keyframes drawLoop{0%,15%{stroke-dashoffset:26}45%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes popLoop{0%,10%{transform:scale(.6);opacity:0}30%{transform:scale(1.08);opacity:1}40%,85%{transform:scale(1);opacity:1}100%{opacity:0}}
+@keyframes shimmer{from{background-position:-160px 0}to{background-position:320px 0}}
+@keyframes grow{0%{width:8%}80%,100%{width:92%}}
+@keyframes press{0%,40%,100%{transform:scale(1)}50%{transform:scale(.95)}60%{transform:scale(1.02)}}
+@keyframes scan{0%{top:10%}50%{top:82%}100%{top:10%}}
+.r1{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.r2{animation:rise .5s .06s cubic-bezier(.2,.8,.2,1) both}
+.r3{animation:rise .5s .12s cubic-bezier(.2,.8,.2,1) both}
+.r4{animation:rise .5s .18s cubic-bezier(.2,.8,.2,1) both}
+.l1{animation:riseLoop 2.8s cubic-bezier(.2,.8,.2,1) infinite}
+.l2{animation:riseLoop 2.8s .08s cubic-bezier(.2,.8,.2,1) infinite}
+.l3{animation:riseLoop 2.8s .16s cubic-bezier(.2,.8,.2,1) infinite}
+.tabind{animation:tabSlide 3.6s cubic-bezier(.34,1.3,.5,1) infinite alternate}
+.pulse{animation:pulse 1.6s ease-out infinite}
+.draw{stroke-dasharray:26;animation:drawLoop 2.6s cubic-bezier(.6,0,.2,1) infinite}
+.pop{animation:popLoop 2.6s cubic-bezier(.3,1.4,.5,1) infinite}
+.shim{background:linear-gradient(90deg,#1F4D3F 0,#1F4D3F 40%,#3E7A66 50%,#1F4D3F 60%,#1F4D3F 100%);background-size:160px 100%;animation:shimmer 1.2s linear infinite,grow 3s cubic-bezier(.4,0,.2,1) infinite}
+.press{animation:press 2s ease-in-out infinite}
+.scan{animation:scan 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1720px; box-sizing: border-box; padding: 72px 80px; background: #F7F5EF; color: #1A1F1C; font-family: Figtree, 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; gap: 56px; overflow: hidden">
+
+<header class="r1" style="display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<div style="display: flex; align-items: center; gap: 16px">
+<div style="width: 56px; height: 56px; border-radius: 18px; background: #1F4D3F; display: grid; place-items: center">
+<svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true" style="fill: #F29E6B"><circle cx="5.6" cy="10.2" r="2.1"></circle><circle cx="9.2" cy="5.6" r="2.1"></circle><circle cx="14.8" cy="5.6" r="2.1"></circle><circle cx="18.4" cy="10.2" r="2.1"></circle><path d="M12 11.6c-2.9 0-5.7 3.3-5.7 5.8 0 1.7 1.2 2.6 2.7 2.6 1.3 0 2-.7 3-.7s1.7.7 3 .7c1.5 0 2.7-.9 2.7-2.6 0-2.5-2.8-5.8-5.7-5.8z"></path></svg>
+</div>
+<div class="disp" style="font-size: 26px; font-weight: 700">Ogarniamy Zwierzaki</div>
+</div>
+<div style="font-size: 15px; color: #5B635E; font-weight: 600">Redesign · październik 2026</div>
+</header>
+
+<div class="r2" style="display: flex; flex-direction: column; gap: 12px">
+<h1 class="disp" style="margin: 0; font-size: 72px; line-height: 1; font-weight: 800">System wizualny</h1>
+<p style="margin: 0; font-size: 20px; color: #5B635E; max-width: 760px; line-height: 1.5">Głęboka butelkowa zieleń daje spokój i zaufanie, morela zostaje ciepłym akcentem z obecnej palety. Ikony to jeden spójny zestaw obrysowy, ruch podkreśla tylko ważne chwile.</p>
+</div>
+
+<section class="r3" style="display: flex; flex-direction: column; gap: 20px">
+<h2 class="disp" style="margin: 0; font-size: 28px; font-weight: 700">Kolory</h2>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #1F4D3F"></div><div style="font-weight: 700">Pine</div><div style="font-size: 14px; color: #5B635E">#1F4D3F · primary</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #173B30"></div><div style="font-weight: 700">Pine 700</div><div style="font-size: 14px; color: #5B635E">#173B30 · hover</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #DCE8E1"></div><div style="font-weight: 700">Mięta</div><div style="font-size: 14px; color: #5B635E">#DCE8E1 · tło aktywne</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #F29E6B"></div><div style="font-weight: 700">Morela</div><div style="font-size: 14px; color: #5B635E">#F29E6B · akcent</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #FDE7D8"></div><div style="font-weight: 700">Brzoskwinia</div><div style="font-size: 14px; color: #5B635E">#FDE7D8 · akcent tła</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #F7F5EF; box-shadow: inset 0 0 0 1px #E3E1D8"></div><div style="font-weight: 700">Papier</div><div style="font-size: 14px; color: #5B635E">#F7F5EF · tło</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; background: #1A1F1C"></div><div style="font-weight: 700">Grafit</div><div style="font-size: 14px; color: #5B635E">#1A1F1C · tekst</div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><div style="height: 120px; border-radius: 20px; display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden"><div style="background: #1F6E52"></div><div style="background: #B3261E"></div></div><div style="font-weight: 700">Stany</div><div style="font-size: 14px; color: #5B635E">#1F6E52 · #B3261E</div></div>
+</div>
+</section>
+
+<div class="r4" style="display: grid; grid-template-columns: 520px minmax(0, 1fr); gap: 48px">
+<section style="display: flex; flex-direction: column; gap: 20px">
+<h2 class="disp" style="margin: 0; font-size: 28px; font-weight: 700">Typografia</h2>
+<div style="background: #FFFFFF; border-radius: 24px; padding: 32px; display: flex; flex-direction: column; gap: 24px; box-shadow: 0 1px 2px rgba(26,31,28,.05), 0 12px 32px rgba(26,31,28,.06)">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 13px; font-weight: 700; color: #5B635E; text-transform: uppercase; letter-spacing: .08em">Nagłówki · Bricolage Grotesque</div>
+<div class="disp" style="font-size: 52px; font-weight: 800; line-height: 1.05">Profil zwierzaka</div>
+<div class="disp" style="font-size: 28px; font-weight: 700">Odczytywanie treści</div>
+</div>
+<div style="height: 1px; background: #E3E1D8"></div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 700; color: #5B635E; text-transform: uppercase; letter-spacing: .08em">Tekst · Figtree</div>
+<div style="font-size: 18px; font-weight: 600">Oryginał jest bezpiecznie zapisany.</div>
+<div style="font-size: 16px; line-height: 1.55; color: #3A413D">Zrób zdjęcie albo wybierz plik PDF. Tytuł nie jest potrzebny. Jeden plik PDF albo do 10 zdjęć (JPEG lub PNG), każdy plik do 10 MB.</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: 13px; color: #5B635E">
+<div><b style="color: #1A1F1C">52/800</b><br>Display</div>
+<div><b style="color: #1A1F1C">32/700</b><br>H1</div>
+<div><b style="color: #1A1F1C">20/700</b><br>H2</div>
+<div><b style="color: #1A1F1C">16/400</b><br>Body</div>
+</div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 class="disp" style="margin: 0; font-size: 28px; font-weight: 700">Ikony</h2>
+<div style="font-size: 14px; color: #5B635E">24 px · obrys 1.75 · zaokrąglone końce</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px">
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><span style="color: #5B635E">szukaj</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span style="color: #5B635E">dodaj</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="10.2" r="2"></circle><circle cx="9.2" cy="5.6" r="2"></circle><circle cx="14.8" cy="5.6" r="2"></circle><circle cx="18.4" cy="10.2" r="2"></circle><path d="M12 12c-2.8 0-5.5 3.2-5.5 5.6 0 1.6 1.2 2.4 2.6 2.4 1.2 0 1.9-.6 2.9-.6s1.7.6 2.9.6c1.4 0 2.6-.8 2.6-2.4 0-2.4-2.7-5.6-5.5-5.6z"></path></svg><span style="color: #5B635E">zwierzęta</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg><span style="color: #5B635E">dokument</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5a2 2 0 0 1 2-2h1.6L9.2 4h5.6l1.6 2.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><circle cx="12" cy="13" r="3.5"></circle></svg><span style="color: #5B635E">aparat</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="14" height="14" rx="2.5"></rect><path d="M3 7.5V19a2 2 0 0 0 2 2h11.5"></path><circle cx="12" cy="8" r="1.4"></circle><path d="m21 13.5-3.6-3.6L10.5 17"></path></svg><span style="color: #5B635E">zdjęcia</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><rect x="7.5" y="12" width="9" height="5" rx="1.2"></rect></svg><span style="color: #5B635E">pdf</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"></path><path d="M8 10h8M8 14h5"></path></svg><span style="color: #5B635E">odczyt</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5.5c0 4.3 3 7.7 7 9.5 4-1.8 7-5.2 7-9.5V6z"></path><path d="m9 12 2.2 2.2L15.5 10"></path></svg><span style="color: #5B635E">zapisany</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span style="color: #5B635E">w kolejce</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg><span style="color: #5B635E">gotowe</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg><span style="color: #5B635E">błąd</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8.5"></path><path d="M4 3.5v5h5"></path><path d="M4 13a8 8 0 0 0 14.6 4.5l1.4-2"></path><path d="M20 20.5v-5h-5"></path></svg><span style="color: #5B635E">ponów</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg><span style="color: #5B635E">data</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-8.5 8.5"></path><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"></path></svg><span style="color: #5B635E">otwórz</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg><span style="color: #5B635E">pobierz</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"></path><path d="m13.5 6.5 4 4"></path></svg><span style="color: #5B635E">zmień imię</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"></path></svg><span style="color: #5B635E">nieaktywny</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"></path></svg><span style="color: #5B635E">wyżej</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg><span style="color: #5B635E">niżej</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg><span style="color: #5B635E">usuń</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 6 8-6"></path></svg><span style="color: #5B635E">e-mail</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5"></rect><path d="M8 10.5v-3a4 4 0 0 1 8 0v3"></path></svg><span style="color: #5B635E">hasło</span></div>
+<div class="tile" style="background: #FFFFFF; border-radius: 16px; height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg><span style="color: #5B635E">wyloguj</span></div>
+</div>
+</section>
+</div>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 class="disp" style="margin: 0; font-size: 28px; font-weight: 700">Ikony: przed i po</h2>
+<div style="font-size: 14px; color: #5B635E">Znaki Unicode zależą od czcionki systemu, SVG wygląda tak samo wszędzie</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px">
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">⌕</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #1F4D3F"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></div>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">♧</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #1F4D3F"><circle cx="5.6" cy="10.2" r="2"></circle><circle cx="9.2" cy="5.6" r="2"></circle><circle cx="14.8" cy="5.6" r="2"></circle><circle cx="18.4" cy="10.2" r="2"></circle><path d="M12 12c-2.8 0-5.5 3.2-5.5 5.6 0 1.6 1.2 2.4 2.6 2.4 1.2 0 1.9-.6 2.9-.6s1.7.6 2.9.6c1.4 0 2.6-.8 2.6-2.4 0-2.4-2.7-5.6-5.5-5.6z"></path></svg></div>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">▤</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #1F4D3F"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></div>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">◉</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #1F4D3F"><path d="M4 8.5a2 2 0 0 1 2-2h1.6L9.2 4h5.6l1.6 2.5H18a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></div>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">ⓘ</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #B3261E"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg></div>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">↪</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #1F4D3F"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></div>
+<div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px"><span style="font-size: 26px; color: #8A918C; width: 28px; text-align: center">✓</span><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #8A918C"><path d="M5 12h14M13 6l6 6-6 6"></path></svg><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color: #1F6E52"><path d="M12 3 5 6v5.5c0 4.3 3 7.7 7 9.5 4-1.8 7-5.2 7-9.5V6z"></path><path d="m9 12 2.2 2.2L15.5 10"></path></svg></div>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<h2 class="disp" style="margin: 0; font-size: 28px; font-weight: 700">Ruch</h2>
+<div style="font-size: 14px; color: #5B635E">Wszystko wyłączane przez prefers-reduced-motion</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px">
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="height: 132px; border-radius: 14px; background: #F7F5EF; padding: 14px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<div class="l1" style="height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; gap: 8px; padding: 0 8px"><div style="width: 18px; height: 18px; border-radius: 50%; background: #FDE7D8"></div><div style="width: 60px; height: 6px; border-radius: 3px; background: #1A1F1C"></div></div>
+<div class="l2" style="height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; gap: 8px; padding: 0 8px"><div style="width: 18px; height: 18px; border-radius: 50%; background: #DCE8E1"></div><div style="width: 44px; height: 6px; border-radius: 3px; background: #1A1F1C"></div></div>
+<div class="l3" style="height: 30px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: center; gap: 8px; padding: 0 8px"><div style="width: 18px; height: 18px; border-radius: 50%; background: #FDE7D8"></div><div style="width: 52px; height: 6px; border-radius: 3px; background: #1A1F1C"></div></div>
+</div>
+<div><div style="font-weight: 700">Wejście listy</div><div style="font-size: 13px; color: #5B635E; line-height: 1.45">420 ms, ease-out, kolejne wiersze co 60 ms</div></div>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="height: 132px; border-radius: 14px; background: #F7F5EF; display: grid; place-items: center">
+<div style="position: relative; width: 192px; height: 44px; border-radius: 22px; background: #FFFFFF; box-shadow: 0 6px 18px rgba(26,31,28,.08); overflow: hidden">
+<div class="tabind" style="position: absolute; left: 4px; top: 4px; width: 0; height: 36px"><div style="position: absolute; left: 0; top: 0; width: 56px; height: 36px; border-radius: 18px; background: #1F4D3F; transform: translateX(0)"></div></div>
+</div>
+</div>
+<div><div style="font-weight: 700">Wskaźnik zakładki</div><div style="font-size: 13px; color: #5B635E; line-height: 1.45">280 ms, lekki overshoot cubic-bezier(.34,1.3,.5,1)</div></div>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="height: 132px; border-radius: 14px; background: #F7F5EF; display: grid; place-items: center">
+<div style="display: flex; align-items: center; gap: 10px; background: #FDE7D8; color: #8A4317; border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700"><span class="pulse" style="width: 10px; height: 10px; border-radius: 50%; background: #F29E6B"></span>Odczytywanie</div>
+</div>
+<div><div style="font-weight: 700">Status odczytu</div><div style="font-size: 13px; color: #5B635E; line-height: 1.45">Puls 1.6 s w pętli, tylko dla stanów w toku</div></div>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="height: 132px; border-radius: 14px; background: #F7F5EF; display: grid; place-items: center">
+<div class="pop" style="width: 64px; height: 64px; border-radius: 50%; background: #1F4D3F; display: grid; place-items: center; color: #FFFFFF"><svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round"><path class="draw" d="m5 12.5 4.5 4.5L19 7.5"></path></svg></div>
+</div>
+<div><div style="font-weight: 700">Zapisano</div><div style="font-size: 13px; color: #5B635E; line-height: 1.45">Koło pop 300 ms, potem rysowany znacznik 420 ms</div></div>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="height: 132px; border-radius: 14px; background: #F7F5EF; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 0 18px">
+<div style="font-size: 12px; color: #5B635E; font-weight: 600">Wysyłanie pliku 1 z 2…</div>
+<div style="height: 10px; border-radius: 5px; background: #DCE8E1; overflow: hidden"><div class="shim" style="height: 10px; border-radius: 5px; width: 40%"></div></div>
+</div>
+<div><div style="font-weight: 700">Postęp wysyłania</div><div style="font-size: 13px; color: #5B635E; line-height: 1.45">Połysk 1.2 s przesuwa się po pasku, gdy plik idzie</div></div>
+</div>
+
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="height: 132px; border-radius: 14px; background: #F7F5EF; display: grid; place-items: center; position: relative; overflow: hidden">
+<div style="position: relative; width: 74px; height: 96px; border-radius: 8px; background: #FFFFFF; box-shadow: 0 4px 14px rgba(26,31,28,.1); display: flex; flex-direction: column; gap: 6px; padding: 14px 10px; box-sizing: border-box; overflow: hidden">
+<div style="height: 4px; border-radius: 2px; background: #C9CFCB; width: 80%"></div><div style="height: 4px; border-radius: 2px; background: #C9CFCB"></div><div style="height: 4px; border-radius: 2px; background: #C9CFCB; width: 60%"></div><div style="height: 4px; border-radius: 2px; background: #C9CFCB; width: 90%"></div><div style="height: 4px; border-radius: 2px; background: #C9CFCB; width: 70%"></div>
+<div class="scan" style="position: absolute; left: 0; right: 0; top: 10%; height: 2px; background: #F29E6B; box-shadow: 0 0 10px 2px rgba(242,158,107,.6)"></div>
+</div>
+</div>
+<div><div style="font-weight: 700">Skanowanie OCR</div><div style="font-size: 13px; color: #5B635E; line-height: 1.45">Linia 2.4 s przesuwa się po miniaturze strony</div></div>
+</div>
+
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1720}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Szukaj</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4D3F}a:hover{color:#173B30}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.g{width:18px;height:18px;fill:none;stroke:#FFFFFF;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+.disp{font-family:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;letter-spacing:-0.02em}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes tabIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes shimmer{from{background-position:-300px 0}to{background-position:300px 0}}
+@keyframes indet{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(183,121,31,.45)}70%{box-shadow:0 0 0 10px rgba(183,121,31,0)}100%{box-shadow:0 0 0 0 rgba(183,121,31,0)}}
+@keyframes sweep{0%,100%{transform:translate(0,0) rotate(-8deg)}50%{transform:translate(18px,10px) rotate(6deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.r0{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.r1{animation:rise .45s .06s cubic-bezier(.2,.8,.2,1) both}
+.r2{animation:rise .45s .12s cubic-bezier(.2,.8,.2,1) both}
+.r3{animation:rise .45s .18s cubic-bezier(.2,.8,.2,1) both}
+.res{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.fade{animation:fadeIn .3s cubic-bezier(.2,.8,.2,1) both}
+.sk{background:linear-gradient(90deg,#ECEBE5 0,#ECEBE5 35%,#F6F5F1 50%,#ECEBE5 65%,#ECEBE5 100%);background-size:600px 100%;animation:shimmer 1.3s linear infinite}
+.indet{animation:indet 1.2s cubic-bezier(.4,0,.2,1) infinite}
+.ring{animation:ring 1.8s ease-out infinite}
+.sweep{animation:sweep 3s ease-in-out infinite}
+.box{transition:box-shadow .2s,border-color .2s}
+.box:focus-within{border-color:#1F4D3F;box-shadow:0 0 0 5px #DCE8E1}
+.box input{border:0;outline:0;background:transparent;font:inherit;font-size:17px;font-weight:600;color:#1A1F1C;width:100%;min-width:0}
+.box input::placeholder{color:#7A827D;font-weight:500}
+.go{transition:transform .15s,background-color .2s}
+.go:hover{background:#173B30}
+.go:active{transform:scale(.92)}
+.go:hover svg{transform:translateX(2px)}
+.go svg{transition:transform .2s}
+.ex{transition:background-color .2s,transform .12s}
+.ex:hover{background:#DCE8E1}
+.ex:active{transform:scale(.96)}
+.chip{transition:background-color .2s,color .2s,transform .12s}
+.chip:active{transform:scale(.95)}
+.card{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
+.card:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(26,31,28,.04),0 16px 34px rgba(26,31,28,.10)}
+.open{transition:background-color .2s}
+.open:hover{background:#173B30;color:#FFFFFF}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:20px;color:#3A413D;font-size:12px;font-weight:600;text-decoration:none;min-height:56px;transition:background-color .2s}
+.tab:hover{background:#F3F2EC;color:#1A1F1C}
+.tab.on{background:#1F4D3F;color:#FFFFFF;animation:tabIn .32s cubic-bezier(.34,1.3,.5,1) both}
+.tab.on:hover{color:#FFFFFF}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 1440px; position: relative; overflow: hidden; background: #F7F5EF; color: #1A1F1C; font-family: Figtree, 'Segoe UI', system-ui, sans-serif">
+<div style="padding: 16px 16px 120px; display: flex; flex-direction: column; gap: 18px">
+
+<div class="r0" style="display: flex; align-items: center; justify-content: space-between">
+<div style="width: 40px; height: 40px; border-radius: 13px; background: #1F4D3F; display: grid; place-items: center; color: #F29E6B">
+<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" style="fill: currentColor"><circle cx="5.6" cy="10.2" r="2.1"></circle><circle cx="9.2" cy="5.6" r="2.1"></circle><circle cx="14.8" cy="5.6" r="2.1"></circle><circle cx="18.4" cy="10.2" r="2.1"></circle><path d="M12 11.6c-2.9 0-5.7 3.3-5.7 5.8 0 1.7 1.2 2.6 2.7 2.6 1.3 0 2-.7 3-.7s1.7.7 3 .7c1.5 0 2.7-.9 2.7-2.6 0-2.5-2.8-5.8-5.7-5.8z"></path></svg>
+</div>
+<nav aria-label="Język" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(26,31,28,.06)">
+<a href="#" aria-current="true" style="min-width: 40px; padding: 7px 10px; border-radius: 999px; background: #1F4D3F; color: #FFFFFF; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none">PL</a>
+<a href="#" style="min-width: 40px; padding: 7px 10px; border-radius: 999px; color: #1A1F1C; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none">EN</a>
+</nav>
+</div>
+
+<div class="r1" style="display: flex; flex-direction: column; gap: 8px; padding-top: 4px">
+<h1 class="disp" style="margin: 0; font-size: 40px; line-height: 1; font-weight: 800">Szukaj</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.45; color: #5B635E">Pisz własnymi słowami. Szukamy po znaczeniu, nie tylko po dokładnych słowach.</p>
+</div>
+
+<form role="search" class="r2" onSubmit="{{submit}}" style="margin: 0">
+<label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Czego szukasz?</label>
+<div class="box" style="display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 0 6px 0 16px; border: 2px solid #E3E1D8; border-radius: 22px; background: #FFFFFF; color: #1F4D3F">
+<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+<input id="q" type="search" value="{{query}}" onChange="{{onQuery}}" placeholder="np. szczepienie przeciw wściekliźnie" autocomplete="off">
+<button type="submit" class="go" aria-label="Szukaj" style="width: 48px; height: 48px; border: 0; border-radius: 16px; background: #1F4D3F; color: #FFFFFF; display: grid; place-items: center; cursor: pointer; flex: none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+</div>
+</form>
+
+<fieldset class="r3" style="margin: 0; padding: 0; border: 0; min-width: 0">
+<legend style="padding: 0; margin-bottom: 10px; font-size: 14px; font-weight: 600; color: #3A413D">Zwierzak</legend>
+<div style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="5">
+<button type="button" class="chip" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; background: {{c.bg}}; color: {{c.fg}}; box-shadow: {{c.shadow}}">
+<sc-if value="{{c.selected}}" hint-placeholder-val="{{ false }}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; stroke-width: 2.5"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></sc-if>{{c.label}}</button>
+</sc-for>
+</div>
+</fieldset>
+
+<sc-if value="{{isIdle}}" hint-placeholder-val="{{ false }}">
+<div class="fade" style="display: flex; flex-direction: column; gap: 12px; padding-top: 6px">
+<p style="margin: 0; font-size: 14px; font-weight: 700; color: #5B635E">Na przykład</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="ex" onClick="{{ex1}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: #FFFFFF; color: #1F4D3F; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">szczepienie przeciw wściekliźnie</button>
+<button type="button" class="ex" onClick="{{ex2}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: #FFFFFF; color: #1F4D3F; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">serce Czarka</button>
+<button type="button" class="ex" onClick="{{ex3}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 14px; background: #FFFFFF; color: #1F4D3F; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">morfologia Luny</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div class="fade" role="status" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 14px; font-weight: 600; color: #3A413D">Przeszukiwanie dokumentów…</span>
+<div style="height: 4px; border-radius: 2px; background: #DCE8E1; overflow: hidden"><div class="indet" style="width: 40%; height: 4px; border-radius: 2px; background: #1F4D3F"></div></div>
+</div>
+<div style="background: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px"><div style="display: flex; gap: 10px; align-items: center"><div class="sk" style="width: 32px; height: 32px; border-radius: 10px"></div><div class="sk" style="width: 140px; height: 12px; border-radius: 6px"></div></div><div class="sk" style="height: 64px; border-radius: 14px"></div><div class="sk" style="width: 150px; height: 40px; border-radius: 12px"></div></div>
+<div style="background: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px"><div style="display: flex; gap: 10px; align-items: center"><div class="sk" style="width: 32px; height: 32px; border-radius: 10px"></div><div class="sk" style="width: 110px; height: 12px; border-radius: 6px"></div></div><div class="sk" style="height: 48px; border-radius: 14px"></div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isUnavailable}}" hint-placeholder-val="{{ false }}">
+<div class="fade" role="alert" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; background: #FFF3D9; border: 1px solid #F1DCA6; color: #5E4108">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<span class="ring" style="width: 32px; height: 32px; border-radius: 50%; background: #B7791F; display: grid; place-items: center; flex: none"><svg class="g" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v6M12 17h.01"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 6px; padding-top: 5px"><span style="font-size: 16px; font-weight: 700">Wyszukiwanie jest chwilowo niedostępne.</span><span style="font-size: 14px; line-height: 1.45">Nie pokazujemy wyników zastępczych. Wszystkie dokumenty i oryginały są dostępne na profilach zwierząt.</span></span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-left: 44px">
+<button type="button" onClick="{{submit}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #5E4108; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Spróbuj ponownie</button>
+<a href="Mobile-Animals.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; background: rgba(94,65,8,.08); color: #5E4108; font-size: 14px; font-weight: 700; text-decoration: none">Przejdź do zwierząt</a>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div class="fade" role="status" style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 20px; border-radius: 24px; background: #FFFFFF; text-align: center">
+<div aria-hidden="true" style="position: relative; width: 120px; height: 100px">
+<div style="position: absolute; left: 20px; top: 6px; width: 70px; height: 88px; border-radius: 10px; background: #F3F2EC; display: flex; flex-direction: column; gap: 7px; padding: 16px 12px; box-sizing: border-box"><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 70%"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2"></span><span style="height: 4px; border-radius: 2px; background: #D3D7D2; width: 50%"></span></div>
+<div class="sweep" style="position: absolute; left: 52px; top: 30px; width: 46px; height: 46px; color: #1F4D3F"><svg viewBox="0 0 24 24" width="46" height="46" style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round"><circle cx="10" cy="10" r="6.5" style="fill: rgba(255,255,255,.7)"></circle><path d="m15 15 5.5 5.5"></path></svg></div>
+</div>
+<h2 class="disp" style="margin: 0; font-size: 22px; font-weight: 800">{{emptyTitle}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5B635E">{{emptyBody}}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{isResults}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div class="fade" role="status" style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+<span style="font-size: 16px; font-weight: 700">{{countLabel}}</span>
+<span style="font-size: 13px; color: #5B635E">dla „{{shownQuery}}”</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+<li class="res" style="animation-delay: {{r.delay}}">
+<article class="card" style="background: #FFFFFF; border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(26,31,28,.04), 0 6px 18px rgba(26,31,28,.05)">
+<header style="display: flex; align-items: center; gap: 10px">
+<span class="disp" aria-hidden="true" style="width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 16px; font-weight: 800; flex: none; background: {{r.avBg}}; color: {{r.avFg}}">{{r.initial}}</span>
+<span style="display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0"><span style="font-size: 15px; font-weight: 700">{{r.animal}}</span><span style="font-size: 13px; color: #5B635E">Data zdarzenia: {{r.date}}</span></span>
+</header>
+<blockquote style="margin: 0; padding: 12px 14px; border-radius: 16px; background: #F4F7F3; font-size: 15px; line-height: 1.5; color: #1A1F1C">{{r.fragment}}</blockquote>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #5B635E"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg>{{r.page}}</span>
+<a class="open" href="Mobile-Document.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 14px; background: #EEF1EC; color: #1F4D3F; font-size: 14px; font-weight: 700; text-decoration: none"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M14 4h6v6M20 4l-8.5 8.5"></path><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"></path></svg>Otwórz oryginał</a>
+</div>
+</article>
+</li>
+</sc-for>
+</ul>
+<p class="fade" style="margin: 4px 0 0; display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: #5B635E"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>1 dokument jest jeszcze odczytywany, więc nie ma go w wynikach.</p>
+</div>
+</sc-if>
+</div>
+
+<nav aria-label="Nawigacja główna" style="position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 6px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 2px 4px rgba(26,31,28,.04), 0 16px 40px rgba(26,31,28,.14); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 60px; gap: 4px">
+<a class="tab on" href="Mobile-Search.dc.html" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Szukaj</a>
+<a class="tab" href="Mobile-Add.dc.html"><span style="width: 28px; height: 28px; border-radius: 50%; background: #F29E6B; color: #1A1F1C; display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; stroke-width: 2.25"><path d="M12 5v14M5 12h14"></path></svg></span>Dodaj</a>
+<a class="tab" href="Mobile-Animals.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="10.2" r="2"></circle><circle cx="9.2" cy="5.6" r="2"></circle><circle cx="14.8" cy="5.6" r="2"></circle><circle cx="18.4" cy="10.2" r="2"></circle><path d="M12 12c-2.8 0-5.5 3.2-5.5 5.6 0 1.6 1.2 2.4 2.6 2.4 1.2 0 1.9-.6 2.9-.6s1.7.6 2.9.6c1.4 0 2.6-.8 2.6-2.4 0-2.4-2.7-5.6-5.5-5.6z"></path></svg>Zwierzęta</a>
+<a class="tab" href="Mobile-Signin.dc.html" aria-label="Wyloguj się"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["idle","loading","results","empty","unavailable"],"default":"results","section":"Stan wyszukiwania"},"$preview":{"width":390,"height":1440}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { override: null, query: 'serce Czarka', shown: 'serce Czarka', animal: 'all' };
+this.timer = null;
+}
+componentDidUpdate(prev) {
+if (prev.state !== this.props.state && this.state.override !== null) this.setState({ override: null });
+}
+componentWillUnmount() {
+if (this.timer) clearTimeout(this.timer);
+}
+run(q) {
+const query = (q ?? this.state.query).trim();
+if (!query) { this.setState({ override: 'idle' }); return; }
+this.setState({ override: 'loading', query: query });
+if (this.timer) clearTimeout(this.timer);
+this.timer = setTimeout(() => this.setState({ override: 'results', shown: query }), 1400);
+}
+count(n) {
+if (n === 1) return '1 dokument';
+const m10 = n % 10, m100 = n % 100;
+if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return n + ' dokumenty';
+return n + ' dokumentów';
+}
+renderVals() {
+const status = this.state.override ?? this.props.state ?? 'results';
+const animals = [
+{ id: 'all', label: 'Wszystkie' },
+{ id: 'czarek', label: 'Czarek' },
+{ id: 'luna', label: 'Luna' },
+{ id: 'bruno', label: 'Bruno' },
+{ id: 'fiona', label: 'Fiona' }
+];
+const style = {
+czarek: { bg: '#FDE7D8', fg: '#8A4317', name: 'Czarek', initial: 'C' },
+luna: { bg: '#DCE8E1', fg: '#1F4D3F', name: 'Luna', initial: 'L' }
+};
+const all = [
+{ a: 'czarek', date: '14 września 2026', page: 'Strona 2 z 3', fragment: '…w badaniu echokardiograficznym stwierdzono cechy kardiomiopatii przerostowej. Zalecono kontrolę za 3 miesiące…' },
+{ a: 'czarek', date: '2 września 2026', page: 'PDF, strona 1 z 1', fragment: '…osłuchowo szmer skurczowy nad koniuszkiem, tętno 180/min, błony śluzowe różowe…' },
+{ a: 'czarek', date: '18 lipca 2026', page: 'Strona 1 z 1', fragment: '…RTG klatki piersiowej: sylwetka serca w normie, bez cech zastoju w płucach…' },
+{ a: 'luna', date: '3 marca 2026', page: 'PDF, strona 2 z 4', fragment: '…badanie przed zabiegiem: EKG bez zmian, rytm zatokowy miarowy…' }
+];
+const filtered = all.filter((r) => this.state.animal === 'all' || r.a === this.state.animal);
+const isResults = status === 'results' && filtered.length > 0;
+const isEmpty = status === 'empty' || (status === 'results' && filtered.length === 0);
+const filteredEmpty = status === 'results' && filtered.length === 0;
+return {
+query: this.state.query,
+shownQuery: this.state.shown,
+onQuery: (e) => this.setState({ query: e.target.value }),
+submit: (e) => { if (e && e.preventDefault) e.preventDefault(); this.run(); },
+ex1: () => { this.setState({ query: 'szczepienie przeciw wściekliźnie' }); this.run('szczepienie przeciw wściekliźnie'); },
+ex2: () => { this.setState({ query: 'serce Czarka' }); this.run('serce Czarka'); },
+ex3: () => { this.setState({ query: 'morfologia Luny' }); this.run('morfologia Luny'); },
+chips: animals.map((x) => {
+const sel = x.id === this.state.animal;
+return {
+label: x.label,
+selected: sel,
+pressed: sel ? 'true' : 'false',
+bg: sel ? '#1F4D3F' : '#FFFFFF',
+fg: sel ? '#FFFFFF' : '#1A1F1C',
+shadow: sel ? 'none' : '0 1px 2px rgba(26,31,28,.06)',
+pick: () => this.setState({ animal: x.id })
+};
+}),
+isIdle: status === 'idle',
+isLoading: status === 'loading',
+isUnavailable: status === 'unavailable',
+isEmpty: isEmpty,
+isResults: isResults,
+emptyTitle: 'Brak dokumentów na ten temat',
+emptyBody: filteredEmpty ? 'Ten zwierzak nie ma dokumentów pasujących do pytania. Wybierz „Wszystkie”, żeby szukać u wszystkich zwierząt.' : 'Nic w Twoim archiwum nie pasuje wystarczająco do tego pytania. Spróbuj opisać to innymi słowami.',
+countLabel: this.count(filtered.length),
+results: filtered.map((r, i) => ({
+animal: style[r.a].name,
+initial: style[r.a].initial,
+avBg: style[r.a].bg,
+avFg: style[r.a].fg,
+date: r.date,
+page: r.page,
+fragment: r.fragment,
+delay: (i * 70) + 'ms'
+}))
+};
+}
+}
+</script>
+</body>
+</html>

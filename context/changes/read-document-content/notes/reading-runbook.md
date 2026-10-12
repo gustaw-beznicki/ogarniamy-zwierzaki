@@ -318,7 +318,7 @@ Fill in after the separately approved deployment and worker activation. Record I
 characters, states, codes, counts and timings only; no text, file names, provider payloads or credentials. Use two
 synthetic accounts with synthetic fixtures (for example `services/api.Tests/Fixtures/Reading/synthetic-note.png`).
 
-Status: **5.4 recorded on 2026-10-12** (one item partial, see wake-up); 5.5 PENDING owner review.
+Status: **5.4 and 5.5 accepted by the owner on 2026-10-12** (the idle wake-up was observed only as startup recovery).
 
 ### Deployment
 
@@ -347,7 +347,7 @@ Status: **5.4 recorded on 2026-10-12** (one item partial, see wake-up); 5.5 PEND
 | --- | --- |
 | Restart during reading (`az webapp restart`, approved): job requeued or reclaimed, read once, no second Analyze for a saved operation | PASS with a caveat: the restart was issued while `05f681dc` was reading. App Service starts the new container before stopping the old one, so the old container finished the job (one Analyze POST, read once) and was stopped 30 s later. A hard stop in the middle of OCR (saved operation resumed, no resubmission) was verified locally in 3.4 (`live-provider-run.md`) |
 | Pending cleanup after restart: acknowledged on the next pass | PASS for this run: every deletion was acknowledged before the restart completed; no cleanup was left pending |
-| F1 wake-up: document captured, app left idle until unloaded (time idle: PENDING), next request wakes it, job and pending cleanup complete afterwards | PARTIAL: not run as an idle test. Equivalent evidence: jobs queued while the worker was off (backfill of existing documents) were claimed within 1 s of the new container starting (23:56:56) and read. An idle unload and wake-up is still to be observed |
+| F1 wake-up: document captured, app left idle until unloaded (time idle: not measured), next request wakes it, job and pending cleanup complete afterwards | PARTIAL: not run as an idle test. Equivalent evidence: jobs queued while the worker was off (backfill of existing documents) were claimed within 1 s of the new container starting (23:56:56) and read. An idle unload and wake-up is still to be observed |
 
 ### Deploy incident (run 38185382270)
 
@@ -355,7 +355,7 @@ Status: **5.4 recorded on 2026-10-12** (one item partial, see wake-up); 5.5 PEND
 - The same pattern was reproduced by the restart test: the new container's startup probe failed after 5.5 s (`ContainerStartupFailure`) while the old container was reading the 60-page scan, and was retried.
 - Reading: on F1 a deploy or restart overlaps old and new containers on one small CPU share. While the worker is busy right after start, the warm-up probe and proxied requests can time out (502). Originals were unavailable for under a minute; no data was affected.
 - Addressed in the startup-hardening PR: the worker waits `StartupDelay` (60 s) after the app starts before its first claim, EF Core command logging is Warning (every 5-second poll used to log two SQL commands), and smoke checks 2b-2d retry while the answer is 000 or 5xx (a wrong status still fails at once).
-- `e7926af9` (owner document) was claimed at 23:57:25 when its container stopped; it is reclaimed after the lease expires. Its final state should be checked in the app.
+- `e7926af9` (owner document) was being read when its container stopped at 23:57-23:58. The owner confirmed on 2026-10-12 that it shows "content read": it was reclaimed after the lease expired and finished, so production also recovered a job interrupted by a real container stop.
 
 ### F1 CPU
 
@@ -368,7 +368,7 @@ Status: **5.4 recorded on 2026-10-12** (one item partial, see wake-up); 5.5 PEND
 
 | Item | Result |
 | --- | --- |
-| OCR quality evidence reviewed (`ocr-feasibility.md`) | PENDING |
-| Retention and cleanup limitations reviewed (unknown submissions, 204 is not proof of erasure, cleanup paused with the worker) | PENDING |
-| This runbook's rollback reviewed | PENDING |
-| Original opens with reading disabled or paused | PENDING |
+| OCR quality evidence reviewed (`ocr-feasibility.md`) | Accepted by the owner, 2026-10-12 |
+| Retention and cleanup limitations reviewed (unknown submissions, 204 is not proof of erasure, cleanup paused with the worker) | Accepted by the owner, 2026-10-12 |
+| This runbook's rollback reviewed | Accepted by the owner, 2026-10-12 |
+| Original opens with reading disabled or paused | Yes: originals opened in production after #28/#29 with the worker off; covered by tests |

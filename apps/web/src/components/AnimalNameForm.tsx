@@ -41,7 +41,7 @@ export function AnimalNameForm({ messages, id, value, onChange, onSubmit, submit
   }
 
   const shown = validation || error;
-  return <form id={id} className="animal-name-form" onSubmit={submit} noValidate>
+  return <form id={id} onSubmit={submit} noValidate>
     <div className="field-group">
       <label>{messages.animalName}<span className={shown ? 'field invalid' : 'field'}><Icon name="paw" size={22} /><input
         name="name"

@@ -436,7 +436,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
       <fieldset className="capture-fields" disabled={frozen}>
         <div className="capture-sources">
           <button type="button" className="source-button source-camera" onClick={() => cameraInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="camera" size={22} /></span>{messages.takePhoto}</button>
-          <button type="button" className="source-button source-photos" onClick={() => photosInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="photos" size={22} /></span>{messages.addPhotos}</button>
+          <button type="button" className="source-button" onClick={() => photosInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="photos" size={22} /></span>{messages.addPhotos}</button>
           <button type="button" className="source-button source-pdf" onClick={() => pdfInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="pdf" size={22} /></span>{messages.choosePdf}</button>
           <input ref={cameraInput} type="file" accept="image/jpeg,image/png" capture="environment" hidden onChange={(event) => void addFiles(event)} />
           <input ref={photosInput} type="file" accept="image/jpeg,image/png" multiple hidden onChange={(event) => void addFiles(event)} />
@@ -446,7 +446,7 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
 
         {zone === 'files' && zoneAlert(filesErrorId)}
 
-        {replacement && <div className="replace-notice" role="group" aria-label={messages.selectedFiles}>
+        {replacement && <div role="group" aria-label={messages.selectedFiles}>
           <Alert
             variant="warning"
             role={null}

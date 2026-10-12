@@ -29,7 +29,7 @@ export function AppShell({ locale, messages, active, children }: {
   }
   // Only one of the two placements is visible at a time (sidebar from 768 px, main column below), so the hidden copy
   // is out of the accessibility tree and the failure is announced once, next to the sign-out control in view.
-  const signOutError = (compact: boolean, className: string) => signOutFailed
+  const signOutError = (compact: boolean, className?: string) => signOutFailed
     ? <Alert variant="error" compact={compact} className={className}>{messages.signOutFailed}</Alert>
     : null;
   return <div className="app-shell">
@@ -45,7 +45,7 @@ export function AppShell({ locale, messages, active, children }: {
         aria-current={active === item.id ? 'page' : undefined}
       ><Icon name={item.icon} size={22} />{item.label}</a>)}</nav>
       <div className="sidebar-bottom">
-        {signOutError(true, 'sidebar-error')}
+        {signOutError(true)}
         <button className="sign-out" type="button" onClick={() => void signOut()}><Icon name="logout" size={22} />{messages.signOut}</button>
       </div>
     </aside>

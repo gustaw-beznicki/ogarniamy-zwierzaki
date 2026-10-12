@@ -299,7 +299,7 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
     <div className="history-header">
       <div>
         <h2 className="history-title">{messages.documentsTitle}</h2>
-        <p className="hint history-hint">{messages.documentsOrder}</p>
+        <p className="hint">{messages.documentsOrder}</p>
       </div>
       {animal.isActive && <a className="accent history-add" href={`${clientLocalePath(locale, 'add')}?animalId=${encodeURIComponent(animal.id)}`}><Icon name="plus" size={18} />{messages.addDocument}</a>}
     </div>

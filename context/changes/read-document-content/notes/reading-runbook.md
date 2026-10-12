@@ -354,7 +354,7 @@ Status: **5.4 recorded on 2026-10-12** (one item partial, see wake-up); 5.5 PEND
 - Timeline (UTC): new container up 23:56:56; the worker immediately read the backfilled documents (`070df6ca` 9.3 s, `65bc0ac4` 16.0 s, `74cbf62a` 3.5 s) and claimed `e7926af9` at 23:57:25. Smoke check 2c waited 19 s and got 502 at 23:57:48. The platform cold-started replacement containers at 23:58:02 and 23:58:13; the old container stopped without an application error in the log. Health was 500 once shortly after, then 200.
 - The same pattern was reproduced by the restart test: the new container's startup probe failed after 5.5 s (`ContainerStartupFailure`) while the old container was reading the 60-page scan, and was retried.
 - Reading: on F1 a deploy or restart overlaps old and new containers on one small CPU share. While the worker is busy right after start, the warm-up probe and proxied requests can time out (502). Originals were unavailable for under a minute; no data was affected.
-- Follow-ups: delay the worker's first claim after startup, lower EF Core command logging to Warning in production (every 5-second poll currently logs two SQL commands), and give smoke check 2c the same retry as check 2.
+- Addressed in the startup-hardening PR: the worker waits `StartupDelay` (60 s) after the app starts before its first claim, EF Core command logging is Warning (every 5-second poll used to log two SQL commands), and smoke checks 2b-2d retry while the answer is 000 or 5xx (a wrong status still fails at once).
 - `e7926af9` (owner document) was claimed at 23:57:25 when its container stopped; it is reclaimed after the lease expires. Its final state should be checked in the app.
 
 ### F1 CPU

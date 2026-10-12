@@ -37,6 +37,22 @@ fetch_post() {
   echo "${status:-000}"
 }
 
+# Prints the status of a request, retrying while the answer is transient (000 or 5xx) until RETRY_TIMEOUT_SECONDS.
+# Right after a deploy the platform may still be swapping the API's container; any other status returns at once, so a
+# wrong answer (for example 200 instead of 401) still fails immediately. Usage: fetch_settled <fetch|fetch_post> <url>.
+fetch_settled() {
+  local status deadline=$((SECONDS + RETRY_TIMEOUT_SECONDS))
+  while true; do
+    status="$("$1" "$2")"
+    if [[ "${status}" != "000" && "${status}" != 5* ]] || (( SECONDS >= deadline )); then
+      echo "${status}"
+      return
+    fi
+    echo "WAIT: ${2} returned ${status}; retrying in ${RETRY_INTERVAL_SECONDS}s" >&2
+    sleep "${RETRY_INTERVAL_SECONDS}"
+  done
+}
+
 # Check 1: both locale sign-in pages are served and carry the app marker.
 for path in /signin/ /en/signin/; do
   url="https://${SWA_HOST}${path}"
@@ -65,7 +81,7 @@ done
 # Check 2b: the authenticated API is reachable through the proxy and refuses an anonymous request without redirecting.
 # fetch does not send cookies or follow redirects; a login redirect therefore fails this check.
 url="https://${SWA_HOST}/api/me"
-status="$(fetch "${url}")"
+status="$(fetch_settled fetch "${url}")"
 [[ "${status}" == "401" ]] || fail "check 2b: ${url} returned ${status}, expected 401 without a session"
 echo "PASS: check 2b: ${url} returned 401 without a session"
 
@@ -79,7 +95,7 @@ for path in \
   "/api/documents/${PROBE_ID}/files/${PROBE_ID}/original" \
   "/api/documents/${PROBE_ID}/files/${PROBE_ID}/original?download=true"; do
   url="https://${SWA_HOST}${path}"
-  status="$(fetch "${url}")"
+  status="$(fetch_settled fetch "${url}")"
   [[ "${status}" == "401" ]] || fail "check 2c: ${url} returned ${status}, expected 401 without a session"
   echo "PASS: check 2c: ${url} returned 401 without a session"
 done
@@ -87,12 +103,12 @@ done
 # Check 2d: the reading status and Retry routes refuse anonymous requests without redirecting. The Retry POST has an
 # empty body and no session or antiforgery token, so it is refused before any lookup and changes nothing.
 url="https://${SWA_HOST}/api/documents/${PROBE_ID}/reading"
-status="$(fetch "${url}")"
+status="$(fetch_settled fetch "${url}")"
 [[ "${status}" == "401" ]] || fail "check 2d: ${url} returned ${status}, expected 401 without a session"
 echo "PASS: check 2d: GET ${url} returned 401 without a session"
 
 url="https://${SWA_HOST}/api/documents/${PROBE_ID}/reading/retry"
-status="$(fetch_post "${url}")"
+status="$(fetch_settled fetch_post "${url}")"
 [[ "${status}" == "401" ]] || fail "check 2d: POST ${url} returned ${status}, expected 401 without a session"
 echo "PASS: check 2d: POST ${url} returned 401 without a session"
 

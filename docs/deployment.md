@@ -96,7 +96,7 @@ Reading is switched on in stages, so each stage can be checked before the next o
 
 Operating notes:
 
-- **F1 sleep.** F1 has no Always On. While the app is unloaded after idle time, new reading jobs, retries and provider cleanup wait; the next request that reaches the API wakes it, and the worker then resumes due work and pending cleanup.
+- **F1 sleep.** F1 has no Always On. While the app is unloaded after idle time, new reading jobs, retries and provider cleanup wait; the next request that reaches the API wakes it, and the worker resumes due work and pending cleanup about a minute later (it waits 60 seconds after startup so that a deploy or restart, which runs the old and new containers side by side on F1, is not slowed down by reading).
 - **CPU quota.** F1 allows 60 CPU minutes per day, and exceeding it stops the app, originals included. Watch CPU time in the app's Quotas page or the `CpuTime` metric after activation. Getting close to the quota, or cold starts that break the search target once search exists, is the trigger for moving to B1.
 - **Pausing reading.** Set `DocumentReading__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Queued jobs wait, and provider cleanup pauses with the worker. Failed jobs stay failed until their owner presses Retry.
 - **Reading outages** (provider down, missing role, wrong endpoint) mark affected jobs failed or retry them later. They do not affect `/api/health`, capture or original downloads.

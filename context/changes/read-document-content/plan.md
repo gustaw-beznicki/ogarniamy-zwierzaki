@@ -380,5 +380,5 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 
 #### Manual
 
-- [ ] 5.4 After separately approved deployment, two synthetic accounts prove status/original isolation, a restart recovers jobs/cleanup, and idle-period processing works with Always On.
-- [ ] 5.5 Owner reviews OCR quality evidence, retention/cleanup limitations and rollback runbook; original retrieval works with reading disabled.
+- [x] 5.4 After separately approved deployment, two synthetic accounts prove status/original isolation, a restart recovers jobs/cleanup, and idle-period processing works with Always On. — accepted 2026-10-12 (evidence in notes/reading-runbook.md; idle wake-up observed only as startup recovery)
+- [x] 5.5 Owner reviews OCR quality evidence, retention/cleanup limitations and rollback runbook; original retrieval works with reading disabled. — accepted by the owner 2026-10-12

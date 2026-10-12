@@ -1,9 +1,9 @@
 ---
 change_id: read-document-content
 title: Read document content
-status: impl_reviewed
+status: implemented
 created: 2026-10-04
-updated: 2026-10-11
+updated: 2026-10-12
 archived_at: null
 ---
 

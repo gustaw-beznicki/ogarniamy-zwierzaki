@@ -516,9 +516,37 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
         Assert.Contains(_logs.Entries, e => e.Contains("Lost the lease"));
     }
 
+    [Fact]
+    public async Task The_hosted_worker_waits_out_its_startup_delay_before_claiming_due_work()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider();
+        var (document, _) = await CaptureAsync(SampleOriginals.Png());
+        var delayed = Worker(provider, time: TimeProvider.System, available: true, startupDelay: TimeSpan.FromHours(1));
+
+        await delayed.StartAsync(CancellationToken.None);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        await delayed.StopAsync(CancellationToken.None);
+
+        Assert.Equal((DocumentReadingState.Queued, 0), ((await JobAsync(document)).State, (await JobAsync(document)).AttemptCount));
+        Assert.Empty(provider.Requests);
+
+        // Once the delay is over, the loop claims and reads the due job on its own.
+        var prompt = Worker(provider, time: TimeProvider.System, available: true, startupDelay: TimeSpan.Zero);
+        await prompt.StartAsync(CancellationToken.None);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while ((await JobAsync(document)).State != DocumentReadingState.Read && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(100);
+        }
+
+        await prompt.StopAsync(CancellationToken.None);
+        Assert.Equal(DocumentReadingState.Read, (await JobAsync(document)).State);
+    }
+
     private DocumentReadingWorker Worker(
         FakeOcrProvider provider, IOriginalStorage? storage = null, TimeProvider? time = null,
-        TimeSpan? analysisPollInterval = null)
+        TimeSpan? analysisPollInterval = null, bool available = false, TimeSpan? startupDelay = null)
     {
         var reader = new AzureDocumentTextReader(
             new HttpClient(provider), new FakeTokenCredential(),
@@ -527,7 +555,14 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
         var scopes = factory.Services.GetRequiredService<IServiceScopeFactory>();
         return new DocumentReadingWorker(
             scopes,
-            DocumentReadingAvailability.Resolve(new DocumentReadingOptions(), isDevelopment: false),
+            DocumentReadingAvailability.Resolve(
+                available
+                    ? new DocumentReadingOptions
+                    {
+                        Auth = DocumentReadingAuthMode.AzureManagedIdentity, Endpoint = new Uri(FakeOcrProvider.Endpoint), WorkerEnabled = true,
+                    }
+                    : new DocumentReadingOptions(),
+                isDevelopment: false),
             reader,
             new PdfTextReader(),
             new DocumentReadingCleanup(scopes, reader, loggers.CreateLogger<DocumentReadingCleanup>()),
@@ -537,6 +572,8 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
         {
             AnalysisPollInterval = analysisPollInterval ?? TimeSpan.Zero,
             HeartbeatInterval = TimeSpan.FromMilliseconds(200),
+            PollInterval = TimeSpan.FromMilliseconds(100),
+            StartupDelay = startupDelay ?? TimeSpan.Zero,
         };
     }
 

@@ -1,10 +1,10 @@
 ---
 change_id: read-document-content
 title: Read document content
-status: implemented
+status: archived
 created: 2026-10-04
 updated: 2026-10-12
-archived_at: null
+archived_at: 2026-10-12T18:37:53Z
 ---
 
 ## Notes

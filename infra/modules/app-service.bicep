@@ -107,7 +107,7 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           // Background reading is on. To pause it, set this back to 'false' and deploy; jobs, text and pending
-          // cleanup stay in the database (see context/changes/read-document-content/notes/reading-runbook.md).
+          // cleanup stay in the database (see docs/sop/operate-document-reading.md).
           name: 'DocumentReading__WorkerEnabled'
           value: 'true'
         }

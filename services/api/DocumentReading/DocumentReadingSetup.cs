@@ -24,6 +24,13 @@ public static class DocumentReadingSetup
             {
                 var timeout = serviceProvider.GetRequiredService<DocumentReadingAvailability>().Options.HttpTimeout;
                 client.Timeout = timeout > TimeSpan.Zero ? timeout : FallbackHttpTimeout;
+            })
+            // The adapter below is a singleton holding one client, so the factory never rotates its handler; recycling
+            // pooled connections instead lets a changed endpoint address take effect without a restart.
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                UseCookies = false,
             });
 
         // The OCR adapter, the local PDF parser (a child process) and provider cleanup. With reading unavailable the
@@ -39,6 +46,7 @@ public static class DocumentReadingSetup
         });
         services.AddSingleton<PdfTextReader>();
         services.AddSingleton<DocumentReadingCleanup>();
+        services.AddSingleton<DocumentReadingWakeUp>();
 
         // Hosted services start after Program.cs has migrated the database. The worker exits at once (with one log
         // line) unless reading is available and DocumentReading:WorkerEnabled is true.

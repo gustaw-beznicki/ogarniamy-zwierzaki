@@ -305,5 +305,5 @@ Generate and integrate S-06's additive migration first, then S-03's against the 
 
 #### Manual
 
-- [ ] 4.3 After separately approved deployment, two synthetic accounts verify management isolation, stale-edit rejection, all-inactive access and completion/retrieval of an upload accepted before inactivation.
+- [x] 4.3 After separately approved deployment, two synthetic accounts verify management isolation, stale-edit rejection, all-inactive access and completion/retrieval of an upload accepted before inactivation. — 4afbb78
 - [x] 4.4 Owner reviews the lifecycle/rollback notes and confirms no deletion action or misleading event-date timeline promise appears in the interface. — 5912bed

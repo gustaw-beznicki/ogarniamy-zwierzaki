@@ -38,17 +38,19 @@ S-03 (`read-document-content`, PR #28) was merged into this branch from `main` i
 - [x] The document status shown in the UI stays available for documents of inactive animals. S-03's `DocumentReadingStatusTests.An_inactive_animals_document_keeps_its_status_and_retry` covers status and Retry through the API; a local browser check (worker disabled) shows "Treść czeka na odczytanie." / "Waiting to read the content." on the document page after the animal was marked inactive.
 - [x] Lifecycle, reading and original isolation regression tests pass together: 213/213 `dotnet test`, plus `npm run check` and `npm run build` in `apps/web`.
 
-## PENDING: post-deployment two-account evidence
+## Post-deployment two-account evidence (2026-10-12)
 
-Deployment requires separate approval through the existing workflow; S-06 needs no infrastructure change. Nothing has been deployed or verified in Azure for this change yet. After an approved deployment, with two synthetic accounts (no real veterinary records):
+Release `4afbb78` (merge of PR #27) was deployed by `deploy` run 38185382270 after approval. Infrastructure, API and web deployed; the run's smoke test then got one transient 502 on `/api/documents/{id}` right after the API restart (health had already passed). A rerun of `scripts/smoke.sh` a few minutes later passed every check, and the checks below ran after it.
 
-- [ ] Management isolation: account B cannot see, open, rename, change the status of or capture into account A's animals, histories or originals.
-- [ ] Stale-edit rejection: an edit from a second tab/device is rejected in the first until it refreshes and reapplies; nothing is silently overwritten.
-- [ ] All-inactive access: with every animal inactive, Animals shows guidance plus the Inactive section, Add offers no fresh capture, and history/originals open.
-- [ ] An upload accepted before inactivation completes and its originals are retrievable byte for byte.
-- [ ] No deletion action and no promise of a reliable medical timeline appears in the PL or EN interface.
+Environment: `mango-bush-08ef40b0f.5.azurestaticapps.net` (API `app-ogarniamy-api-3jhak2vhze7d2`, reading worker enabled). Two synthetic accounts `e2e-s06-1791763214770-a@example.test` (A) and `e2e-s06-1791763217071-b@example.test` (B), animals named "S06 test …", one 625-byte synthetic text PDF ("S06 synthetic test document - not a medical record"). Driven with Playwright through the real UI and API (session cookies, antiforgery, If-Match); all 21 checks passed.
 
-Evidence (date, release/commit, environment host, account labels, results): _not yet recorded_.
+- [x] Management isolation: B got 404 on A's animal detail, rename, activity, history, document, original and reading status, and on a manifest for A's animal; B's list holds only B's animal; A's animal (name, status, version) is unchanged; the profile page shows the unavailable state to B.
+- [x] Stale-edit rejection: with two tabs of A, the second tab's rename made the first tab's save fail with the "changed in another tab" notice, the draft was kept, the newer name stayed, Refresh did not replay the edit, and only the explicit save applied it.
+- [x] All-inactive access: with both of A's animals inactive, `hasAnimals` stayed true, Animals showed the guidance and "Nieaktywne (2)" without an onboarding redirect, Add showed no capture controls, the inactive profile listed its document and the original downloaded byte for byte.
+- [x] An upload accepted before inactivation completes: the animal was marked inactive after the manifest was accepted and the first file upload was interrupted; Retry completed the document on the now-inactive animal and its original is byte-identical.
+- [x] No deletion action and no promise of a reliable medical timeline appears on the Animals, profile and document pages in PL or EN (no "usuń", "delete", "remove", "oś czasu" or "timeline").
+
+Additionally, both synthetic documents of the inactive animals were read by the production worker (`state: read`, completed 2026-10-12 00:00 UTC), confirming that reading ignores animal activity.
 
 ## Owner review
 

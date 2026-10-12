@@ -1,5 +1,7 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import type { Messages } from '../i18n';
+import { FieldError } from './Alert';
+import { Icon } from './Icon';
 
 // Same limit the API applies to the trimmed name.
 const nameMaxLength = 100;
@@ -26,6 +28,7 @@ export function AnimalNameForm({ messages, id, value, onChange, onSubmit, submit
   children?: ReactNode;
 }) {
   const [validation, setValidation] = useState('');
+  const errorId = useId();
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,18 +42,22 @@ export function AnimalNameForm({ messages, id, value, onChange, onSubmit, submit
 
   const shown = validation || error;
   return <form id={id} className="animal-name-form" onSubmit={submit} noValidate>
-    <label>{messages.animalName}<input
-      name="name"
-      value={value}
-      maxLength={nameMaxLength}
-      placeholder={messages.animalNamePlaceholder}
-      required
-      autoComplete="off"
-      autoFocus={autoFocus}
-      aria-invalid={validation ? true : undefined}
-      onChange={(event) => { setValidation(''); onChange(event.currentTarget.value); }}
-    /></label>
-    {shown && <p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {errorMessage(messages, shown)}</p>}
+    <div className="field-group">
+      <label>{messages.animalName}<span className={shown ? 'field invalid' : 'field'}><Icon name="paw" size={22} /><input
+        name="name"
+        value={value}
+        maxLength={nameMaxLength}
+        placeholder={messages.animalNamePlaceholder}
+        required
+        autoComplete="off"
+        autoFocus={autoFocus}
+        aria-invalid={shown ? true : undefined}
+        aria-describedby={shown ? errorId : undefined}
+        onChange={(event) => { setValidation(''); onChange(event.currentTarget.value); }}
+      /></span></label>
+      {/* Persistent live region, so a message that appears is announced at once, as before. */}
+      <div className="field-error-slot" role="alert">{shown && <FieldError id={errorId}>{errorMessage(messages, shown)}</FieldError>}</div>
+    </div>
     {children}
     <div className="form-actions">
       <button className="primary" type="submit" disabled={busy || blocked}>{busy ? messages.saving : submitLabel}</button>

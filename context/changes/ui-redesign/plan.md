@@ -817,10 +817,10 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [x] 1.1 Type check passes: `npm run check` in `apps/web`
-- [x] 1.2 Build passes: `npm run build` in `apps/web`
-- [x] 1.3 Font files are emitted locally and no Google Fonts URL is referenced
-- [x] 1.4 The smoke marker is still present on both sign-in pages
+- [x] 1.1 Type check passes: `npm run check` in `apps/web` — bed2f3b
+- [x] 1.2 Build passes: `npm run build` in `apps/web` — bed2f3b
+- [x] 1.3 Font files are emitted locally and no Google Fonts URL is referenced — bed2f3b
+- [x] 1.4 The smoke marker is still present on both sign-in pages — bed2f3b
 
 #### Manual
 
@@ -831,11 +831,11 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [ ] 2.1 Type check passes: `npm run check` in `apps/web`
-- [ ] 2.2 Build passes: `npm run build` in `apps/web`
-- [ ] 2.3 Every new message key exists in both catalogues
-- [ ] 2.4 No Unicode icon glyphs remain in the files changed in this phase
-- [ ] 2.5 No Polish outside `pl.ts`
+- [x] 2.1 Type check passes: `npm run check` in `apps/web`
+- [x] 2.2 Build passes: `npm run build` in `apps/web`
+- [x] 2.3 Every new message key exists in both catalogues
+- [x] 2.4 No Unicode icon glyphs remain in the files changed in this phase
+- [x] 2.5 No Polish outside `pl.ts`
 
 #### Manual
 

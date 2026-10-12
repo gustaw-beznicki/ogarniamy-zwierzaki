@@ -1,5 +1,7 @@
 export const messages = {
   appName: 'Ogarniamy Zwierzaki',
+  authTagline: 'Private archive of veterinary documents',
+  authPrivacyNote: 'Only the account owner can see the originals',
   signIn: 'Sign in',
   createAccount: 'Create account',
   email: 'Email',

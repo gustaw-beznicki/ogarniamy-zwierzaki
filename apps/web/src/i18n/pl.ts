@@ -2,6 +2,8 @@ import type { Messages } from './en';
 
 export const messages = {
   appName: 'Ogarniamy Zwierzaki',
+  authTagline: 'Prywatne archiwum dokumentów weterynaryjnych',
+  authPrivacyNote: 'Oryginały widzi tylko właściciel konta',
   signIn: 'Zaloguj się',
   createAccount: 'Utwórz konto',
   email: 'E-mail',

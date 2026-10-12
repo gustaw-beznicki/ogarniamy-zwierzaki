@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import type { Locale, Messages } from '../i18n';
 import { countLabel, formatEventDate, interpolate, localToday, uuidQueryParameter } from '../i18n/format';
 import { clientLocalePath } from '../i18n/paths';
 import { ApiError, api, type Animal, type UploadManifest } from '../lib/api';
+import { Alert, FieldError } from './Alert';
+import { Icon } from './Icon';
+import { PageState } from './PageState';
 
 const maxFileBytes = 10_485_760;
 const maxPhotos = 10;
@@ -43,6 +46,22 @@ type Status = 'editing' | 'running' | 'failed' | 'sessionExpired';
 const retryableCodes = new Set(['upload_interrupted', 'storage_unavailable', 'upload_incomplete']);
 
 class SelectionError extends Error {}
+
+// Where an error is shown: next to the zone it concerns, or above Save/Retry for everything else. Presentation only;
+// the form still keeps a single error code.
+type ErrorZone = 'files' | 'animal' | 'date' | 'form';
+const filesZoneCodes = new Set(['files_required', 'empty_file', 'file_too_large', 'heic_not_supported', 'unsupported_file_type', 'one_pdf_only', 'too_many_photos', 'duplicate_photo', 'file_unreadable', 'insecure_context']);
+const animalZoneCodes = new Set(['animal_required', 'animal_inactive']);
+const dateZoneCodes = new Set(['invalid_event_date', 'future_event_date']);
+// The selection is still valid after these, so they are warnings rather than errors.
+const warningCodes = new Set(['duplicate_photo', 'too_many_photos']);
+
+function errorZone(code: string): ErrorZone {
+  if (filesZoneCodes.has(code)) return 'files';
+  if (animalZoneCodes.has(code)) return 'animal';
+  if (dateZoneCodes.has(code)) return 'date';
+  return 'form';
+}
 
 // Recognises the format from the file's leading bytes (cameras may report no or a wrong MIME type).
 async function detectType(file: File): Promise<SupportedType | 'heic' | null> {
@@ -113,6 +132,9 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
   const cameraInput = useRef<HTMLInputElement>(null);
   const photosInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
+  const filesErrorId = useId();
+  const animalErrorId = useId();
+  const dateErrorId = useId();
 
   useEffect(() => {
     let active = true;
@@ -381,95 +403,122 @@ export function DocumentCaptureForm({ locale, messages }: { locale: Locale; mess
   const message = (code: string) => (Object.hasOwn(messages, code) ? messages[code as keyof Messages] : messages.request_failed);
 
   if (loadState === 'loading') return <main className="content"><p className="loading" role="status">{messages.loadingContent}</p></main>;
-  if (loadState === 'failed') return <main className="content"><p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.request_failed}</p></main>;
+  if (loadState === 'failed') return <main className="content"><PageState tone="error" headingLevel={1} title={messages.request_failed} /></main>;
 
   if (status === 'sessionExpired') {
-    return <main className="content"><section className="card capture-card">
+    return <main className="content"><section className="card capture-card capture-state">
       <h1>{messages.captureTitle}</h1>
-      <p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.session_expired}</p>
+      <Alert variant="error">{messages.session_expired}</Alert>
       <a className="primary button-link" href={clientLocalePath(locale, 'signin')}>{messages.signInAgain}</a>
     </section></main>;
   }
 
   // Inactive animals take no fresh capture. This is not onboarding: the account may still own inactive animals.
   if (animals.length === 0 && !attempt) {
-    return <main className="content"><section className="card capture-card">
+    return <main className="content"><section className="card capture-card capture-state">
       <h1>{messages.captureTitle}</h1>
-      <p className="muted">{messages.noActiveAnimals}</p>
+      <Alert variant="info">{messages.noActiveAnimals}</Alert>
       <a className="primary button-link" href={clientLocalePath(locale, 'animals')}>{messages.noActiveAnimalsAction}</a>
     </section></main>;
   }
 
   const fileTotal = attempt?.files.length ?? selection?.files.length ?? 0;
+  const zone = errorCode ? errorZone(errorCode) : null;
+  // Every capture error was announced at once before the redesign; zone alerts keep role="alert", warnings included.
+  const zoneAlert = (id?: string) => <Alert variant={warningCodes.has(errorCode) ? 'warning' : 'error'} role="alert" id={id}>{message(errorCode)}</Alert>;
+  const showProgress = progress !== null && status === 'running';
   return <main className="content"><section className="capture-card">
-    <h1>{messages.captureTitle}</h1>
-    <p className="muted">{messages.captureIntro}</p>
+    <header className="capture-header">
+      <h1>{messages.captureTitle}</h1>
+      <p className="muted">{messages.captureIntro}</p>
+    </header>
     <form onSubmit={(event) => { event.preventDefault(); void save(); }} noValidate>
       <fieldset className="capture-fields" disabled={frozen}>
         <div className="capture-sources">
-          <button type="button" className="source-button" onClick={() => cameraInput.current?.click()}><span className="source-icon" aria-hidden="true">◉</span>{messages.takePhoto}</button>
-          <button type="button" className="source-button" onClick={() => photosInput.current?.click()}><span className="source-icon" aria-hidden="true">＋</span>{messages.addPhotos}</button>
-          <button type="button" className="source-button" onClick={() => pdfInput.current?.click()}><span className="source-icon" aria-hidden="true">▤</span>{messages.choosePdf}</button>
+          <button type="button" className="source-button source-camera" onClick={() => cameraInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="camera" size={22} /></span>{messages.takePhoto}</button>
+          <button type="button" className="source-button source-photos" onClick={() => photosInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="photos" size={22} /></span>{messages.addPhotos}</button>
+          <button type="button" className="source-button source-pdf" onClick={() => pdfInput.current?.click()}><span className="source-icon" aria-hidden="true"><Icon name="pdf" size={22} /></span>{messages.choosePdf}</button>
           <input ref={cameraInput} type="file" accept="image/jpeg,image/png" capture="environment" hidden onChange={(event) => void addFiles(event)} />
           <input ref={photosInput} type="file" accept="image/jpeg,image/png" multiple hidden onChange={(event) => void addFiles(event)} />
           <input ref={pdfInput} type="file" accept="application/pdf" hidden onChange={(event) => void addFiles(event)} />
         </div>
-        <p className="hint">{messages.captureLimits}</p>
+        <p className="hint capture-limits"><Icon name="info" size={18} />{messages.captureLimits}</p>
 
-        {replacement && <div className="notice replace-notice" role="group" aria-label={messages.selectedFiles}>
-          <p>{replacement.kind === 'pdf' ? messages.replaceWithPdfPrompt : messages.replaceWithPhotosPrompt}</p>
-          <div className="notice-actions">
-            <button type="button" className="primary" onClick={confirmReplacement}>{messages.replaceSelection}</button>
-            <button type="button" className="secondary" onClick={() => setReplacement(null)}>{messages.keepSelection}</button>
-          </div>
+        {zone === 'files' && zoneAlert(filesErrorId)}
+
+        {replacement && <div className="replace-notice" role="group" aria-label={messages.selectedFiles}>
+          <Alert
+            variant="warning"
+            role={null}
+            action={<>
+              <button type="button" onClick={confirmReplacement}>{messages.replaceSelection}</button>
+              <button type="button" className="alert-action-quiet" onClick={() => setReplacement(null)}>{messages.keepSelection}</button>
+            </>}
+          >{replacement.kind === 'pdf' ? messages.replaceWithPdfPrompt : messages.replaceWithPhotosPrompt}</Alert>
         </div>}
 
-        <section className="selection" aria-label={messages.selectedFiles}>
+        <section className="card selection" aria-label={messages.selectedFiles} aria-describedby={zone === 'files' ? filesErrorId : undefined}>
           <h2>{messages.selectedFiles}{selection?.kind === 'image' ? <span className="count"> · {countLabel(locale, messages, 'photoCount', selection.files.length)}</span> : null}</h2>
           {!selection && <p className="hint">{messages.selectionEmpty}</p>}
           {selection && <ol className="file-list">{selection.files.map((item, index) => <li key={item.key} className="file-item">
             {selection.kind === 'image'
               ? previews[item.key] ? <img className="file-preview" src={previews[item.key]} alt={interpolate(messages.photoPreviewAlt, { position: index + 1 })} /> : <span className="file-preview" aria-hidden="true" />
-              : <span className="file-preview file-icon" aria-hidden="true">▤</span>}
+              : <span className="file-preview file-pdf" aria-hidden="true"><Icon name="pdf" size={26} /></span>}
             <span className="file-name">{item.file.name}</span>
             <span className="file-actions">
               {selection.kind === 'image' && <>
-                <button type="button" className="icon-button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={interpolate(messages.moveUpLabel, { position: index + 1 })}>↑</button>
-                <button type="button" className="icon-button" disabled={index === selection.files.length - 1} onClick={() => move(index, 1)} aria-label={interpolate(messages.moveDownLabel, { position: index + 1 })}>↓</button>
+                <button type="button" className="icon-button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={interpolate(messages.moveUpLabel, { position: index + 1 })}><Icon name="arrowUp" size={18} /></button>
+                <button type="button" className="icon-button" disabled={index === selection.files.length - 1} onClick={() => move(index, 1)} aria-label={interpolate(messages.moveDownLabel, { position: index + 1 })}><Icon name="arrowDown" size={18} /></button>
               </>}
-              <button type="button" className="icon-button" onClick={() => remove(item.key)} aria-label={interpolate(messages.removeLabel, { name: item.file.name })}>✕</button>
+              <button type="button" className="icon-button icon-button-danger" onClick={() => remove(item.key)} aria-label={interpolate(messages.removeLabel, { name: item.file.name })}><Icon name="close" size={18} /></button>
             </span>
           </li>)}</ol>}
         </section>
 
-        <fieldset className="chip-group">
+        <fieldset className="chip-group" aria-describedby={zone === 'animal' ? animalErrorId : undefined}>
           <legend>{messages.animal}</legend>
           <div className="chips">{animals.map((animal) => <label key={animal.id} className={animal.id === animalId ? 'chip selected' : 'chip'}>
             <input type="radio" name="animal" value={animal.id} checked={animal.id === animalId} onChange={() => setAnimalId(animal.id)} className="visually-hidden" />
-            {animal.id === animalId && <span aria-hidden="true">✓ </span>}{animal.name}
+            <Icon name="check" size={18} />{animal.name}
           </label>)}</div>
+          {zone === 'animal' && zoneAlert(animalErrorId)}
         </fieldset>
 
-        <label className="date-field">{messages.eventDate}
-          <input type="date" name="eventDate" value={eventDate} max={today} required onChange={(event) => setEventDate(event.currentTarget.value)} />
-        </label>
+        <div className="field-group date-field">
+          <label>{messages.eventDate}<span className={zone === 'date' ? 'field invalid' : 'field'}><Icon name="calendar" size={22} /><input
+            type="date"
+            name="eventDate"
+            value={eventDate}
+            max={today}
+            required
+            aria-invalid={zone === 'date' ? true : undefined}
+            aria-describedby={zone === 'date' ? dateErrorId : undefined}
+            onChange={(event) => setEventDate(event.currentTarget.value)}
+          /></span></label>
+          <div className="field-error-slot" role="alert">{zone === 'date' && <FieldError id={dateErrorId}>{message(errorCode)}</FieldError>}</div>
+        </div>
       </fieldset>
 
       {selectedAnimal && /^\d{4}-\d{2}-\d{2}$/.test(eventDate) && <p className="capture-summary">{interpolate(messages.captureSummary, { animal: selectedAnimal.name, date: formatEventDate(locale, eventDate) })}</p>}
 
-      {progress && status === 'running' && <div className="capture-progress">
-        <progress aria-label={messages.progressLabel} max={fileTotal + 2} value={progressValue(progress, fileTotal)} />
-        <p role="status">{progressText(progress)}</p>
-      </div>}
+      {/* The phase paragraph is a persistent live region, so the first phase is announced too; the card styling and
+          the bar appear only while saving. */}
+      <div className={showProgress ? 'card capture-progress' : 'capture-progress idle'}>
+        <div className="capture-phase">
+          {showProgress && progress.phase === 'done' && <span className="tile capture-done-tile" aria-hidden="true"><Icon name="check" size={24} className="draw" /></span>}
+          <p role="status">{showProgress ? progressText(progress) : ''}</p>
+        </div>
+        {showProgress && <progress className="capture-bar" aria-label={messages.progressLabel} max={fileTotal + 2} value={progressValue(progress, fileTotal)} />}
+      </div>
 
-      {errorCode && <p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {message(errorCode)}</p>}
+      {zone === 'form' && zoneAlert()}
 
       {status === 'failed' && attempt
         ? <div className="capture-actions">
           {retryableCodes.has(errorCode) && <button type="button" className="primary" onClick={() => void run(attempt)}>{messages.retry}</button>}
           {!retryableCodes.has(errorCode) && <button type="button" className="secondary" onClick={startOver}>{messages.startOver}</button>}
         </div>
-        : <button className="primary" type="submit" disabled={frozen}>{status === 'running' ? messages.saving : messages.save}</button>}
+        : <button className="primary capture-save" type="submit" disabled={frozen}>{status === 'running' ? messages.saving : messages.save}</button>}
     </form>
   </section></main>;
 }

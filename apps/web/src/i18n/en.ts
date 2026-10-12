@@ -119,6 +119,7 @@ export const messages = {
   storedNotice: 'The original is stored safely.',
   originals: 'Originals',
   pageLabel: 'Page {position} of {total}',
+  originalPagesLabel: 'Pages',
   openOriginal: 'Open original',
   downloadOriginal: 'Download original',
   openPdf: 'Open PDF',

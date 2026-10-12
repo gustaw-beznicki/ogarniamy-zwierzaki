@@ -121,6 +121,7 @@ export const messages = {
   storedNotice: 'Oryginał jest bezpiecznie zapisany.',
   originals: 'Oryginały',
   pageLabel: 'Strona {position} z {total}',
+  originalPagesLabel: 'Strony',
   openOriginal: 'Otwórz oryginał',
   downloadOriginal: 'Pobierz oryginał',
   openPdf: 'Otwórz PDF',

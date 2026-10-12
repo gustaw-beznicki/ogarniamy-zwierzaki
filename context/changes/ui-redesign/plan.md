@@ -866,9 +866,9 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [x] 4.1 Type check passes: `npm run check` in `apps/web`
-- [x] 4.2 Build passes: `npm run build` in `apps/web`
-- [x] 4.3 No Unicode icon glyphs remain in `DocumentCaptureForm.tsx`
+- [x] 4.1 Type check passes: `npm run check` in `apps/web` — 0edf14a
+- [x] 4.2 Build passes: `npm run build` in `apps/web` — 0edf14a
+- [x] 4.3 No Unicode icon glyphs remain in `DocumentCaptureForm.tsx` — 0edf14a
 
 #### Manual
 
@@ -883,9 +883,9 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [ ] 5.1 Type check passes: `npm run check` in `apps/web`
-- [ ] 5.2 Build passes: `npm run build` in `apps/web`
-- [ ] 5.3 No Unicode icon glyphs remain in `DocumentDetails.tsx` and `DocumentReadingStatus.tsx`
+- [x] 5.1 Type check passes: `npm run check` in `apps/web`
+- [x] 5.2 Build passes: `npm run build` in `apps/web`
+- [x] 5.3 No Unicode icon glyphs remain in `DocumentDetails.tsx` and `DocumentReadingStatus.tsx`
 
 #### Manual
 

@@ -37,12 +37,17 @@ public static class DocumentReadingEndpoints
     // header in seconds) while the hourly limit blocks it.
     private static async Task<Results<Ok<DocumentReadingResponse>, NotFound, ProblemHttpResult>> RetryAsync(
         Guid documentId, HttpContext context, ClaimsPrincipal principal, UserManager<AppUser> users,
-        OwnedDocumentReading reading, TimeProvider time, CancellationToken cancellationToken)
+        OwnedDocumentReading reading, DocumentReadingWakeUp wakeUp, TimeProvider time, CancellationToken cancellationToken)
     {
         var result = await reading.RetryAsync(CurrentUser.Id(principal, users), documentId, cancellationToken);
         if (result.Status is not { } status)
         {
             return TypedResults.NotFound();
+        }
+
+        if (result.Outcome == DocumentReadingRetryOutcome.Accepted)
+        {
+            wakeUp.Notify();
         }
 
         if (result.Outcome != DocumentReadingRetryOutcome.RateLimited)

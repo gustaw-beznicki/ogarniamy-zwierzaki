@@ -267,6 +267,32 @@ public sealed class DocumentReadingRepositoryTests(ApiFactory factory) : IClassF
     }
 
     [Fact]
+    public async Task A_saved_local_parse_is_kept_once_per_original_and_dropped_when_the_job_finishes()
+    {
+        await ParkExistingJobsAsync();
+        var pdf = await StoredAsync(DocumentFile.PdfContentType);
+        var fileId = pdf.Files[0].Id;
+        var claim = Assert.IsType<DocumentReadingClaim>(await ClaimAsync());
+        var abandoned = await UseJobsAsync(jobs => jobs.StartRunFileAsync(claim, fileId, "2", localCheckpoint: "{\"first\":1}"));
+        Assert.NotNull(abandoned);
+        Assert.True(await UseJobsAsync(jobs => jobs.RecordOperationAsync(claim, abandoned.Value, "op-abandoned")));
+        Assert.True(await UseJobsAsync(jobs => jobs.AbandonRunFileAsync(claim, abandoned.Value)));
+
+        // The next attempt carries the parse forward; the abandoned copy is dropped, its cleanup obligation kept.
+        var current = await UseJobsAsync(jobs => jobs.StartRunFileAsync(claim, fileId, "2", localCheckpoint: "{\"second\":2}"));
+        Assert.NotNull(current);
+        var runFiles = await UseJobsAsync(jobs => jobs.ListRunFilesAsync(claim));
+        Assert.Equal([null, "{\"second\":2}"], runFiles.Select(r => r.FetchedText));
+        Assert.Equal(DocumentReadingCleanupState.Pending, runFiles[0].CleanupState);
+
+        // A finished job keeps no saved parse.
+        Assert.True(await UseJobsAsync(jobs => jobs.FailAsync(claim, "ocr_unavailable")));
+        var left = await UseDatabaseAsync(db => db.DocumentReadingRunFiles.AsNoTracking()
+            .Where(r => r.DocumentId == pdf.Id).Select(r => r.FetchedText).ToListAsync());
+        Assert.All(left, Assert.Null);
+    }
+
+    [Fact]
     public async Task A_published_revision_is_kept_until_a_later_generation_replaces_it()
     {
         await ParkExistingJobsAsync();

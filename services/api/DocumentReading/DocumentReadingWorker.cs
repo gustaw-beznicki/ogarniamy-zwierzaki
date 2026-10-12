@@ -22,6 +22,7 @@ public sealed class DocumentReadingWorker(
     IDocumentTextReader reader,
     PdfTextReader pdfReader,
     DocumentReadingCleanup cleanup,
+    DocumentReadingWakeUp wakeUp,
     IOriginalStorage storage,
     TimeProvider time,
     ILogger<DocumentReadingWorker> logger) : BackgroundService
@@ -42,8 +43,12 @@ public sealed class DocumentReadingWorker(
         Converters = { new JsonStringEnumConverter() },
     };
 
-    // The idle wait between claims when nothing is due.
+    // The idle wait between claims when nothing is due. It doubles on every idle pass up to MaxPollInterval and drops
+    // back after a claim or a wake-up (a completed capture or an accepted Retry), so an idle app on F1 polls about once a
+    // minute while fresh work still starts within seconds.
     public TimeSpan PollInterval { get; init; } = TimeSpan.FromSeconds(5);
+
+    public TimeSpan MaxPollInterval { get; init; } = TimeSpan.FromSeconds(60);
 
     public TimeSpan LeaseDuration { get; init; } = TimeSpan.FromMinutes(2);
 
@@ -84,6 +89,7 @@ public sealed class DocumentReadingWorker(
             return;
         }
 
+        var idleWait = PollInterval;
         while (!stoppingToken.IsCancellationRequested)
         {
             var claimed = false;
@@ -102,16 +108,22 @@ public sealed class DocumentReadingWorker(
                 logger.LogError("The document reading worker loop failed ({ExceptionType}); continuing.", exception.GetType().Name);
             }
 
-            if (!claimed)
+            if (claimed)
             {
-                try
-                {
-                    await Task.Delay(PollInterval, time, stoppingToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                idleWait = PollInterval;
+                continue;
+            }
+
+            try
+            {
+                var woken = await wakeUp.WaitAsync(idleWait, time, stoppingToken);
+                idleWait = woken
+                    ? PollInterval
+                    : TimeSpan.FromTicks(Math.Min(idleWait.Ticks * 2, Math.Max(MaxPollInterval.Ticks, PollInterval.Ticks)));
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
         }
     }

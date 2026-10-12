@@ -118,7 +118,8 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
     // Starts reading one original of the claimed document in the claim's run generation. selectedPageRanges are the
     // original page numbers to send for OCR in the provider's "pages" syntax, or null for the whole file. localCheckpoint
     // is the worker's serialized local parse of a PDF, kept in fetched_text until the run file is Retrieved (when the
-    // fetched output replaces it). Returns the new run file's ID, or null (writing nothing) when the lease is no longer
+    // fetched output replaces it), a later run file of the same original carries it forward, or the job finishes.
+    // Returns the new run file's ID, or null (writing nothing) when the lease is no longer
     // current. The file must belong to the document; otherwise the database rejects it.
     public async Task<Guid?> StartRunFileAsync(
         DocumentReadingClaim claim, Guid documentFileId, string? selectedPageRanges,
@@ -134,6 +135,12 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
         if (!await LockCurrentLeaseAsync(claim, cancellationToken))
         {
             return null;
+        }
+
+        if (localCheckpoint is not null)
+        {
+            // The new run file carries the local parse forward, so earlier copies of it for this original are dropped.
+            await ClearLocalCheckpointsAsync(claim.DocumentId, claim.RunGeneration, documentFileId, cancellationToken);
         }
 
         var id = Guid.CreateVersion7();
@@ -281,6 +288,7 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
                     lease_token = NULL, lease_expires_at = NULL, updated_at = now()
                 WHERE document_id = {claim.DocumentId}
                 """, cancellationToken);
+            await ClearLocalCheckpointsAsync(claim.DocumentId, null, null, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         finally
@@ -346,9 +354,24 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
                 lease_token = NULL, lease_expires_at = NULL, updated_at = now()
             WHERE document_id = {claim.DocumentId}
             """, cancellationToken);
+        await ClearLocalCheckpointsAsync(claim.DocumentId, null, null, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return true;
     }
+
+    // Drops saved local parses (fetched_text of run files not Retrieved) of a document, optionally only for one run
+    // generation and original. Called in the caller's transaction once a parse is carried forward to a new run file or
+    // the job is finished (read or failed; a Retry starts a new generation that parses again), so copies of document
+    // text do not pile up across attempts. Retrieved output is untouched.
+    private Task<int> ClearLocalCheckpointsAsync(
+        Guid documentId, int? runGeneration, Guid? documentFileId, CancellationToken cancellationToken) =>
+        db.Database.ExecuteSqlAsync($"""
+            UPDATE document_reading_run_files
+            SET fetched_text = NULL, updated_at = now()
+            WHERE document_id = {documentId} AND stage <> 'retrieved' AND fetched_text IS NOT NULL
+                AND ({runGeneration}::integer IS NULL OR run_generation = {runGeneration})
+                AND ({documentFileId}::uuid IS NULL OR document_file_id = {documentFileId})
+            """, cancellationToken);
 
     // Provider results due for deletion: a pending cleanup whose output is no longer needed (checkpointed, abandoned,
     // from an older run generation, or of a finished job) and whose retry time has passed. Cleanup is independent of
@@ -356,15 +379,17 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
     public Task<List<DocumentReadingCleanupWork>> ListDueCleanupsAsync(int limit, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        // DateTimeOffset.UtcNow translates to the database's now().
         return db.DocumentReadingRunFiles
-            .FromSql($"""
-                SELECT r.* FROM document_reading_run_files AS r
-                JOIN document_reading_jobs AS j ON j.document_id = r.document_id
-                WHERE r.cleanup_state = 'pending' AND (r.next_cleanup_at IS NULL OR r.next_cleanup_at <= now())
-                    AND (r.stage IN ('retrieved', 'failed') OR r.run_generation < j.run_generation
-                        OR j.state IN ('read', 'failed'))
-                """)
             .AsNoTracking()
+            .Where(r => r.CleanupState == DocumentReadingCleanupState.Pending
+                && (r.NextCleanupAt == null || r.NextCleanupAt <= DateTimeOffset.UtcNow)
+                && db.DocumentReadingJobs.Any(j => j.DocumentId == r.DocumentId
+                    && (r.Stage == DocumentReadingRunFileStage.Retrieved
+                        || r.Stage == DocumentReadingRunFileStage.Failed
+                        || r.RunGeneration < j.RunGeneration
+                        || j.State == DocumentReadingState.Read
+                        || j.State == DocumentReadingState.Failed)))
             .OrderBy(r => r.NextCleanupAt)
             .ThenBy(r => r.CreatedAt)
             .Take(limit)

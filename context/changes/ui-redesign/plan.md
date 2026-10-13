@@ -899,13 +899,13 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Automated
 
-- [x] 6.1 Type check passes: `npm run check` in `apps/web`
-- [x] 6.2 Build passes: `npm run build` in `apps/web`
-- [x] 6.3 No Unicode icon glyphs remain anywhere in components
-- [x] 6.4 No `.error` or `.notice` class usage remains
-- [x] 6.5 No Polish outside `pl.ts`
-- [x] 6.6 No Google Fonts reference in the build
-- [x] 6.7 The reduced-motion block exists
+- [x] 6.1 Type check passes: `npm run check` in `apps/web` — 5901afe
+- [x] 6.2 Build passes: `npm run build` in `apps/web` — 5901afe
+- [x] 6.3 No Unicode icon glyphs remain anywhere in components — 5901afe
+- [x] 6.4 No `.error` or `.notice` class usage remains — 5901afe
+- [x] 6.5 No Polish outside `pl.ts` — 5901afe
+- [x] 6.6 No Google Fonts reference in the build — 5901afe
+- [x] 6.7 The reduced-motion block exists — 5901afe
 
 #### Manual
 

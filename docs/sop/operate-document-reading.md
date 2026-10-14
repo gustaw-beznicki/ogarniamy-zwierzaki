@@ -1,16 +1,10 @@
-# Document reading runbook (Phase 5)
+# SOP: Operate document reading
 
-Operating notes for background document reading on App Service F1: states, failure codes, configuration, inspection,
-pausing and resuming the worker, F1 sleep and CPU quota, rollback, and the template for the post-deployment evidence
-(manual checks 5.4 and 5.5).
+**Purpose**: understand, inspect, pause, resume and roll back background document reading (OCR) in Azure.
+**When**: after a reading incident (provider outage, configuration error, unexpected CPU use), when owners report documents stuck in "queued" or "failed", and during a rollback.
+**Safety**: every inspection step is read-only and returns no document content. Every step that changes Azure (app settings, deployments, database rows, firewall or role assignments) needs the owner's explicit approval.
 
-Status: **written, not yet exercised in Azure.** Nothing in this file has been run against production. Every step that
-changes Azure (app settings, deployments, database rows, firewall or role assignments) needs the owner's explicit
-approval. The one-time rollout steps (Document Intelligence account, Cognitive Services User role) are in
-[`infra-rollout.md`](infra-rollout.md); this runbook covers operation after them.
-
-Semantic search (S-04) does not exist yet. A document whose reading status is "read" has its text stored with page
-provenance; nothing searches it.
+A document whose reading status is "read" has its text stored with page provenance; nothing searches it yet.
 
 ## Ground rules
 
@@ -70,11 +64,14 @@ Counters and limits:
 | `retrieved` | Output checkpointed (`fetched_text`); never fetched twice. |
 | `failed` | Abandoned (terminal failure, lost lease or unknown submission outcome). Never resumed; only its cleanup continues. |
 
+A `pending` or `submitted` PDF run file may also hold the saved local parse in `fetched_text`, so a later attempt does
+not parse again. Only the latest copy per original is kept, and it is dropped when the job is read or failed.
+
 | `cleanup_state` | Meaning |
 | --- | --- |
 | `not_needed` | Nothing was sent to the provider (for example a PDF read entirely from its text layer). |
 | `pending` | A provider result may exist; deletion is due at `next_cleanup_at`. Retried after 1 min, 5 min, 30 min, then every 2 hours (`cleanup_attempt_count`). |
-| `acknowledged` | The provider answered 204 to the deletion, or an authenticated `NotFound` for the result. A deletion request, not proof of physical erasure (see `live-provider-run.md`: DELETE of a missing result also answers 204). |
+| `acknowledged` | The provider answered 204 to the deletion, or an authenticated `NotFound` for the result. A deletion request, not proof of physical erasure (the provider answers 204 even to a DELETE of a result that no longer exists). |
 
 Cleanup is independent of the job: a failed, retried or read job keeps its pending cleanups. A submission whose response
 was lost before the operation ID was saved has no known result ID; it cannot be deleted early and relies on the
@@ -91,7 +88,7 @@ retried by its owner.
 | `provider_unavailable` | transient | Throttling (429), provider 5xx, network error or timeout. | Nothing; check provider health if it persists. |
 | `provider_result_missing` | transient | A saved operation's result is gone (expired or deleted); the run file is abandoned and the next attempt submits again. | Nothing. |
 | `storage_unavailable` | transient | Blob Storage could not be reached while reading the original. | Check the storage role and Blob Storage health; originals have the same dependency. |
-| `attempt_deadline_exceeded` | transient | One attempt ran longer than 30 minutes. **Kept transient on purpose** (implementation review F6): it is more likely provider slowness than document size. Real size limits are separate terminal codes. | Nothing for one occurrence. If one document keeps hitting it until it fails, look at provider latency in the logs before treating it as a size problem. |
+| `attempt_deadline_exceeded` | transient | One attempt ran longer than 30 minutes. **Kept transient on purpose**: it is more likely provider slowness than document size. Real size limits are separate terminal codes. | Nothing for one occurrence. If one document keeps hitting it until it fails, look at provider latency in the logs before treating it as a size problem. |
 | `unexpected_error` | transient | An unclassified exception; only its type is logged. | Look up the exception type in the log; repeated occurrences are a bug. |
 | `pdf_unreadable` | transient (rare) | Stored only when a PDF parses differently on resume than when its OCR pages were submitted. An ordinary local parser failure is not stored: the file goes to whole-file OCR instead. | Nothing. |
 | `encrypted_pdf` | terminal | Password-protected PDF. | Owner keeps the original; reading is not possible. |
@@ -101,17 +98,17 @@ retried by its owner.
 | `unsupported_image_dimensions` | terminal | The provider rejected the image size. | None; the original stays openable. |
 | `unreadable_content` | terminal | The provider could not read the file content. | None. |
 | `empty_document` | terminal | No text on any page of any original. | None. |
-| `original_unavailable` | terminal | The original's blob is missing. | Follow `docs/sop/recover-originals.md`; then the owner retries. |
+| `original_unavailable` | terminal | The original's blob is missing. | Follow [Recover document originals](recover-originals.md); then the owner retries. |
 | `provider_rejected`, `provider_protocol_error` | terminal | The provider failed the analysis or answered in an unexpected shape. | Check the API version and model; repeated occurrences need investigation. |
 | `attempts_exhausted` | terminal | Claimed for a sixth time: earlier attempts ended without handing the job back, typically a process crash while reading it. Stops crash loops from burning the F1 CPU quota. | Treat as a bug report for that document ID; do not retry repeatedly. |
-| `provider_auth` | configuration | No token for the identity, or 401/403 from the provider: missing Cognitive Services User role or wrong identity. | Check the role assignment (`infra-rollout.md`, step 2), then requeue (below). |
+| `provider_auth` | configuration | No token for the identity, or 401/403 from the provider: missing Cognitive Services User role or wrong identity. | Check the role assignment ([deployment guide](../deployment.md), step 3 of setting up a new environment), then requeue (below). |
 | `provider_config` | configuration | 404 or similar: wrong endpoint, model or API version, or reading unavailable. | Check `DocumentReading__Endpoint`, `ModelId`, `ApiVersion`, then requeue. |
 
 ## Configuration
 
-The keys and defaults are documented in `docs/local-development.md` (Configuration). In Azure they are App Service
+The keys and defaults are documented in the [local development guide](../local-development.md) (Configuration). In Azure they are App Service
 settings (`DocumentReading__Auth`, `__Endpoint`, `__ModelId`, `__ApiVersion`, `__WorkerEnabled`) set by
-`infra/modules/app-service.bicep`, with `WorkerEnabled` fixed to `false` there.
+`infra/modules/app-service.bicep`, where `WorkerEnabled` is `true` (the worker is on in production).
 
 - Every approved deployment rewrites the App Service settings from Bicep. A value changed by hand with
   `az webapp config appsettings set` lasts only until the next deployment. Use it for an emergency pause, then make the
@@ -141,7 +138,7 @@ carry IDs, codes and timings only):
 
 Access: locally `docker compose exec postgres psql -U postgres -d ogarniamy`. In Azure only the API's managed identity
 can sign in; querying needs a temporary, separately approved access path, removed afterwards (as in
-`docs/sop/check-incomplete-uploads.md`). All queries below are read-only and return no content.
+[Check incomplete uploads](check-incomplete-uploads.md)). All queries below are read-only and return no content.
 
 Overview by state:
 
@@ -218,8 +215,8 @@ WHERE stage IN ('pending', 'failed') AND provider_operation_id IS NULL AND clean
 This also counts run files that never reached the provider (for example PDFs read locally that then failed), so treat
 it as an upper bound.
 
-Stored documents without a reading job (should be zero; a pre-S-03 release running against this schema would create
-them):
+Stored documents without a reading job (should be zero; a release from before document reading running against this
+schema would create them):
 
 ```sql
 SELECT count(*) AS stored_without_job
@@ -236,16 +233,16 @@ WHERE d.storage_state = 'stored'
    rg-ogarniamy-mvp --name <api app> --settings DocumentReading__WorkerEnabled=false`. The API restarts; the current
    job is requeued without counting the attempt.
 2. Confirm the startup line "The document reading worker is not running: DocumentReading:WorkerEnabled is false."
-3. To keep the pause across deployments, commit `'false'` in `infra/modules/app-service.bicep` (already the value
-   until the worker is activated).
+3. To keep the pause across deployments, commit `'false'` for `DocumentReading__WorkerEnabled` in
+   `infra/modules/app-service.bicep` through a pull request.
 
 While paused: new captures still get `queued` jobs, owners see "queued", Retry still requeues failed jobs, and **provider
 cleanup also stops** (it runs in the worker loop). Pending deletions then rely on the provider's 24-hour retention until
 the worker resumes, so keep pauses short when cleanup is pending.
 
 **Resume**: set `DocumentReading__WorkerEnabled=true` through the approved release (Bicep) or, temporarily, the same
-`az webapp config appsettings set` command. On start the worker first runs due cleanup, then claims due and
-lease-expired jobs one at a time. Check the overview query until no due work remains.
+`az webapp config appsettings set` command. The worker waits 60 seconds after the app starts, then runs due cleanup
+and claims due and lease-expired jobs one at a time. Check the overview query until no due work remains.
 
 **Jobs that failed during the incident** stay failed. Owners can press Retry. For many jobs failed with a configuration
 code after the cause is fixed, an operator requeue is a separately approved database change that mirrors Retry without
@@ -261,7 +258,7 @@ WHERE state = 'failed' AND failure_code IN ('provider_auth', 'provider_config');
 
 Pending cleanups of the old generation are kept.
 
-**Forward reconciliation** after a pre-S-03 release stored documents without jobs (approved mutation, the same statement
+**Forward reconciliation** after a release from before document reading stored documents without jobs (approved mutation, the same statement
 the `DocumentReading` migration ran as its backfill; conflict-safe):
 
 ```sql
@@ -275,20 +272,25 @@ ON CONFLICT (document_id) DO NOTHING;
 
 ## F1 sleep and CPU quota
 
-The API stays on App Service F1 (plan amendment 2026-10-06): no Always On, a daily CPU quota of 60 CPU minutes, and the
+The API runs on App Service F1: no Always On, a daily CPU quota of 60 CPU minutes, and the
 app unloads after idle time.
 
 - **Sleep.** When F1 unloads the app, nothing runs: new jobs, transient retries, provider cleanup and backfill wait until
-  the next request wakes it (any page that calls `/api/*`, including the smoke test's `/api/health`). On start the worker
-  runs due cleanup first, then due and lease-expired jobs. A job interrupted by an unload without notice is reclaimed
+  the next request wakes it (any page that calls `/api/*`, including the smoke test's `/api/health`). The worker waits 60 seconds
+  after the app starts (so a deploy or restart, which runs old and new containers side by side, is not slowed down by
+  reading), then runs due cleanup first, then due and lease-expired jobs. A job interrupted by an unload without notice is reclaimed
   after its 2-minute lease expires and counts as an attempt. Owners may see "queued" for a long time on a quiet day;
   that is the documented limitation, not an outage.
 - **CPU quota.** Exceeding 60 CPU minutes in a day stops the app until the quota resets, which also makes originals
   unavailable. Guards: one job at a time, a 60-second, single-processor local parse that is saved and reused across
   attempts, and the 5-attempt budget that stops crash loops.
-- **Idle polling (review F7, deferred).** While awake, the worker runs a cleanup query and a claim query every
-  5 seconds even when nothing is due. It is cheap but constant; check its share in the first CPU measurements. A backoff
-  (5 s growing to 60 s) is the planned fix if it matters.
+  Known limitation: there is no account-wide or daily budget. Retry is limited per
+  document only and uploads are not rate-limited, so about 60 hard PDFs a day could exhaust the quota. Pause the
+  worker if CPU time climbs unexpectedly.
+- **Idle polling.** While awake and idle, the worker checks for due cleanup and jobs every 5 seconds at first, doubling
+  the wait up to once a minute. A completed capture or an accepted Retry wakes it at once, and any claimed job resets
+  the wait. A cleanup pass starts no new deletion after 30 seconds, so an unreachable provider delays the next claim
+  by about a minute at most.
 - **What to watch**, daily for the first week after activation, then weekly:
   - CPU time: the app's Quotas page in the portal (CPU (Day)), or `az monitor metrics list --resource <api app resource
     id> --metric CpuTime --interval PT1H --aggregation Total --offset 1d` (seconds per hour; sum for the day).
@@ -296,7 +298,7 @@ app unloads after idle time.
   - Restarts or "quota exceeded" events in the App Service activity log.
 - **B1 trigger.** Move to B1 (with Always On) when either holds: daily CPU time reaches about 45 CPU minutes (75 % of the
   quota) on more than one day in a week, or the quota is hit once; or cold starts break the about-two-second search
-  target once S-04 exists. Record each reading in the evidence table below. The B1 switch is a separate, approved
+  target once search exists. The B1 switch is a separate, approved
   infrastructure change.
 
 ## Rollback
@@ -304,62 +306,10 @@ app unloads after idle time.
 - **Stop reading only**: pause the worker (above). Capture and originals are unaffected.
 - **Code rollback**: revert the release on `main` and approve the deploy, or re-run an earlier successful deploy. Keep
   the schema, `document_reading_jobs`, `document_reading_run_files` (with their cleanup obligations),
-  `document_text_pages`, the Document Intelligence account, its role assignment and every original. A pre-S-03 release
-  ignores the reading tables; documents it stores have no job and are reconciled forward (above) before reading is
+  `document_text_pages`, the Document Intelligence account, its role assignment and every original. A release from before
+  document reading ignores the reading tables; documents it stores have no job and are reconciled forward (above) before reading is
   enabled again.
 - Never drop the reading tables or delete text, jobs or run files as part of a rollback; pending cleanups would be lost
   and could not be retried.
 - Original retrieval does not depend on reading: with reading `Disabled`, misconfigured or paused, originals open
-  normally. Check 5.5 confirms this in Azure.
-
-## Post-deployment verification evidence (manual 5.4 and 5.5)
-
-Fill in after the separately approved deployment and worker activation. Record IDs shortened to their first 8
-characters, states, codes, counts and timings only; no text, file names, provider payloads or credentials. Use two
-synthetic accounts with synthetic fixtures (for example `services/api.Tests/Fixtures/Reading/synthetic-note.png`).
-
-Status: **PENDING**
-
-### Deployment
-
-| Item | Value |
-| --- | --- |
-| Deployed commit | PENDING |
-| Deploy run / approval date | PENDING |
-| `infra/deploy.sh what-if` scope matched (one Document Intelligence account and `DocumentReading__*` settings; no SKU, network, PostgreSQL or role changes) | PENDING |
-| `scripts/smoke.sh` result (including check 2d) | PENDING |
-| Startup line shows `AzureManagedIdentity` and the worker state | PENDING |
-| OCR identity: API managed identity holds Cognitive Services User on the account (role assignment ID or "verified in portal") | PENDING |
-| Worker activation date and method | PENDING |
-
-### Isolation (two synthetic accounts)
-
-| Check | Result |
-| --- | --- |
-| Account A captures a synthetic document; status goes queued, reading, read | PENDING |
-| Account B gets 404 for A's reading status, Retry and original | PENDING |
-| Anonymous requests get 401 for status and Retry (no redirect) | PENDING |
-| Inactive animal (S-06 API): A still opens the original and sees the status | PENDING |
-
-### Recovery
-
-| Check | Result |
-| --- | --- |
-| Restart during reading (`az webapp restart`, approved): job requeued or reclaimed, read once, no second Analyze for a saved operation | PENDING |
-| Pending cleanup after restart: acknowledged on the next pass | PENDING |
-| F1 wake-up: document captured, app left idle until unloaded (time idle: PENDING), next request wakes it, job and pending cleanup complete afterwards | PENDING |
-
-### F1 CPU
-
-| Date | CPU minutes that day | Documents read | Notes (idle polling share, B1 trigger approaching?) |
-| --- | --- | --- | --- |
-| PENDING | PENDING | PENDING | PENDING |
-
-### Owner review (5.5)
-
-| Item | Result |
-| --- | --- |
-| OCR quality evidence reviewed (`ocr-feasibility.md`) | PENDING |
-| Retention and cleanup limitations reviewed (unknown submissions, 204 is not proof of erasure, cleanup paused with the worker) | PENDING |
-| This runbook's rollback reviewed | PENDING |
-| Original opens with reading disabled or paused | PENDING |
+  normally.

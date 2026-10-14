@@ -102,7 +102,7 @@ dotnet user-secrets set DocumentReading:WorkerEnabled true --project services/ap
 dotnet run --project services/api
 ```
 
-The startup log says whether reading is available and whether the worker runs. On start the worker retries due provider cleanup, then reads due documents one at a time, including every `Stored` document already in your local database. Each photo and each PDF page without a usable text layer is sent to Azure and billed, so use a separate local database (a different `Database=` name in `ConnectionStrings:Default`) if your existing one holds documents you do not want read. Use only synthetic or your own non-sensitive files.
+The startup log says whether reading is available and whether the worker runs. The worker waits 60 seconds after startup, then retries due provider cleanup and reads due documents one at a time, including every `Stored` document already in your local database. Each photo and each PDF page without a usable text layer is sent to Azure and billed, so use a separate local database (a different `Database=` name in `ConnectionStrings:Default`) if your existing one holds documents you do not want read. Use only synthetic or your own non-sensitive files.
 
 To stop reading, remove `DocumentReading:WorkerEnabled` (or set it to `false`) and restart; jobs, read text and pending cleanups stay in the database.
 

@@ -66,8 +66,8 @@ public static class AnimalEndpoints
     }
 
     private static async Task<Results<Ok<OwnedAnimal>, NotFound, ProblemHttpResult>> RenameAsync(
-        Guid id, RenameAnimalRequest request, HttpRequest http, ClaimsPrincipal principal, UserManager<AppUser> users,
-        OwnedAnimals animals, CancellationToken cancellationToken)
+        Guid id, HttpRequest http, ClaimsPrincipal principal, UserManager<AppUser> users, OwnedAnimals animals,
+        CancellationToken cancellationToken)
     {
         var version = ReadVersion(http, out var versionProblem);
         if (versionProblem is not null)
@@ -75,7 +75,18 @@ public static class AnimalEndpoints
             return versionProblem;
         }
 
-        var name = request.Name?.Trim() ?? string.Empty;
+        // Read by hand so a malformed body answers with a coded 400 like the activity route.
+        RenameAnimalRequest? request;
+        try
+        {
+            request = await http.ReadFromJsonAsync<RenameAnimalRequest>(cancellationToken);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        {
+            return ApiProblem.Create(StatusCodes.Status400BadRequest, "name_required");
+        }
+
+        var name = request?.Name?.Trim() ?? string.Empty;
         if (name.Length == 0)
         {
             return ApiProblem.Create(StatusCodes.Status400BadRequest, "name_required");

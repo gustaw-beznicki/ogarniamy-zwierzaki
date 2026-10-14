@@ -281,6 +281,42 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
     }
 
     [Fact]
+    public async Task A_submission_with_an_unknown_outcome_is_abandoned_without_a_cleanup_obligation_and_sent_again()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider
+        {
+            // The request may have reached the provider, but no response (and so no result ID) came back.
+            BeforeSubmit = (_, index) => index == 1 ? throw new HttpRequestException("synthetic lost response") : null,
+            Analyze = (_, _) => FakeOcrProvider.Succeeded((1, "Read on the second try")),
+        };
+        var (document, _) = await CaptureAsync(SampleOriginals.Png());
+
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+        Assert.Equal(DocumentReadingState.Queued, (await JobAsync(document)).State);
+        var unknown = Assert.Single(await RunFilesAsync(document));
+        Assert.Equal(
+            (DocumentReadingRunFileStage.Pending, null, DocumentReadingCleanupState.NotNeeded),
+            (unknown.Stage, unknown.ProviderOperationId, unknown.CleanupState));
+
+        await MakeDueAsync(document);
+        Assert.True(await Worker(provider).RunOnceAsync(CancellationToken.None));
+
+        Assert.Contains(_logs.Entries, e => e.Contains("unknown submission outcome"));
+        Assert.Equal(2, provider.Posts.Count());
+        Assert.Equal(DocumentReadingState.Read, (await JobAsync(document)).State);
+        Assert.Equal("Read on the second try", Assert.Single(await PagesAsync(document)).Text);
+        var runFiles = await RunFilesAsync(document);
+        Assert.Equal(
+            [(DocumentReadingRunFileStage.Failed, DocumentReadingCleanupState.NotNeeded),
+                (DocumentReadingRunFileStage.Retrieved, DocumentReadingCleanupState.Acknowledged)],
+            runFiles.Select(r => (r.Stage, r.CleanupState)));
+        // Only the known result is deleted; the unknown one is left to the provider's bounded retention.
+        Assert.Equal([provider.IdOf(2)], provider.DeletedIds);
+        AssertLogsCarryNoContent("Read on the second try");
+    }
+
+    [Fact]
     public async Task A_retry_after_a_failed_submission_reuses_the_saved_local_parse_of_a_mixed_pdf()
     {
         await ParkExistingJobsAsync();
@@ -516,9 +552,61 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
         Assert.Contains(_logs.Entries, e => e.Contains("Lost the lease"));
     }
 
+    [Fact]
+    public async Task The_hosted_worker_waits_out_its_startup_delay_before_claiming_due_work()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider();
+        var (document, _) = await CaptureAsync(SampleOriginals.Png());
+        var delayed = Worker(provider, time: TimeProvider.System, available: true, startupDelay: TimeSpan.FromHours(1));
+
+        await delayed.StartAsync(CancellationToken.None);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        await delayed.StopAsync(CancellationToken.None);
+
+        Assert.Equal((DocumentReadingState.Queued, 0), ((await JobAsync(document)).State, (await JobAsync(document)).AttemptCount));
+        Assert.Empty(provider.Requests);
+
+        // Once the delay is over, the loop claims and reads the due job on its own.
+        var prompt = Worker(provider, time: TimeProvider.System, available: true, startupDelay: TimeSpan.Zero);
+        await prompt.StartAsync(CancellationToken.None);
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while ((await JobAsync(document)).State != DocumentReadingState.Read && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(100);
+        }
+
+        await prompt.StopAsync(CancellationToken.None);
+        Assert.Equal(DocumentReadingState.Read, (await JobAsync(document)).State);
+    }
+
+    [Fact]
+    public async Task A_completed_capture_wakes_the_idle_worker_without_waiting_for_its_poll()
+    {
+        await ParkExistingJobsAsync();
+        var provider = new FakeOcrProvider();
+        var worker = Worker(
+            provider, time: TimeProvider.System, available: true, startupDelay: TimeSpan.Zero,
+            wakeUp: factory.Services.GetRequiredService<DocumentReadingWakeUp>(), pollInterval: TimeSpan.FromHours(1));
+        await worker.StartAsync(CancellationToken.None);
+        // Let the first pass find nothing, so the loop is in its hour-long idle wait.
+        await Task.Delay(TimeSpan.FromSeconds(1));
+
+        var (document, _) = await CaptureAsync(SampleOriginals.Png());
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while ((await JobAsync(document)).State != DocumentReadingState.Read && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(100);
+        }
+
+        await worker.StopAsync(CancellationToken.None);
+        Assert.Equal(DocumentReadingState.Read, (await JobAsync(document)).State);
+    }
+
     private DocumentReadingWorker Worker(
         FakeOcrProvider provider, IOriginalStorage? storage = null, TimeProvider? time = null,
-        TimeSpan? analysisPollInterval = null)
+        TimeSpan? analysisPollInterval = null, bool available = false, TimeSpan? startupDelay = null,
+        DocumentReadingWakeUp? wakeUp = null, TimeSpan? pollInterval = null)
     {
         var reader = new AzureDocumentTextReader(
             new HttpClient(provider), new FakeTokenCredential(),
@@ -527,16 +615,26 @@ public sealed class DocumentReadingWorkerTests(ApiFactory factory) : IClassFixtu
         var scopes = factory.Services.GetRequiredService<IServiceScopeFactory>();
         return new DocumentReadingWorker(
             scopes,
-            DocumentReadingAvailability.Resolve(new DocumentReadingOptions(), isDevelopment: false),
+            DocumentReadingAvailability.Resolve(
+                available
+                    ? new DocumentReadingOptions
+                    {
+                        Auth = DocumentReadingAuthMode.AzureManagedIdentity, Endpoint = new Uri(FakeOcrProvider.Endpoint), WorkerEnabled = true,
+                    }
+                    : new DocumentReadingOptions(),
+                isDevelopment: false),
             reader,
             new PdfTextReader(),
             new DocumentReadingCleanup(scopes, reader, loggers.CreateLogger<DocumentReadingCleanup>()),
+            wakeUp ?? new DocumentReadingWakeUp(),
             storage ?? factory.Services.GetRequiredService<IOriginalStorage>(),
             time ?? new FixedTimeProvider(new DateTimeOffset(2026, 10, 5, 12, 0, 0, TimeSpan.Zero)),
             loggers.CreateLogger<DocumentReadingWorker>())
         {
             AnalysisPollInterval = analysisPollInterval ?? TimeSpan.Zero,
             HeartbeatInterval = TimeSpan.FromMilliseconds(200),
+            PollInterval = pollInterval ?? TimeSpan.FromMilliseconds(100),
+            StartupDelay = startupDelay ?? TimeSpan.Zero,
         };
     }
 

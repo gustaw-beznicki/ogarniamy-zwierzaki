@@ -31,7 +31,7 @@ function groupByMonth(documents: DocumentSummary[]): MonthGroup[] {
   return groups;
 }
 
-type LoadState = 'loading' | 'ready' | 'unavailable' | 'failed';
+type LoadState = 'loading' | 'ready' | 'unavailable' | 'failed' | 'accountChanged';
 // Only one profile edit is open at a time, so an edit never starts from a version another open edit is about to change.
 type Mode = 'idle' | 'rename' | 'confirmInactive';
 type Conflict = 'rename' | 'activity' | null;
@@ -39,6 +39,8 @@ type Conflict = 'rename' | 'activity' | null;
 export function AnimalDocuments({ locale, messages }: { locale: Locale; messages: Messages }) {
   const [state, setState] = useState<LoadState>('loading');
   const [animal, setAnimal] = useState<Animal | null>(null);
+  // The account that loaded the profile; edits are sent only on its behalf.
+  const [accountEmail, setAccountEmail] = useState('');
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -73,8 +75,9 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
       setState('unavailable');
       return;
     }
-    void Promise.all([api.animal(animalId), api.animalDocuments(animalId, 0, pageSize)]).then(([owned, page]) => {
+    void Promise.all([api.me(), api.animal(animalId), api.animalDocuments(animalId, 0, pageSize)]).then(([me, owned, page]) => {
       if (!active) return;
+      setAccountEmail(me.email);
       setAnimal(owned);
       setDocuments(page.items);
       setHasMore(page.hasMore);
@@ -139,6 +142,8 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
   function mutationFailed(error: unknown, kind: 'rename' | 'activity') {
     if (error instanceof ApiError && error.code === 'unauthorized') {
       window.location.replace(clientLocalePath(locale, 'signin'));
+    } else if (error instanceof ApiError && error.code === 'account_changed') {
+      setState('accountChanged');
     } else if (error instanceof ApiError && error.code === 'animal_changed') {
       // Never replayed: the owner refreshes and then decides again.
       setConflict(kind);
@@ -154,7 +159,7 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
     setBusy(true);
     resetEdit();
     try {
-      const updated = await api.renameAnimal(animal.id, editVersion, name);
+      const updated = await api.renameAnimal(animal.id, editVersion, name, accountEmail);
       setAnimal(updated);
       setMode('idle');
       setNotice(messages.nameSaved);
@@ -172,7 +177,7 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
     resetEdit();
     setNotice('');
     try {
-      const updated = await api.setAnimalActivity(animal.id, version, isActive);
+      const updated = await api.setAnimalActivity(animal.id, version, isActive, accountEmail);
       setAnimal(updated);
       setMode('idle');
       setNotice(updated.isActive ? messages.markedActive : messages.markedInactive);
@@ -215,6 +220,9 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
   </a>;
 
   if (state === 'loading') return <main className="content"><p className="loading" role="status">{messages.loadingContent}</p></main>;
+  if (state === 'accountChanged') {
+    return <main className="content"><Alert variant="warning" role="alert">{messages.readingAccountChanged}</Alert></main>;
+  }
   if (state === 'unavailable' || state === 'failed' || !animal) {
     return <main className="content">
       <PageState tone="error" headingLevel={1} title={state === 'failed' ? messages.request_failed : messages.documentsUnavailable} action={backToAnimals} />

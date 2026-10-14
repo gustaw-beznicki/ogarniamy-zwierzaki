@@ -100,8 +100,9 @@ public sealed class OwnedAnimals(AppDbContext db)
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        await transaction.CommitAsync(cancellationToken);
+        // Projected while the row is still locked, so the response is this edit's state, not a later one.
         var current = await FindAsync(userId, animalId, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return new AnimalMutationResult(AnimalMutationOutcome.Updated, current);
     }
 
@@ -110,7 +111,7 @@ public sealed class OwnedAnimals(AppDbContext db)
         var query = db.Animals
             .FromSql($"""
                 SELECT id, name, created_at, is_active, version FROM animals
-                WHERE id = {animalId} AND id IN (SELECT animal_id FROM animal_members WHERE user_id = {userId})
+                WHERE id = {animalId} AND id IN (SELECT animal_id FROM animal_members WHERE user_id = {userId} AND role = 'owner')
                 FOR UPDATE
                 """);
         var locked = await (track ? query : query.AsNoTracking()).ToListAsync(cancellationToken);
@@ -132,6 +133,6 @@ public sealed class OwnedAnimals(AppDbContext db)
     private IQueryable<Animal> ForUser(string userId) =>
         db.AnimalMembers
             .AsNoTracking()
-            .Where(m => m.UserId == userId)
+            .Where(m => m.UserId == userId && m.Role == AnimalRole.Owner)
             .Select(m => m.Animal);
 }

@@ -307,6 +307,29 @@ public sealed class AnimalVersioningTests(ApiFactory factory) : IClassFixture<Ap
     }
 
     [Fact]
+    public async Task A_malformed_rename_body_gets_400_with_a_code()
+    {
+        var (client, _) = await factory.CreateSignedInClientAsync();
+        using (client)
+        {
+            var animal = await CreateAsync(client);
+            var id = animal.GetProperty("id").GetGuid();
+
+            using var wrongType = await RenameAsync(client, id, new { name = 5 }, Quoted(animal));
+            await wrongType.AssertProblemAsync(HttpStatusCode.BadRequest, "name_required");
+
+            using var malformed = new HttpRequestMessage(HttpMethod.Put, $"/api/animals/{id}/name")
+            {
+                Content = new StringContent("{", Encoding.UTF8, "application/json"),
+            };
+            malformed.Headers.Add(TestAccounts.AntiforgeryHeader, await client.GetAntiforgeryTokenAsync());
+            malformed.Headers.TryAddWithoutValidation("If-Match", Quoted(animal));
+            using var response = await client.SendAsync(malformed);
+            await response.AssertProblemAsync(HttpStatusCode.BadRequest, "name_required");
+        }
+    }
+
+    [Fact]
     public async Task A_stale_version_gets_412_and_changes_nothing()
     {
         var (client, _) = await factory.CreateSignedInClientAsync();

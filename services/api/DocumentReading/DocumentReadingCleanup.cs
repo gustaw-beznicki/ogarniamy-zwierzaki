@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ogarniamy_zwierzaki_api.DocumentReading;
 
 // Deletes provider analysis results that are no longer needed: right after their output is checkpointed (called by
@@ -10,6 +12,10 @@ public sealed class DocumentReadingCleanup(
     IServiceScopeFactory scopes, IDocumentTextReader reader, ILogger<DocumentReadingCleanup> logger)
 {
     public int BatchSize { get; init; } = 20;
+
+    // A pass starts no new deletion after this long, so an unreachable provider (each call may wait for the 30-second
+    // HTTP timeout) delays the worker's next claim by about a minute at most instead of BatchSize timeouts.
+    public TimeSpan PassTimeLimit { get; init; } = TimeSpan.FromSeconds(30);
 
     // How long a failed deletion waits before the next try, by the number of earlier failed tries.
     public static TimeSpan BackoffAfter(int failedAttempts) => failedAttempts switch
@@ -31,8 +37,15 @@ public sealed class DocumentReadingCleanup(
         }
 
         var acknowledged = 0;
+        var started = Stopwatch.GetTimestamp();
         foreach (var work in due)
         {
+            if (Stopwatch.GetElapsedTime(started) > PassTimeLimit)
+            {
+                // The rest stay due and are picked up by the next pass.
+                break;
+            }
+
             if (await DeleteAsync(work, cancellationToken))
             {
                 acknowledged++;

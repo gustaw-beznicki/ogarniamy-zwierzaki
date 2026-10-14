@@ -323,6 +323,15 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 - Phase 5 verifies F1 behavior (wake-up recovery and CPU use against the quota) instead of B1/Always On and private database resolution.
 - The Progress row titles are unchanged by convention. Their wording about B1, Always On and the network in 1.4, 5.2 and 5.4 is outdated; this amendment and the phase sections above take precedence.
 
+## Plan addendum 2026-10-12 (worker timing and operations docs)
+
+Changes made after Phase 5 that adjust the Phase 3 worker defaults. They are recorded here so the plan stays the source of truth:
+
+- **Startup delay (faad5af).** The hosted worker waits 60 seconds after the app starts before its first cleanup pass and claim. On F1 a deploy or restart runs the old and new containers side by side on one small CPU share; reading at once caused a 502 smoke failure and a failed startup probe on 2026-10-11. F1 wake-up recovery therefore starts about a minute after the waking request.
+- **Idle backoff and wake-up (implementation review F5).** The idle poll starts at five seconds and doubles to at most 60 seconds; it resets after a claim. A completed capture or an accepted owner Retry wakes the worker at once in the same process. A cleanup pass starts no new deletion after 30 seconds.
+- **Saved local parse (implementation review F2).** At most one saved local parse is kept per original and run generation; it is dropped when the job is read or failed.
+- **Operating procedures (implementation review F4).** The durable part of `notes/reading-runbook.md` moved to `docs/sop/operate-document-reading.md`; the notes keep the 5.4/5.5 evidence and the incident record.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
@@ -375,10 +384,10 @@ Generate the processing migration after S-06's migration is integrated. Backfill
 #### Automated
 
 - [x] 5.1 Full documented checks pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`, `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`, `npm run check --prefix apps/web`, `npm run build --prefix apps/web` and `infra/deploy.sh lint`. — 79bf406
-- [ ] 5.2 Read-only what-if matches the staged infrastructure scope and post-deployment non-mutating smoke checks pass.
+- [x] 5.2 Read-only what-if matches the staged infrastructure scope and post-deployment non-mutating smoke checks pass. — 79bf406
 - [x] 5.3 Integrated S-03/S-06 tests retain inactive archive access, stale-edit rejection and repeat-completion behavior after both migrations. — 79bf406
 
 #### Manual
 
-- [ ] 5.4 After separately approved deployment, two synthetic accounts prove status/original isolation, a restart recovers jobs/cleanup, and idle-period processing works with Always On.
-- [ ] 5.5 Owner reviews OCR quality evidence, retention/cleanup limitations and rollback runbook; original retrieval works with reading disabled.
+- [x] 5.4 After separately approved deployment, two synthetic accounts prove status/original isolation, a restart recovers jobs/cleanup, and idle-period processing works with Always On. — accepted 2026-10-12 (evidence in notes/reading-runbook.md; idle wake-up observed only as startup recovery)
+- [x] 5.5 Owner reviews OCR quality evidence, retention/cleanup limitations and rollback runbook; original retrieval works with reading disabled. — accepted by the owner 2026-10-12

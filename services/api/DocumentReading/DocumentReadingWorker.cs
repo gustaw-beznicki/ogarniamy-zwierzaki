@@ -22,6 +22,7 @@ public sealed class DocumentReadingWorker(
     IDocumentTextReader reader,
     PdfTextReader pdfReader,
     DocumentReadingCleanup cleanup,
+    DocumentReadingWakeUp wakeUp,
     IOriginalStorage storage,
     TimeProvider time,
     ILogger<DocumentReadingWorker> logger) : BackgroundService
@@ -42,8 +43,12 @@ public sealed class DocumentReadingWorker(
         Converters = { new JsonStringEnumConverter() },
     };
 
-    // The idle wait between claims when nothing is due.
+    // The idle wait between claims when nothing is due. It doubles on every idle pass up to MaxPollInterval and drops
+    // back after a claim or a wake-up (a completed capture or an accepted Retry), so an idle app on F1 polls about once a
+    // minute while fresh work still starts within seconds.
     public TimeSpan PollInterval { get; init; } = TimeSpan.FromSeconds(5);
+
+    public TimeSpan MaxPollInterval { get; init; } = TimeSpan.FromSeconds(60);
 
     public TimeSpan LeaseDuration { get; init; } = TimeSpan.FromMinutes(2);
 
@@ -55,9 +60,14 @@ public sealed class DocumentReadingWorker(
     // Between polls of a running analysis when the provider sends no Retry-After.
     public TimeSpan AnalysisPollInterval { get; init; } = TimeSpan.FromSeconds(1);
 
+    // The hosted loop waits this long after the app starts before its first claim. On App Service F1 a deploy or restart
+    // runs the old and new containers side by side on one small CPU share; reading right away starved the new
+    // container's warm-up probe and proxied requests (502s, a failed startup probe) on 2026-10-11.
+    public TimeSpan StartupDelay { get; init; } = TimeSpan.FromSeconds(60);
+
     // Assumes no continuous run time: App Service F1 sleeps after idle time and may stop mid-job. Every start (or wake-up)
-    // first retries due provider cleanup, then claims due and lease-expired jobs, so work queued while the app slept
-    // resumes on the next wake-up.
+    // waits StartupDelay, then retries due provider cleanup and claims due and lease-expired jobs, so work queued while
+    // the app slept resumes shortly after the next wake-up.
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!availability.IsAvailable || !availability.Options.WorkerEnabled)
@@ -68,7 +78,18 @@ public sealed class DocumentReadingWorker(
             return;
         }
 
-        logger.LogInformation("The document reading worker started.");
+        logger.LogInformation(
+            "The document reading worker started; first claim after {StartupDelay}.", StartupDelay);
+        try
+        {
+            await Task.Delay(StartupDelay, time, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        var idleWait = PollInterval;
         while (!stoppingToken.IsCancellationRequested)
         {
             var claimed = false;
@@ -87,16 +108,22 @@ public sealed class DocumentReadingWorker(
                 logger.LogError("The document reading worker loop failed ({ExceptionType}); continuing.", exception.GetType().Name);
             }
 
-            if (!claimed)
+            if (claimed)
             {
-                try
-                {
-                    await Task.Delay(PollInterval, time, stoppingToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
+                idleWait = PollInterval;
+                continue;
+            }
+
+            try
+            {
+                var woken = await wakeUp.WaitAsync(idleWait, time, stoppingToken);
+                idleWait = woken
+                    ? PollInterval
+                    : TimeSpan.FromTicks(Math.Min(idleWait.Ticks * 2, Math.Max(MaxPollInterval.Ticks, PollInterval.Ticks)));
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
         }
     }

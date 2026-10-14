@@ -207,6 +207,7 @@ public sealed class DocumentReadingAcceptanceTests(ApiFactory factory) : IClassF
             reader,
             new PdfTextReader(),
             new DocumentReadingCleanup(scopes, reader, NullLogger<DocumentReadingCleanup>.Instance),
+            new DocumentReadingWakeUp(),
             factory.Services.GetRequiredService<IOriginalStorage>(),
             new FixedTimeProvider(new DateTimeOffset(2026, 10, 5, 12, 0, 0, TimeSpan.Zero)),
             NullLogger<DocumentReadingWorker>.Instance)

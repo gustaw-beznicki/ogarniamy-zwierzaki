@@ -205,7 +205,7 @@ async function captureMutation<T>(path: string, options: RequestOptions, account
   }
 }
 
-// Sends a non-idempotent mutation (animal creation, edits) once with the antiforgery header. Nothing is replayed: after
+// Sends a non-idempotent mutation (animal creation) once with the antiforgery header. Nothing is replayed: after
 // an explicit token rejection the cached token is dropped and the caller must submit again on purpose, so a create
 // is never duplicated and a stale edit is never re-sent behind the user's back.
 async function accountMutation<T>(path: string, options: RequestOptions): Promise<T> {
@@ -261,10 +261,10 @@ export const api = {
   animals: (includeInactive = false) => request<Animal[]>(`/api/animals/${includeInactive ? '?includeInactive=true' : ''}`),
   animal: (id: string) => request<Animal>(animalPath(id)),
   createAnimal: (name: string) => accountMutation<Animal>('/api/animals/', { method: 'POST', json: { name } }),
-  renameAnimal: (id: string, version: string, name: string) =>
-    accountMutation<Animal>(`${animalPath(id)}/name`, { method: 'PUT', json: { name }, headers: versionHeader(version) }),
-  setAnimalActivity: (id: string, version: string, isActive: boolean) =>
-    accountMutation<Animal>(`${animalPath(id)}/activity`, { method: 'PUT', json: { isActive }, headers: versionHeader(version) }),
+  renameAnimal: (id: string, version: string, name: string, accountEmail: string) =>
+    ownerMutation<Animal>(`${animalPath(id)}/name`, { method: 'PUT', json: { name }, headers: versionHeader(version) }, accountEmail),
+  setAnimalActivity: (id: string, version: string, isActive: boolean, accountEmail: string) =>
+    ownerMutation<Animal>(`${animalPath(id)}/activity`, { method: 'PUT', json: { isActive }, headers: versionHeader(version) }, accountEmail),
   captureDefaults: () => request<CaptureDefaults>('/api/capture-defaults'),
   createUpload: (operationId: string, manifest: UploadManifest, accountEmail: string) =>
     captureMutation<DocumentUpload>(`${uploadPath(operationId)}/`, { method: 'PUT', json: manifest }, accountEmail),

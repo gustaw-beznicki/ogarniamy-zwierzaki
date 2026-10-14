@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 using ogarniamy_zwierzaki_api.Auth;
+using ogarniamy_zwierzaki_api.DocumentReading;
 
 namespace ogarniamy_zwierzaki_api.Documents;
 
@@ -80,11 +81,13 @@ public static class DocumentEndpoints
 
     private static async Task<Results<Ok<StoredDocumentResponse>, NotFound, ProblemHttpResult>> CompleteUploadAsync(
         Guid operationId, ClaimsPrincipal principal, UserManager<AppUser> users, DocumentCaptureService capture,
-        CancellationToken cancellationToken)
+        DocumentReadingWakeUp readingWakeUp, CancellationToken cancellationToken)
     {
         var result = await capture.CompleteAsync(CurrentUser.Id(principal, users), operationId, cancellationToken);
         if (result.Value is { } document)
         {
+            // Completion committed a reading job (or found the existing one); let an idle worker look now.
+            readingWakeUp.Notify();
             return TypedResults.Ok(document);
         }
 

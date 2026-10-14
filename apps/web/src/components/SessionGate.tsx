@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { Locale, Messages } from '../i18n';
 import { clientLocalePath } from '../i18n/paths';
 import { ApiError, api } from '../lib/api';
+import { BrandMark } from './Icon';
+import { PageState } from './PageState';
 
 type Destination = 'entry' | 'onboarding' | 'protected' | 'signin';
 
@@ -39,7 +41,7 @@ export function SessionGate({ locale, messages, destination, children }: {
     return () => { active = false; };
   }, [destination, locale]);
 
-  if (status === 'loading') return <main className="content"><p className="loading" role="status">{messages.loading}</p></main>;
-  if (status === 'failed') return <main className="content"><p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.request_failed}</p></main>;
+  if (status === 'loading') return <main className="content"><p className="loading" role="status"><BrandMark size={40} />{messages.loading}</p></main>;
+  if (status === 'failed') return <main className="content"><PageState title={messages.request_failed} tone="error" /></main>;
   return <>{children}</>;
 }

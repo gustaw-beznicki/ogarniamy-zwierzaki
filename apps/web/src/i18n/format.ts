@@ -26,6 +26,17 @@ export function formatEventDate(locale: Locale, isoDate: string): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(date);
 }
 
+// The month and year of a calendar date (yyyy-MM-dd), for history group headings, independent of the device's time
+// zone. No day is formatted, so Polish keeps the nominative month name instead of the genitive.
+export function formatEventMonth(locale: Locale, isoDate: string): string {
+  const [year, month] = isoDate.split('-').map(Number);
+  if (!year || !month) return isoDate;
+  const date = new Date(0);
+  // setUTCFullYear keeps years 1–99 literal, unlike Date.UTC.
+  date.setUTCFullYear(year, month - 1, 1);
+  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
+}
+
 // A server timestamp shown in the device's local time.
 export function formatTimestamp(locale: Locale, isoTimestamp: string): string {
   const date = new Date(isoTimestamp);

@@ -98,6 +98,8 @@ Several documents have an event date that differs from the upload date (e.g. Cza
 
 ## Tokens
 
+> **Superseded (2026-10).** The table and the single-accent rule below describe the M-1 mockup and are kept as a historical record. The current visual system lives in `apps/web/src/styles/tokens.css` and `context/changes/ui-redesign/design/Main.dc.html`: the ui-redesign change replaced the palette, added dedicated state colours (info, warning, danger, success), self-hosted fonts and a new icon set.
+
 Owner palette (2026-09-26): four colours (terracotta, cream, sage, light sage) plus one warm dark and one warm muted text neutral. Contrast computed with the WCAG 2.x relative-luminance formula (script, not estimated). None of the four palette colours reaches 4.5:1 as text on cream, so all text uses the two neutrals; palette colours are used only for fills, borders and icon backgrounds, and never as the only cue.
 
 | Token | Value | Use | Contrast |

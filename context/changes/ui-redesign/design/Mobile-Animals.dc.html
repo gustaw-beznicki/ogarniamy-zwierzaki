@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Zwierzęta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4D3F}a:hover{color:#173B30}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.disp{font-family:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;letter-spacing:-0.02em}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes tabIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.r0{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.r1{animation:rise .45s .06s cubic-bezier(.2,.8,.2,1) both}
+.r2{animation:rise .45s .12s cubic-bezier(.2,.8,.2,1) both}
+.r3{animation:rise .45s .18s cubic-bezier(.2,.8,.2,1) both}
+.r4{animation:rise .45s .24s cubic-bezier(.2,.8,.2,1) both}
+.r5{animation:rise .45s .30s cubic-bezier(.2,.8,.2,1) both}
+.row{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
+.row:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(26,31,28,.04),0 14px 30px rgba(26,31,28,.10)}
+.row:active{transform:scale(.98)}
+.row .go{transition:background-color .2s,color .2s,transform .2s}
+.row:hover .go{background:#1F4D3F;color:#FFFFFF;transform:translateX(2px)}
+.ghost{transition:background-color .2s}
+.ghost:hover{background:#DCE8E1}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:20px;color:#3A413D;font-size:12px;font-weight:600;text-decoration:none;min-height:56px;transition:background-color .2s}
+.tab:hover{background:#F3F2EC;color:#1A1F1C}
+.tab.on{background:#1F4D3F;color:#FFFFFF;animation:tabIn .32s cubic-bezier(.34,1.3,.5,1) both}
+.tab.on:hover{color:#FFFFFF}
+details summary{list-style:none}
+details summary::-webkit-details-marker{display:none}
+details .chev{transition:transform .25s}
+details[open] .chev{transform:rotate(180deg)}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F5EF; color: #1A1F1C; font-family: Figtree, 'Segoe UI', system-ui, sans-serif">
+
+<div style="padding: 16px 16px 120px; display: flex; flex-direction: column; gap: 20px">
+
+<div class="r0" style="display: flex; align-items: center; justify-content: space-between">
+<div style="width: 40px; height: 40px; border-radius: 13px; background: #1F4D3F; display: grid; place-items: center; color: #F29E6B">
+<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" style="fill: currentColor"><circle cx="5.6" cy="10.2" r="2.1"></circle><circle cx="9.2" cy="5.6" r="2.1"></circle><circle cx="14.8" cy="5.6" r="2.1"></circle><circle cx="18.4" cy="10.2" r="2.1"></circle><path d="M12 11.6c-2.9 0-5.7 3.3-5.7 5.8 0 1.7 1.2 2.6 2.7 2.6 1.3 0 2-.7 3-.7s1.7.7 3 .7c1.5 0 2.7-.9 2.7-2.6 0-2.5-2.8-5.8-5.7-5.8z"></path></svg>
+</div>
+<nav aria-label="Język" style="display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(26,31,28,.06)">
+<a href="#" aria-current="true" style="min-width: 40px; padding: 7px 10px; border-radius: 999px; background: #1F4D3F; color: #FFFFFF; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none">PL</a>
+<a href="#" style="min-width: 40px; padding: 7px 10px; border-radius: 999px; color: #1A1F1C; font-size: 13px; font-weight: 700; text-align: center; text-decoration: none">EN</a>
+</nav>
+</div>
+
+<div class="r1" style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 8px">
+<h1 class="disp" style="margin: 0; font-size: 40px; line-height: 1; font-weight: 800">Zwierzęta</h1>
+<button class="ghost" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 8px; border: 0; border-radius: 999px; background: #FFFFFF; color: #1F4D3F; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgba(26,31,28,.06)"><span style="width: 30px; height: 30px; border-radius: 50%; background: #DCE8E1; display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px"><path d="M12 5v14M5 12h14"></path></svg></span>Dodaj zwierzaka</button>
+</div>
+
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+<li class="r2"><a class="row" href="Mobile-Profile.dc.html" aria-label="Pokaż dokumenty: Czarek" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 24px; background: #FFFFFF; color: #1A1F1C; text-decoration: none; box-shadow: 0 1px 2px rgba(26,31,28,.04), 0 6px 18px rgba(26,31,28,.05)">
+<span class="disp" style="width: 56px; height: 56px; border-radius: 18px; background: #FDE7D8; color: #8A4317; display: grid; place-items: center; font-size: 24px; font-weight: 800">C</span>
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-size: 18px; font-weight: 700">Czarek</span><span style="font-size: 14px; color: #5B635E">12 dokumentów</span></span>
+<span class="go" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F2EC; display: grid; place-items: center; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><path d="m9 6 6 6-6 6"></path></svg></span>
+</a></li>
+<li class="r3"><a class="row" href="Mobile-Profile.dc.html" aria-label="Pokaż dokumenty: Luna" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 24px; background: #FFFFFF; color: #1A1F1C; text-decoration: none; box-shadow: 0 1px 2px rgba(26,31,28,.04), 0 6px 18px rgba(26,31,28,.05)">
+<span class="disp" style="width: 56px; height: 56px; border-radius: 18px; background: #DCE8E1; color: #1F4D3F; display: grid; place-items: center; font-size: 24px; font-weight: 800">L</span>
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-size: 18px; font-weight: 700">Luna</span><span style="font-size: 14px; color: #5B635E">3 dokumenty</span></span>
+<span class="go" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F2EC; display: grid; place-items: center; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><path d="m9 6 6 6-6 6"></path></svg></span>
+</a></li>
+<li class="r4"><a class="row" href="Mobile-Profile.dc.html" aria-label="Pokaż dokumenty: Bruno" style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 24px; background: #FFFFFF; color: #1A1F1C; text-decoration: none; box-shadow: 0 1px 2px rgba(26,31,28,.04), 0 6px 18px rgba(26,31,28,.05)">
+<span class="disp" style="width: 56px; height: 56px; border-radius: 18px; background: #E9E4F2; color: #4A3A6B; display: grid; place-items: center; font-size: 24px; font-weight: 800">B</span>
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-size: 18px; font-weight: 700">Bruno</span><span style="font-size: 14px; color: #5B635E">1 dokument</span></span>
+<span class="go" style="width: 40px; height: 40px; border-radius: 50%; background: #F3F2EC; display: grid; place-items: center; color: #1F4D3F"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><path d="m9 6 6 6-6 6"></path></svg></span>
+</a></li>
+</ul>
+
+<details class="r5" open="">
+<summary style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 6px; border-radius: 14px; color: #5B635E; font-weight: 700; cursor: pointer">
+<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"></path></svg>
+<span style="flex: 1">Nieaktywne (1)</span>
+<svg class="i chev" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px"><path d="m6 9 6 6 6-6"></path></svg>
+</summary>
+<a class="row" href="Mobile-Profile.dc.html" aria-label="Pokaż dokumenty: Fiona" style="display: flex; align-items: center; gap: 14px; padding: 14px; margin-top: 8px; border-radius: 24px; background: transparent; border: 1.5px dashed #CFD3CC; color: #1A1F1C; text-decoration: none">
+<span class="disp" style="width: 56px; height: 56px; border-radius: 18px; background: #ECEBE5; color: #5B635E; display: grid; place-items: center; font-size: 24px; font-weight: 800">F</span>
+<span style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0"><span style="font-size: 18px; font-weight: 700">Fiona</span><span style="font-size: 14px; color: #5B635E">5 dokumentów</span></span>
+<span style="padding: 5px 10px; border-radius: 999px; background: #ECEBE5; color: #3A413D; font-size: 12px; font-weight: 700">Nieaktywny</span>
+</a>
+</details>
+</div>
+
+<nav aria-label="Nawigacja główna" style="position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 6px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 2px 4px rgba(26,31,28,.04), 0 16px 40px rgba(26,31,28,.14); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) 60px; gap: 4px">
+<a class="tab" href="Mobile-Search.dc.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Szukaj</a>
+<a class="tab" href="Mobile-Add.dc.html"><span style="width: 28px; height: 28px; border-radius: 50%; background: #F29E6B; color: #1A1F1C; display: grid; place-items: center"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; height: 18px; stroke-width: 2.25"><path d="M12 5v14M5 12h14"></path></svg></span>Dodaj</a>
+<a class="tab on" href="Mobile-Animals.dc.html" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.6" cy="10.2" r="2"></circle><circle cx="9.2" cy="5.6" r="2"></circle><circle cx="14.8" cy="5.6" r="2"></circle><circle cx="18.4" cy="10.2" r="2"></circle><path d="M12 12c-2.8 0-5.5 3.2-5.5 5.6 0 1.6 1.2 2.4 2.6 2.4 1.2 0 1.9-.6 2.9-.6s1.7.6 2.9.6c1.4 0 2.6-.8 2.6-2.4 0-2.4-2.7-5.6-5.5-5.6z"></path></svg>Zwierzęta</a>
+<a class="tab" href="Mobile-Signin.dc.html" aria-label="Wyloguj się"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

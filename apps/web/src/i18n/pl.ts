@@ -2,6 +2,8 @@ import type { Messages } from './en';
 
 export const messages = {
   appName: 'Ogarniamy Zwierzaki',
+  authTagline: 'Prywatne archiwum dokumentów weterynaryjnych',
+  authPrivacyNote: 'Oryginały widzi tylko właściciel konta',
   signIn: 'Zaloguj się',
   createAccount: 'Utwórz konto',
   email: 'E-mail',
@@ -122,6 +124,7 @@ export const messages = {
   storedNotice: 'Oryginał jest bezpiecznie zapisany.',
   originals: 'Oryginały',
   pageLabel: 'Strona {position} z {total}',
+  originalPagesLabel: 'Strony',
   openOriginal: 'Otwórz oryginał',
   downloadOriginal: 'Pobierz oryginał',
   openPdf: 'Otwórz PDF',

@@ -1,5 +1,7 @@
 export const messages = {
   appName: 'Ogarniamy Zwierzaki',
+  authTagline: 'Private archive of veterinary documents',
+  authPrivacyNote: 'Only the account owner can see the originals',
   signIn: 'Sign in',
   createAccount: 'Create account',
   email: 'Email',
@@ -120,6 +122,7 @@ export const messages = {
   storedNotice: 'The original is stored safely.',
   originals: 'Originals',
   pageLabel: 'Page {position} of {total}',
+  originalPagesLabel: 'Pages',
   openOriginal: 'Open original',
   downloadOriginal: 'Download original',
   openPdf: 'Open PDF',

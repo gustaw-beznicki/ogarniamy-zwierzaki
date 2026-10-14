@@ -1,11 +1,35 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import type { Locale, Messages } from '../i18n';
-import { countLabel, formatEventDate, interpolate, uuidQueryParameter } from '../i18n/format';
+import { countLabel, formatEventDate, formatEventMonth, formatTimestamp, interpolate, uuidQueryParameter } from '../i18n/format';
 import { clientLocalePath } from '../i18n/paths';
 import { ApiError, api, type Animal, type DocumentSummary } from '../lib/api';
+import { Alert } from './Alert';
+import { AnimalAvatar } from './AnimalAvatar';
 import { AnimalNameForm, errorMessage } from './AnimalNameForm';
+import { BrandMark, Icon } from './Icon';
+import { PageState } from './PageState';
 
 const pageSize = 20;
+
+type MonthGroup = { key: string; documents: DocumentSummary[] };
+
+// Groups the already-ordered history by the yyyy-MM of its event date without re-sorting. Rows appended by
+// "Show more" for a month already shown join that month's group, so each distinct month has one heading.
+function groupByMonth(documents: DocumentSummary[]): MonthGroup[] {
+  const groups: MonthGroup[] = [];
+  const byKey = new Map<string, MonthGroup>();
+  for (const document of documents) {
+    const key = document.eventDate.slice(0, 7);
+    let group = byKey.get(key);
+    if (!group) {
+      group = { key, documents: [] };
+      byKey.set(key, group);
+      groups.push(group);
+    }
+    group.documents.push(document);
+  }
+  return groups;
+}
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'failed' | 'accountChanged';
 // Only one profile edit is open at a time, so an edit never starts from a version another open edit is about to change.
@@ -191,42 +215,60 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
     }
   }
 
-  const backToAnimals = <a className="back-link" href={clientLocalePath(locale, 'animals')}><span aria-hidden="true">‹</span> {messages.backToAnimals}</a>;
+  const backToAnimals = <a className="back-link" href={clientLocalePath(locale, 'animals')}>
+    <span className="back-bubble" aria-hidden="true"><Icon name="chevronLeft" size={20} /></span>{messages.backToAnimals}
+  </a>;
 
   if (state === 'loading') return <main className="content"><p className="loading" role="status">{messages.loadingContent}</p></main>;
   if (state === 'accountChanged') {
-    return <main className="content"><p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.readingAccountChanged}</p></main>;
+    return <main className="content"><Alert variant="warning" role="alert">{messages.readingAccountChanged}</Alert></main>;
   }
   if (state === 'unavailable' || state === 'failed' || !animal) {
-    return <main className="content">{backToAnimals}<p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {state === 'failed' ? messages.request_failed : messages.documentsUnavailable}</p></main>;
+    return <main className="content">
+      <PageState tone="error" headingLevel={1} title={state === 'failed' ? messages.request_failed : messages.documentsUnavailable} action={backToAnimals} />
+    </main>;
   }
 
-  const conflictNotice = (text: string) => <div className="notice" role="alert">
-    <p>{text}</p>
-    <button type="button" className="secondary" disabled={refreshing} onClick={() => void refreshProfile()}>{refreshing ? messages.loadingContent : messages.refresh}</button>
-  </div>;
-  const errorText = mutationError && <p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {errorMessage(messages, mutationError)}</p>;
+  const conflictNotice = (text: string) => <Alert
+    variant="warning"
+    role="alert"
+    action={<button type="button" disabled={refreshing} onClick={() => void refreshProfile()}>{refreshing ? messages.loadingContent : messages.refresh}</button>}
+  >{text}</Alert>;
+  const errorText = mutationError ? <Alert variant="error">{errorMessage(messages, mutationError)}</Alert> : null;
+  const groups = groupByMonth(documents);
+  let rowIndex = 0;
 
   return <main className="content"><section className="documents-section">
     {backToAnimals}
-    <div className="section-header">
-      <div>
-        <p className="eyebrow">{messages.profileTitle}</p>
-        <h1>{animal.name}</h1>
-        <span className={animal.isActive ? 'status-pill' : 'status-pill inactive'}>{animal.isActive ? messages.statusActive : messages.statusInactive}</span>
+    <section className={animal.isActive ? 'profile-hero' : 'profile-hero inactive'} aria-labelledby="profile-name">
+      {animal.isActive && <BrandMark size={170} className="profile-hero-paw" />}
+      <div className="profile-hero-head">
+        <AnimalAvatar animal={animal} locale={locale} size="hero" />
+        <div className="profile-hero-text">
+          <h1 id="profile-name">{animal.name}</h1>
+          <div className="profile-hero-meta">
+            <span className="status-pill"><span className="status-dot" aria-hidden="true" />{animal.isActive ? messages.statusActive : messages.statusInactive}</span>
+            <span className="profile-hero-count">{countLabel(locale, messages, 'documentCount', animal.storedDocumentCount)}</span>
+          </div>
+        </div>
       </div>
-      {animal.isActive && <a className="primary button-link" href={`${clientLocalePath(locale, 'add')}?animalId=${encodeURIComponent(animal.id)}`}>{messages.addDocument}</a>}
-    </div>
-    {!animal.isActive && <p className="notice profile-notice">{messages.inactiveProfileNotice}</p>}
-    <p className="profile-status" role="status">{notice}</p>
+      {mode === 'idle' && <div className="profile-actions">
+        <button ref={editButton} type="button" className="glass-button" disabled={busy} onClick={startRename}><Icon name="pencil" size={18} />{messages.editName}</button>
+        {animal.isActive && <button ref={activityButton} type="button" className="glass-button" disabled={busy} onClick={startInactivate}><Icon name="archive" size={18} />{messages.markInactive}</button>}
+      </div>}
+    </section>
+    {!animal.isActive && <Alert
+      variant="warning"
+      action={mode === 'idle'
+        ? <button ref={activityButton} type="button" disabled={busy || conflict === 'activity'} onClick={() => void changeActivity(true, animal.version)}>{busy ? messages.saving : messages.markActive}</button>
+        : undefined}
+    >{messages.inactiveProfileNotice}</Alert>}
+    {/* Persistent live region: the Alert inside it is not a live region itself. */}
+    <div className="profile-status" role="status">{notice
+      ? <Alert variant={notice === messages.profileRefreshedActivity ? 'info' : 'success'} compact role={null}>{notice}</Alert>
+      : null}</div>
 
-    {mode === 'idle' && <div className="profile-controls">
-      <div className="profile-actions">
-        <button ref={editButton} type="button" className="secondary" disabled={busy} onClick={startRename}>{messages.editName}</button>
-        {animal.isActive
-          ? <button ref={activityButton} type="button" className="secondary" disabled={busy} onClick={startInactivate}>{messages.markInactive}</button>
-          : <button ref={activityButton} type="button" className="primary" disabled={busy || conflict === 'activity'} onClick={() => void changeActivity(true, animal.version)}>{busy ? messages.saving : messages.markActive}</button>}
-      </div>
+    {mode === 'idle' && <div className="profile-messages">
       {conflict === 'activity' && conflictNotice(messages.activityChanged)}
       {errorText}
     </div>}
@@ -246,34 +288,57 @@ export function AnimalDocuments({ locale, messages }: { locale: Locale; messages
         autoFocus
       >
         {conflict === 'rename' && conflictNotice(messages.animal_changed)}
-        {refreshedDraft && <p className="hint">{interpolate(messages.profileRefreshedDraft, { name: animal.name })}</p>}
+        {refreshedDraft && <Alert variant="info" compact role={null}>{interpolate(messages.profileRefreshedDraft, { name: animal.name })}</Alert>}
       </AnimalNameForm>
     </section>}
 
-    {mode === 'confirmInactive' && <section className="card profile-edit" role="group" aria-labelledby="inactivate-title" aria-describedby="inactivate-body" tabIndex={-1} autoFocus>
+    {mode === 'confirmInactive' && <section className="card profile-edit profile-confirm" role="group" aria-labelledby="inactivate-title" aria-describedby="inactivate-body" tabIndex={-1} autoFocus>
+      <span className="tile tile-warning" aria-hidden="true"><Icon name="archive" /></span>
       <h2 id="inactivate-title">{interpolate(messages.confirmInactiveTitle, { name: animal.name })}</h2>
       <p id="inactivate-body">{messages.confirmInactiveBody}</p>
       {conflict === 'activity' && conflictNotice(messages.activityChanged)}
       {errorText}
-      <div className="form-actions">
-        <button type="button" className="primary" disabled={busy || conflict === 'activity'} onClick={() => void changeActivity(false, editVersion)}>{busy ? messages.saving : messages.markInactive}</button>
+      <div className="form-actions confirm-actions">
         <button type="button" className="secondary" disabled={busy} onClick={() => cancel(activityButton)}>{messages.cancel}</button>
+        <button type="button" className="primary" disabled={busy || conflict === 'activity'} onClick={() => void changeActivity(false, editVersion)}>{busy ? messages.saving : messages.markInactive}</button>
       </div>
     </section>}
 
-    <h2 className="history-title">{messages.documentsTitle}</h2>
-    <p className="hint history-hint">{messages.documentsOrder}</p>
+    <div className="history-header">
+      <div>
+        <h2 className="history-title">{messages.documentsTitle}</h2>
+        <p className="hint">{messages.documentsOrder}</p>
+      </div>
+      {animal.isActive && <a className="accent history-add" href={`${clientLocalePath(locale, 'add')}?animalId=${encodeURIComponent(animal.id)}`}><Icon name="plus" size={18} />{messages.addDocument}</a>}
+    </div>
     {documents.length === 0
-      ? <p className="notice">{messages.documentsEmpty}</p>
-      : <ul className="document-list">{documents.map((document) => {
-        const date = formatEventDate(locale, document.eventDate);
-        return <li key={document.id}><a className="document-link" href={`${clientLocalePath(locale, 'document')}?id=${encodeURIComponent(document.id)}`} aria-label={`${interpolate(messages.openDocumentLabel, { date })}, ${countLabel(locale, messages, 'fileCount', document.fileCount)}`}>
-          <span className="file-icon" aria-hidden="true">▤</span>
-          <span className="document-meta"><span className="document-date">{date}</span><span className="muted">{messages.eventDate} · {countLabel(locale, messages, 'fileCount', document.fileCount)}</span></span>
-          <span className="chevron" aria-hidden="true">›</span>
-        </a></li>;
-      })}</ul>}
-    {moreFailed && <p className="error" role="alert"><span aria-hidden="true">ⓘ</span> {messages.request_failed}</p>}
-    {hasMore && <button type="button" className="secondary show-more" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? messages.loadingContent : messages.showMore}</button>}
+      ? <Alert variant="info">{messages.documentsEmpty}</Alert>
+      : <div className="timeline">
+        <span className="timeline-rail" aria-hidden="true" />
+        {groups.map((group) => <div key={group.key} className="timeline-group">
+          <h3 className="timeline-month">{formatEventMonth(locale, group.documents[0].eventDate)}</h3>
+          <ul className="document-list">{group.documents.map((document) => {
+            const date = formatEventDate(locale, document.eventDate);
+            const files = countLabel(locale, messages, 'fileCount', document.fileCount);
+            const style = { '--i': Math.min(rowIndex++, 10) } as CSSProperties;
+            return <li key={document.id} className="timeline-item rise" style={style}>
+              <span className="timeline-dot" aria-hidden="true" />
+              <a className="document-link" href={`${clientLocalePath(locale, 'document')}?id=${encodeURIComponent(document.id)}`} aria-label={`${interpolate(messages.openDocumentLabel, { date })}, ${files}`}>
+                <span className="document-tile" aria-hidden="true"><Icon name="document" /></span>
+                <span className="document-meta">
+                  <span className="document-date">{date}</span>
+                  <span className="muted">{files}</span>
+                  <span className="muted">{`${messages.uploadedOn}: ${formatTimestamp(locale, document.uploadedAt)}`}</span>
+                </span>
+                <Icon name="chevronRight" size={20} className="document-chevron" />
+              </a>
+            </li>;
+          })}</ul>
+        </div>)}
+      </div>}
+    {moreFailed && <Alert variant="error">{messages.request_failed}</Alert>}
+    {hasMore && <button type="button" className="show-more" disabled={loadingMore} onClick={() => void loadMore()}>
+      {loadingMore ? messages.loadingContent : messages.showMore}<Icon name="chevronDown" size={18} />
+    </button>}
   </section></main>;
 }

@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-10-12
+updated: 2026-10-19
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -46,7 +46,7 @@ Owners of animals with years of treatment history keep vet documents on paper an
 | S-01 | account-and-first-animal             | register, sign in, set up the first animal, and see only own data                    | F-01, F-02    | FR-001, FR-002, FR-003, §Access Control     | done |
 | S-02 | capture-document-original            | photograph or upload a document, assign animal + date, reopen the private original   | S-01          | US-01, FR-006, FR-007, FR-008, §Guardrails  | done |
 | S-03 | read-document-content                | have each stored document's content read in the background with nothing typed       | S-02          | US-01, FR-009, §NFR (privacy, original always openable) | done |
-| S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | proposed |
+| S-04 | semantic-search-with-fragments       | ask in ordinary words and get related own documents with the matching fragment       | S-03          | US-02, FR-010, FR-013, FR-002, §Business Logic | planning |
 | S-05 | search-filter-and-unavailable-notice | narrow results to one animal; see an explicit notice when search is unavailable      | S-04          | US-02, FR-011, FR-012                       | proposed |
 | S-06 | animal-profiles-and-history          | keep several animals, edit / mark inactive, see an animal's documents by event date  | S-02          | FR-004, FR-005, FR-014                      | done |
 
@@ -154,7 +154,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - What is the similarity threshold, and how is it set? — Owner: user. Block: no. Start with a provisional value and tune it against a real archive (Open Roadmap Question 1).
 - **Risk:** The north star. It carries the first test written from the user's perspective, from typing a query to opening the original (`shape-notes.md` Forward). The key risk is a vector query returning another account's fragment (FR-002), which is tested explicitly.
-- **Status:** proposed
+- **Status:** planning
 
 ### S-05: Narrow to one animal and the "search unavailable" notice
 

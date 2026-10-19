@@ -1,6 +1,6 @@
 ---
 project: "Ogarniamy zwierzaki"
-version: 1
+version: 2
 status: draft
 created: 2026-09-15
 context_type: greenfield
@@ -312,13 +312,19 @@ Non-Goals rather than kept as deferred requirements. FR-015 to FR-018 were added
 
 - A search returns its result in under about two seconds as the owner perceives it, and shows
   continuous visible progress whenever it takes longer.
-- Document content leaves the product's boundary only for text-reading processing. Azure Document
-  Intelligence may temporarily retain submitted input and analysis results for its documented
-  window of up to 24 hours after analysis completes. The product must request deletion immediately
-  after durably retrieving the result and retry unfinished cleanup after failures or restarts.
-  This bounded provider-retention exception was accepted by the owner on 2026-10-04 while planning
-  S-03; it replaces the previous immediate post-processing non-retention requirement. Content is
-  never used to train anything. See [Azure's data privacy documentation](https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/document-intelligence/data-privacy-security).
+- Document content leaves the product's boundary only for text reading and for semantic indexing
+  (embeddings of document text and of search queries), and is processed only in the EU. Azure
+  Document Intelligence may temporarily retain submitted input and analysis results for its
+  documented window of up to 24 hours after analysis completes. The product must request deletion
+  immediately after durably retrieving the result and retry unfinished cleanup after failures or
+  restarts. This bounded provider-retention exception was accepted by the owner on 2026-10-04
+  while planning S-03; it replaces the previous immediate post-processing non-retention
+  requirement. Embeddings are produced by the Azure OpenAI regional (not global) deployment in
+  Sweden (`swedencentral`). Azure abuse monitoring may store prompts and completions in the
+  resource's geography, reviewed only by EEA-based reviewers; the owner accepted this on
+  2026-10-19 while planning S-04. Content is never used to train anything. See
+  [Azure's data privacy documentation for Document Intelligence](https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/document-intelligence/data-privacy-security)
+  and Microsoft's [Data, privacy, and security for Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/openai/data-privacy).
 - The product is usable in current browsers on both a phone and a desktop — capture happens on the
   phone right after a visit, assembly happens wherever the owner sits the evening before the next
   one.

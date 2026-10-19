@@ -72,6 +72,21 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2025-08-0
   ]
 }
 
+// Allowlists the pgvector extension so the startup migration can run CREATE EXTENSION vector.
+// Serialized after the database like the other server children (see the comment above).
+resource extensions 'Microsoft.DBforPostgreSQL/flexibleServers/configurations@2025-08-01' = {
+  parent: server
+  name: 'azure.extensions'
+  properties: {
+    value: 'VECTOR'
+    source: 'user-override'
+  }
+  dependsOn: [
+    administrator
+    database
+  ]
+}
+
 // A separate module: the rule count is known only at deployment time, so what-if cannot expand this module.
 // Keeping the loop in its own module lets what-if still show the server, administrator and database above.
 module firewall 'postgres-firewall.bicep' = if (applyFirewallRules) {
@@ -82,6 +97,7 @@ module firewall 'postgres-firewall.bicep' = if (applyFirewallRules) {
   }
   dependsOn: [
     database
+    extensions
   ]
 }
 

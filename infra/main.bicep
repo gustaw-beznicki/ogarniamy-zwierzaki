@@ -41,11 +41,29 @@ var documentIntelligenceName = 'di-ogarniamy-${uniqueString(resourceGroup().id)}
 var documentReadingModelId = 'prebuilt-read'
 var documentReadingApiVersion = '2024-11-30'
 
+// Computed here for the same reason; bootstrap/embedding-access.bicep must use the same value. The API's
+// Cognitive Services OpenAI User role is granted once by the owner (embedding-access.bicep), never here.
+var embeddingsAccountName = 'oai-ogarniamy-${uniqueString(resourceGroup().id)}'
+var embeddingDeploymentName = 'text-embedding-3-large'
+// text-embedding-3-large returns 3072 dimensions natively; 1536 are requested to keep the vector index small.
+var embeddingDimensions = 1536
+// Provisional cosine-similarity cutoff, to be calibrated on real documents.
+var searchMinSimilarity = '0.30'
+
 module documentIntelligence 'modules/document-intelligence.bicep' = {
   name: 'ogarniamy-document-intelligence'
   params: {
     accountName: documentIntelligenceName
     location: location
+  }
+}
+
+module embeddings 'modules/embeddings.bicep' = {
+  name: 'ogarniamy-embeddings'
+  params: {
+    accountName: embeddingsAccountName
+    location: location
+    deploymentName: embeddingDeploymentName
   }
 }
 
@@ -69,6 +87,10 @@ module appService 'modules/app-service.bicep' = {
     documentIntelligenceEndpoint: documentIntelligence.outputs.endpoint
     documentReadingModelId: documentReadingModelId
     documentReadingApiVersion: documentReadingApiVersion
+    embeddingEndpoint: embeddings.outputs.endpoint
+    embeddingDeployment: embeddings.outputs.deploymentName
+    embeddingDimensions: embeddingDimensions
+    searchMinSimilarity: searchMinSimilarity
   }
 }
 
@@ -103,3 +125,5 @@ output postgresServerName string = postgres.outputs.name
 output storageAccountName string = storage.outputs.name
 output documentIntelligenceName string = documentIntelligence.outputs.name
 output documentIntelligenceEndpoint string = documentIntelligence.outputs.endpoint
+output embeddingsAccountName string = embeddings.outputs.name
+output embeddingsEndpoint string = embeddings.outputs.endpoint

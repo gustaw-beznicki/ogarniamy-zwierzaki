@@ -75,6 +75,16 @@ These steps are done once by a subscription owner, because CI deliberately lacks
      --parameters location=swedencentral apiPrincipalId="${API_PRINCIPAL_ID}"
    ```
 
+   Grant the API **Cognitive Services OpenAI User** on the Azure OpenAI embeddings account with [`infra/bootstrap/embedding-access.bicep`](../infra/bootstrap/embedding-access.bicep), which works the same way (same shared module, role scoped to that account only, optional `developerPrincipalIds`). Run it once, before the embedding worker is enabled:
+
+   ```bash
+   az deployment group create \
+     --resource-group rg-ogarniamy-mvp \
+     --name ogarniamy-embedding-access \
+     --template-file infra/bootstrap/embedding-access.bicep \
+     --parameters location=swedencentral apiPrincipalId="${API_PRINCIPAL_ID}"
+   ```
+
 4. **Configure GitHub.** Add repository variables `AZURE_CLIENT_ID` (deploy identity), `AZURE_PR_CLIENT_ID` (PR identity), `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` from the bootstrap outputs. Create two environments, both with a branch policy allowing only `main`: `production-approval` with a required reviewer (the approval gate), and `production` without reviewers (the deploy job; its OIDC subject is the one the deploy identity trusts).
 
 What the bootstrap grants:
@@ -101,6 +111,20 @@ Operating notes:
 - **Pausing reading.** Set `DocumentReading__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Queued jobs wait, and provider cleanup pauses with the worker. Failed jobs stay failed until their owner presses Retry.
 - **Reading outages** (provider down, missing role, wrong endpoint) mark affected jobs failed or retry them later. They do not affect `/api/health`, capture or original downloads.
 - **Operating procedures.** Job states, failure codes, read-only inspection queries, pause and resume, operator requeue and rollback are in [Operate document reading](sop/operate-document-reading.md).
+
+## Rolling out semantic search
+
+Embeddings are switched on in stages, like reading, so each stage can be checked before the next one and originals never depend on it. Content is embedded only in the EU: the Azure OpenAI account and its `text-embedding-3-large` deployment (sku `Standard`, regional) live in `swedencentral`.
+
+1. **Account, extension and settings.** An approved deployment creates the Azure OpenAI account and deployment, allowlists the `vector` extension (`azure.extensions` server parameter) and adds the `Embedding__*` and `Search__MinSimilarity` settings with the worker off. Check its `what-if` first: one new Cognitive Services account and deployment, the `azure.extensions` configuration and the app settings, and no SKU, network, firewall or role assignment changes. The owner grants Cognitive Services OpenAI User (step 3 of the bootstrap above).
+2. **Schema and application, worker off.** The release with the search migration deploys with `Embedding__WorkerEnabled=false`; the migration creates the `vector` extension. Capture, originals and reading work as before.
+3. **Verify configuration.** `/api/health` is healthy, the smoke test passes, and the API's startup log reports embeddings as available with the worker disabled.
+4. **Activate the worker.** A separate, approved release sets `Embedding__WorkerEnabled` to `true` in `app-service.bicep`. Role assignments can take several minutes to take effect, so check the role before this release.
+
+Operating notes:
+
+- **Pausing.** Set `Embedding__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Stored text and originals are untouched.
+- **Similarity cutoff.** `Search__MinSimilarity` (`0.30`) is provisional; calibrate it on real documents and change it in `main.bicep`.
 
 ## Smoke test
 

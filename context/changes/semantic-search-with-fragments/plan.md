@@ -515,8 +515,8 @@ change re-queue documents.
 
 #### Automated
 
-- [x] 1.1 Bicep lints: `infra/deploy.sh lint`
-- [x] 1.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`
+- [x] 1.1 Bicep lints: `infra/deploy.sh lint` — 3d3e804
+- [x] 1.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` — 3d3e804
 
 #### Manual
 

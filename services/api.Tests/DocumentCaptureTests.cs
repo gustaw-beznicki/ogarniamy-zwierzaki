@@ -412,28 +412,31 @@ public sealed class DocumentCaptureTests(ApiFactory factory) : IClassFixture<Api
     [Fact]
     public async Task Event_dates_up_to_local_today_are_accepted_in_the_supplied_time_zone()
     {
-        // 22:30 UTC on 4 October 2026: already 5 October in Warsaw (UTC+2), still 4 October in Los Angeles (UTC-7).
-        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 10, 4, 22, 30, 0, TimeSpan.Zero));
+        // 23:30 UTC today: already tomorrow in Warsaw (UTC+1/+2), still today in Los Angeles (UTC-7/-8). Anchored on
+        // the real date, because the sign-in session is checked against the real clock and a fixed past date expires it.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var clock = new FixedTimeProvider(new DateTimeOffset(today.ToDateTime(new TimeOnly(23, 30)), TimeSpan.Zero));
+        var day = (int offset) => today.AddDays(offset).ToString("yyyy-MM-dd");
         await using var host = factory.WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(clock)));
         using var client = await host.CreateCaptureClientAsync();
         var animalId = await client.CreateAnimalIdAsync();
 
-        await AssertCreatedAsync(client, DocumentApi.Manifest(animalId, "2026-10-05", "Europe/Warsaw", TestOriginal.Png()));
+        await AssertCreatedAsync(client, DocumentApi.Manifest(animalId, day(1), "Europe/Warsaw", TestOriginal.Png()));
         await AssertManifestProblemAsync(
-            client, DocumentApi.Manifest(animalId, "2026-10-06", "Europe/Warsaw", TestOriginal.Png()),
+            client, DocumentApi.Manifest(animalId, day(2), "Europe/Warsaw", TestOriginal.Png()),
             HttpStatusCode.BadRequest, "future_event_date");
 
-        await AssertCreatedAsync(client, DocumentApi.Manifest(animalId, "2026-10-04", "America/Los_Angeles", TestOriginal.Png()));
+        await AssertCreatedAsync(client, DocumentApi.Manifest(animalId, day(0), "America/Los_Angeles", TestOriginal.Png()));
         await AssertManifestProblemAsync(
-            client, DocumentApi.Manifest(animalId, "2026-10-05", "America/Los_Angeles", TestOriginal.Png()),
+            client, DocumentApi.Manifest(animalId, day(1), "America/Los_Angeles", TestOriginal.Png()),
             HttpStatusCode.BadRequest, "future_event_date");
 
         await AssertCreatedAsync(client, DocumentApi.Manifest(animalId, "0001-01-01", "Pacific/Kiritimati", TestOriginal.Png()));
 
         // The date is checked when the operation is created, not again on a retry.
         var operationId = Guid.NewGuid();
-        var manifest = DocumentApi.Manifest(animalId, "2026-10-05", "Europe/Warsaw", TestOriginal.Png());
+        var manifest = DocumentApi.Manifest(animalId, day(1), "Europe/Warsaw", TestOriginal.Png());
         using (var created = await client.PutManifestAsync(operationId, manifest))
         {
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);

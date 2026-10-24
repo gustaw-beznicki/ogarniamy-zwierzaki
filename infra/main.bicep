@@ -31,7 +31,9 @@ param applyFirewallRules bool = true
 
 // Computed once and passed to both modules, so the API's connection setting does not reference the server
 // (whose Entra administrator in turn needs the API's managed identity).
-var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id)}'
+// The region is part of the name: a server whose creation failed in swedencentral (2026-10-24) left an undeletable
+// name reservation there, and a name cannot be reused in another region.
+var postgresServerName = 'psql-ogarniamy-${uniqueString(resourceGroup().id, postgresLocation)}'
 
 // Computed here, not from App Service outputs; bootstrap/storage-access.bicep must use the same values.
 // No role assignment is created here: the API's Blob access is granted once by the owner (storage-access.bicep).

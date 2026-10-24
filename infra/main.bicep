@@ -5,6 +5,9 @@ targetScope = 'resourceGroup'
 @description('Backend region (App Service).')
 param location string
 
+@description('PostgreSQL region. Separate from the backend because swedencentral had no Burstable capacity for the new subscription (2026-10-24).')
+param postgresLocation string
+
 @description('Static Web App resource region; static content is served globally.')
 @allowed([
   'westeurope'
@@ -76,7 +79,7 @@ module postgres 'modules/postgres.bicep' = {
   name: 'ogarniamy-postgres'
   params: {
     serverName: postgresServerName
-    location: location
+    location: postgresLocation
     apiAppName: appService.outputs.name
     apiPrincipalId: appService.outputs.principalId
     // Known only at deployment time, so the module loops over it (a template-level loop fails with BCP178).

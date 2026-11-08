@@ -29,6 +29,18 @@ param documentReadingModelId string
 @description('Document Intelligence REST API version.')
 param documentReadingApiVersion string
 
+@description('Azure OpenAI endpoint, for example https://<account>.openai.azure.com/. Not a secret.')
+param embeddingEndpoint string
+
+@description('Name of the embedding model deployment.')
+param embeddingDeployment string
+
+@description('Number of dimensions requested from the embedding model; must match the vector column.')
+param embeddingDimensions int
+
+@description('Minimum cosine similarity for a search hit; provisional until calibrated on real documents.')
+param searchMinSimilarity string
+
 // The site's own settings need its name, so it is computed once instead of read back from the resource.
 var siteName = 'app-ogarniamy-api-${uniqueString(subscription().id)}'
 
@@ -110,6 +122,33 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
           // cleanup stay in the database (see docs/sop/operate-document-reading.md).
           name: 'DocumentReading__WorkerEnabled'
           value: 'true'
+        }
+        {
+          // No key: the Azure OpenAI account disables local auth; the API uses its managed identity.
+          name: 'Embedding__Auth'
+          value: 'AzureManagedIdentity'
+        }
+        {
+          name: 'Embedding__Endpoint'
+          value: embeddingEndpoint
+        }
+        {
+          name: 'Embedding__Deployment'
+          value: embeddingDeployment
+        }
+        {
+          name: 'Embedding__Dimensions'
+          value: string(embeddingDimensions)
+        }
+        {
+          // Off on the first deploy; set to 'true' in a separate release once the owner has granted the role
+          // (see docs/deployment.md, "Rolling out semantic search").
+          name: 'Embedding__WorkerEnabled'
+          value: 'false'
+        }
+        {
+          name: 'Search__MinSimilarity'
+          value: searchMinSimilarity
         }
       ]
     }

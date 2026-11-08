@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pgvector;
 using ogarniamy_zwierzaki_api.Data;
 
 #nullable disable
@@ -20,6 +21,7 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
@@ -318,6 +320,145 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                     b.ToTable("auth_sessions", null, t =>
                         {
                             t.HasCheckConstraint("ck_auth_sessions_expires_at", "expires_at > created_at");
+                        });
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentEmbedding.DocumentChunk", b =>
+                {
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<int>("ChunkIndex")
+                        .HasColumnType("integer")
+                        .HasColumnName("chunk_index");
+
+                    b.Property<Guid>("DocumentFileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_file_id");
+
+                    b.Property<Vector>("Embedding")
+                        .IsRequired()
+                        .HasColumnType("vector(1536)")
+                        .HasColumnName("embedding");
+
+                    b.Property<string>("EmbeddingVersion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("embedding_version");
+
+                    b.Property<int>("EndOffset")
+                        .HasColumnType("integer")
+                        .HasColumnName("end_offset");
+
+                    b.Property<int>("FilePosition")
+                        .HasColumnType("integer")
+                        .HasColumnName("file_position");
+
+                    b.Property<int>("RunGeneration")
+                        .HasColumnType("integer")
+                        .HasColumnName("run_generation");
+
+                    b.Property<int>("SourcePageNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_page_number");
+
+                    b.Property<int>("StartOffset")
+                        .HasColumnType("integer")
+                        .HasColumnName("start_offset");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("text");
+
+                    b.HasKey("DocumentId", "ChunkIndex")
+                        .HasName("pk_document_chunks");
+
+                    b.HasIndex("DocumentId")
+                        .HasDatabaseName("ix_document_chunks_document_id");
+
+                    b.ToTable("document_chunks", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_document_chunks_provenance", "chunk_index >= 0 AND run_generation >= 1 AND source_page_number >= 1 AND file_position >= 0 AND start_offset >= 0 AND end_offset > start_offset");
+                        });
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentEmbedding.DocumentEmbeddingJob", b =>
+                {
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("DueAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_at");
+
+                    b.Property<string>("EmbeddedAnimalName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("embedded_animal_name");
+
+                    b.Property<int?>("EmbeddedRunGeneration")
+                        .HasColumnType("integer")
+                        .HasColumnName("embedded_run_generation");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_expires_at");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("DocumentId")
+                        .HasName("pk_document_embedding_jobs");
+
+                    b.HasIndex("DueAt")
+                        .HasDatabaseName("ix_document_embedding_jobs_due_queued")
+                        .HasFilter("state = 'queued'");
+
+                    b.HasIndex("LeaseExpiresAt")
+                        .HasDatabaseName("ix_document_embedding_jobs_lease_embedding")
+                        .HasFilter("state = 'embedding'");
+
+                    b.ToTable("document_embedding_jobs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_document_embedding_jobs_counters", "attempt_count >= 0 AND (embedded_run_generation IS NULL OR embedded_run_generation >= 1)");
+
+                            t.HasCheckConstraint("ck_document_embedding_jobs_embedded", "state <> 'embedded' OR (embedded_run_generation IS NOT NULL AND embedded_animal_name IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_document_embedding_jobs_failure_code", "(state = 'failed') = (failure_code IS NOT NULL) AND (failure_code IS NULL OR failure_code ~ '^[a-z0-9_]{1,64}$')");
+
+                            t.HasCheckConstraint("ck_document_embedding_jobs_lease", "(lease_token IS NULL) = (lease_expires_at IS NULL) AND (state = 'embedding') = (lease_token IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_document_embedding_jobs_state", "state IN ('queued', 'embedding', 'embedded', 'failed')");
                         });
                 });
 
@@ -749,6 +890,26 @@ namespace ogarniamy_zwierzaki_api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_auth_sessions_users_user_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentEmbedding.DocumentChunk", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.Documents.Document", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_chunks_documents_document_id");
+                });
+
+            modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentEmbedding.DocumentEmbeddingJob", b =>
+                {
+                    b.HasOne("ogarniamy_zwierzaki_api.Documents.Document", null)
+                        .WithOne()
+                        .HasForeignKey("ogarniamy_zwierzaki_api.DocumentEmbedding.DocumentEmbeddingJob", "DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_embedding_jobs_documents_document_id");
                 });
 
             modelBuilder.Entity("ogarniamy_zwierzaki_api.DocumentReading.DocumentReadingJob", b =>

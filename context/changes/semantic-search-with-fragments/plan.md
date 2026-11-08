@@ -515,21 +515,21 @@ change re-queue documents.
 
 #### Automated
 
-- [ ] 1.1 Bicep lints: `infra/deploy.sh lint`
-- [ ] 1.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`
+- [x] 1.1 Bicep lints: `infra/deploy.sh lint` — 63d1f84
+- [x] 1.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` — 63d1f84
 
 #### Manual
 
-- [ ] 1.3 `infra/deploy.sh what-if` shows only the new OpenAI account and deployment, the `azure.extensions` configuration and new app settings
-- [ ] 1.4 PRD amendment reads correctly and states the EU-only scope and the abuse-monitoring exception
+- [x] 1.3 `infra/deploy.sh what-if` shows only the new OpenAI account and deployment, the `azure.extensions` configuration and new app settings — 63d1f84
+- [x] 1.4 PRD amendment reads correctly and states the EU-only scope and the abuse-monitoring exception — 63d1f84
 
 ### Phase 2: Vector storage and embedding pipeline
 
 #### Automated
 
-- [ ] 2.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`
-- [ ] 2.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`
-- [ ] 2.3 Migration applies on a fresh pgvector database and on a database migrated through `DocumentReading`
+- [x] 2.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj` — 98af4dc
+- [x] 2.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` — 98af4dc
+- [x] 2.3 Migration applies on a fresh pgvector database and on a database migrated through `DocumentReading` — 98af4dc
 
 #### Manual
 
@@ -539,8 +539,8 @@ change re-queue documents.
 
 #### Automated
 
-- [ ] 3.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`
-- [ ] 3.2 Isolation tests for search pass (anonymous, other account, inactive animal)
+- [x] 3.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj` — 3562199
+- [x] 3.2 Isolation tests for search pass (anonymous, other account, inactive animal) — 3562199
 
 #### Manual
 

@@ -2,6 +2,8 @@ using Azure.Core;
 using Azure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Pgvector.EntityFrameworkCore;
+using Pgvector.Npgsql;
 
 namespace ogarniamy_zwierzaki_api.Data;
 
@@ -25,10 +27,23 @@ public static class DatabaseSetup
         await using var scope = app.Services.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
+
+        // The migration may have just created the vector extension; a pooled data source that loaded its type map
+        // before that does not know the vector type yet, so reload it once.
+        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
+        await connection.OpenAsync();
+        try
+        {
+            await connection.ReloadTypesAsync();
+        }
+        finally
+        {
+            await connection.CloseAsync();
+        }
     }
 
     internal static void ConfigureContext(DbContextOptionsBuilder options, NpgsqlDataSource dataSource) =>
-        options.UseNpgsql(dataSource).UseSnakeCaseNamingConvention();
+        options.UseNpgsql(dataSource, npgsql => npgsql.UseVector()).UseSnakeCaseNamingConvention();
 
     private static NpgsqlDataSource CreateDataSource(IConfiguration configuration)
     {
@@ -41,6 +56,7 @@ public static class DatabaseSetup
 
         var options = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
         var builder = new NpgsqlDataSourceBuilder(connectionString);
+        builder.UseVector();
 
         switch (options.Auth)
         {

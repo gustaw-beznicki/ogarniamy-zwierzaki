@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Npgsql;
+using Pgvector.Npgsql;
 
 namespace ogarniamy_zwierzaki_api.Data;
 
@@ -16,7 +17,9 @@ public sealed class DesignTimeAppDbContextFactory : IDesignTimeDbContextFactory<
             .Build();
         var connectionString = configuration.GetConnectionString("Default") ?? "Host=localhost;Database=ogarniamy";
 
-        var dataSource = new NpgsqlDataSourceBuilder(connectionString).Build();
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.UseVector();
+        var dataSource = dataSourceBuilder.Build();
         var options = new DbContextOptionsBuilder<AppDbContext>();
         DatabaseSetup.ConfigureContext(options, dataSource);
         return new AppDbContext(options.Options);

@@ -14,7 +14,7 @@ cp .env.example .env          # then set POSTGRES_PASSWORD to any local password
 docker compose up -d
 ```
 
-This starts PostgreSQL and [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite), the local Blob Storage emulator that holds document originals.
+This starts PostgreSQL 17 with the [pgvector](https://github.com/pgvector/pgvector) extension (the `pgvector/pgvector:0.8.2-pg17` image; the first migration that needs it creates the extension) and [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite), the local Blob Storage emulator that holds document originals.
 
 If port 5432 is already taken on your machine, set `POSTGRES_PORT` in `.env` (for example `5433`) and use that port in the connection string below. The same applies to Azurite's `AZURITE_BLOB_PORT` (default `10000`).
 
@@ -72,6 +72,12 @@ To look at stored originals, list the `originals` container with [Azure Storage 
 | `DocumentReading:ModelId`, `DocumentReading:ApiVersion`, `DocumentReading:TokenScope`, `DocumentReading:HttpTimeout` | model id, API version, scope URI, `hh:mm:ss` | Provider call settings. Defaults (`prebuilt-read`, `2024-11-30`, the Cognitive Services scope, 30 seconds) are in `appsettings.json`. |
 | `DocumentReading:WorkerEnabled` | `false` (default), `true` | Whether background reading runs, separately from `Auth`. |
 
+| `Embedding:Auth` | `Disabled` (default), `AzureManagedIdentity`, `DeveloperCredential` | How the API authenticates to the Azure OpenAI embedding deployment. `Disabled` turns embedding off; `DeveloperCredential` uses your `az login` identity (role **Cognitive Services OpenAI User**) and is refused outside the `Development` environment. Invalid embedding settings log a warning at startup and turn embedding off; the API still starts. |
+| `Embedding:Endpoint` | `https://<account>.openai.azure.com/` | Required unless embedding is `Disabled`. Not a secret: the resource accepts only Entra ID tokens. |
+| `Embedding:Deployment`, `Embedding:Dimensions`, `Embedding:TokenScope`, `Embedding:HttpTimeout` | deployment name, integer, scope URI, `hh:mm:ss` | Provider call settings. Defaults (`text-embedding-3-large`, `1536`, the Cognitive Services scope, 30 seconds) are in `appsettings.json`. `Dimensions` must stay `1536`, the size of the stored vector column. |
+| `Embedding:WorkerEnabled` | `false` (default), `true` | Whether the background embedding worker runs, separately from `Auth`. |
+| `Search:MinSimilarity` | number between 0 and 1, default `0.30` | Cosine similarity threshold used by semantic search. |
+
 Secrets never go into tracked files: local passwords and connection strings live in `.env` (gitignored) and user secrets; Azure uses managed identities.
 
 ## Reading probe (optional)
@@ -105,6 +111,20 @@ dotnet run --project services/api
 The startup log says whether reading is available and whether the worker runs. The worker waits 60 seconds after startup, then retries due provider cleanup and reads due documents one at a time, including every `Stored` document already in your local database. Each photo and each PDF page without a usable text layer is sent to Azure and billed, so use a separate local database (a different `Database=` name in `ConnectionStrings:Default`) if your existing one holds documents you do not want read. Use only synthetic or your own non-sensitive files.
 
 To stop reading, remove `DocumentReading:WorkerEnabled` (or set it to `false`) and restart; jobs, read text and pending cleanups stay in the database.
+
+## Background embedding (optional)
+
+Once a document is read, a second background worker cuts its text into chunks, embeds them with Azure OpenAI and stores the vectors in PostgreSQL (pgvector). It is off by default. To embed locally, use your own identity (role **Cognitive Services OpenAI User** on the resource) and turn the worker on:
+
+```bash
+az login
+dotnet user-secrets set Embedding:Auth DeveloperCredential --project services/api
+dotnet user-secrets set Embedding:Endpoint "https://<account>.openai.azure.com/" --project services/api
+dotnet user-secrets set Embedding:WorkerEnabled true --project services/api
+dotnet run --project services/api
+```
+
+The startup log says whether embedding is available and whether the worker runs. Every document that is already read (and every one read or renamed later) is queued for embedding, so use a separate local database if your existing one holds documents you do not want sent to Azure. Use only synthetic or your own non-sensitive files. Remove `Embedding:WorkerEnabled` (or set it to `false`) and restart to stop; jobs and stored vectors stay in the database.
 
 ## Database migrations
 

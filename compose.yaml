@@ -2,7 +2,8 @@
 # The PostgreSQL password comes from the untracked .env (see .env.example).
 services:
   postgres:
-    image: postgres:17
+    # PostgreSQL 17 with the pgvector extension; pinned, the integration tests use the same image.
+    image: pgvector/pgvector:0.8.2-pg17
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ogarniamy

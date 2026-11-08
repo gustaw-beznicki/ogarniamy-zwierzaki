@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.DocumentEmbedding;
 using ogarniamy_zwierzaki_api.Documents;
 
 namespace ogarniamy_zwierzaki_api.DocumentReading;
@@ -242,7 +243,7 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
     // The pages must cover every original of the document: pages 1..n of the PDF, page 1 of each photo; blank pages are
     // included with empty text. DocumentId, RunGeneration and FilePosition are taken from the claim and document_files,
     // not from the arguments. Any earlier published revision is replaced in the same transaction, so a reader always sees
-    // one complete revision. Nothing is written on LeaseLost or EmptyDocument (the caller fails the job instead).
+    // one complete revision, and an embedding job is queued (or re-queued) for it. Nothing is written on LeaseLost or EmptyDocument (the caller fails the job instead).
     public async Task<DocumentReadingPublication> PublishAsync(
         DocumentReadingClaim claim, IReadOnlyCollection<DocumentTextPage> pages,
         CancellationToken cancellationToken = default)
@@ -289,6 +290,9 @@ public sealed partial class DocumentReadingJobs(AppDbContext db)
                 WHERE document_id = {claim.DocumentId}
                 """, cancellationToken);
             await ClearLocalCheckpointsAsync(claim.DocumentId, null, null, cancellationToken);
+            // The new revision is embedded by the embedding worker; queued in this transaction, so a published revision
+            // never lacks its embedding work (and a Retry that re-publishes re-queues it).
+            await DocumentEmbeddingJobs.EnqueueDocumentAsync(db, claim.DocumentId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         finally

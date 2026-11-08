@@ -10,7 +10,7 @@ namespace ogarniamy_zwierzaki_api.Tests;
 // are created through normal startup. Each test class gets its own containers, so stored data never leaks between them.
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17").Build();
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("pgvector/pgvector:0.8.2-pg17").Build();
 
     // Pinned to the version used by compose.yaml; in-memory, as the data is discarded with the container.
     private readonly AzuriteContainer _azurite = new AzuriteBuilder("mcr.microsoft.com/azure-storage/azurite:3.37.0")
@@ -34,6 +34,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 // reading tests construct the worker themselves with a fake provider.
                 ["DocumentReading:Auth"] = "Disabled",
                 ["DocumentReading:WorkerEnabled"] = "false",
+                // Same for embedding: embedding tests construct the worker themselves with a fake client.
+                ["Embedding:Auth"] = "Disabled",
+                ["Embedding:WorkerEnabled"] = "false",
             }));
     }
 

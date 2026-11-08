@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.DocumentEmbedding;
 using ogarniamy_zwierzaki_api.Documents;
 
 namespace ogarniamy_zwierzaki_api.Animals;
@@ -42,7 +43,9 @@ public sealed class OwnedAnimals(AppDbContext db)
         return new OwnedAnimal(animal.Id, animal.Name, animal.IsActive, animal.Version, 0);
     }
 
-    // Renames the animal when expectedVersion is still current. Re-sending the current name keeps the version.
+    // Renames the animal when expectedVersion is still current. Re-sending the current name keeps the version and
+    // queues nothing; a changed name re-queues the embedding of the animal's read documents in the same transaction
+    // (their embedded text starts with the animal's name).
     public Task<AnimalMutationResult> RenameAsync(
         string userId, Guid animalId, Guid expectedVersion, string name, CancellationToken cancellationToken = default) =>
         MutateAsync(userId, animalId, expectedVersion, animal =>
@@ -54,7 +57,8 @@ public sealed class OwnedAnimals(AppDbContext db)
 
             animal.Name = name;
             return true;
-        }, cancellationToken);
+        }, cancellationToken,
+        afterSave: token => DocumentEmbeddingJobs.EnqueueAnimalDocumentsAsync(db, animalId, token));
 
     // Marks the animal active or inactive when expectedVersion is still current. Never touches the name.
     public Task<AnimalMutationResult> SetActivityAsync(
@@ -80,7 +84,8 @@ public sealed class OwnedAnimals(AppDbContext db)
     // sees the first one's new version. Fresh upload manifests lock the same row, which serializes them with activity
     // changes. Ownership is resolved before the version is compared, so a foreign animal's version is never disclosed.
     private async Task<AnimalMutationResult> MutateAsync(
-        string userId, Guid animalId, Guid expectedVersion, Func<Animal, bool> apply, CancellationToken cancellationToken)
+        string userId, Guid animalId, Guid expectedVersion, Func<Animal, bool> apply, CancellationToken cancellationToken,
+        Func<CancellationToken, Task>? afterSave = null)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var animal = await LockOwnedAsync(userId, animalId, track: true, cancellationToken);
@@ -98,6 +103,10 @@ public sealed class OwnedAnimals(AppDbContext db)
         {
             animal.Version = Guid.NewGuid();
             await db.SaveChangesAsync(cancellationToken);
+            if (afterSave is not null)
+            {
+                await afterSave(cancellationToken);
+            }
         }
 
         // Projected while the row is still locked, so the response is this edit's state, not a later one.

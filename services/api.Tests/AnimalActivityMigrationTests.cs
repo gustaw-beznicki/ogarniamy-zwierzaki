@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Pgvector.EntityFrameworkCore;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Data;
 
@@ -23,7 +24,7 @@ public sealed class AnimalActivityMigrationTests(ApiFactory factory) : IClassFix
             Database = $"animal_activity_{Guid.NewGuid():N}",
         };
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connection.ConnectionString)
+            .UseNpgsql(connection.ConnectionString, npgsql => npgsql.UseVector())
             .UseSnakeCaseNamingConvention()
             .Options;
         await using var db = new AppDbContext(options);

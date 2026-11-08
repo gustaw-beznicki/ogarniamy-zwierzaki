@@ -1,10 +1,10 @@
 ---
 change_id: ui-redesign
 title: UI redesign
-status: implemented
+status: archived
 created: 2026-10-12
 updated: 2026-11-08
-archived_at: null
+archived_at: 2026-11-08T13:36:37Z
 ---
 
 ## Notes

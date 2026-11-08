@@ -578,12 +578,12 @@ change re-queue documents.
 
 #### Automated
 
-- [ ] 5.1 Deploy workflow and smoke checks pass on main
-- [x] 5.2 All tests and frontend checks pass
+- [x] 5.1 Deploy workflow and smoke checks pass on main
+- [x] 5.2 All tests and frontend checks pass — 6c54654
 
 #### Manual
 
-- [ ] 5.3 Backfill completes: every read document has an `embedded` job for its published generation
-- [ ] 5.4 Calibration note recorded and threshold committed; "serce Czarka" finds the cardiomyopathy document
-- [ ] 5.5 Search answers within about 2 seconds on a warm app (cold-start time noted against the B1 trigger)
-- [ ] 5.6 A second test account sees none of the owner's results on Azure
+- [x] 5.3 Backfill completes: every read document has an `embedded` job for its published generation
+- [x] 5.4 Calibration note recorded and threshold committed; "serce Czarka" finds the cardiomyopathy document
+- [x] 5.5 Search answers within about 2 seconds on a warm app (cold-start time noted against the B1 trigger)
+- [x] 5.6 A second test account sees none of the owner's results on Azure

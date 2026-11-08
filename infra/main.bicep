@@ -52,8 +52,8 @@ var embeddingsAccountName = 'oai-ogarniamy-${uniqueString(resourceGroup().id)}'
 var embeddingDeploymentName = 'text-embedding-3-large'
 // text-embedding-3-large returns 3072 dimensions natively; 1536 are requested to keep the vector index small.
 var embeddingDimensions = 1536
-// Provisional cosine-similarity cutoff, to be calibrated on real documents.
-var searchMinSimilarity = '0.30'
+// Provisional cosine-similarity cutoff chosen by the owner; validate it on real documents (see the S-04 calibration note).
+var searchMinSimilarity = '0.70'
 
 module documentIntelligence 'modules/document-intelligence.bicep' = {
   name: 'ogarniamy-document-intelligence'

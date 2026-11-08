@@ -530,6 +530,45 @@ body:has(.auth-hero) .language-switch a:not(.active):hover { background: rgba(25
   .document-originals .original-actions > a { padding: 0 20px; }
 }
 
+/* Search (design/Mobile-Search.dc.html, Desktop-Search.dc.html). */
+.search-page { display: flex; flex-direction: column; gap: 18px; }
+.search-header { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; animation: rise .45s var(--ease-out) both; }
+.search-header h1 { margin: 0; line-height: 1; }
+.search-header .hint { font-size: 15px; line-height: 1.45; }
+.search-form { margin: 0; }
+.search-field { min-height: 60px; padding: 0 6px 0 16px; border-radius: 22px; color: var(--color-primary); }
+.search-field input { font-size: 17px; font-weight: 600; }
+.search-submit { flex: none; min-height: 48px; padding: 0 14px; border-radius: 16px; }
+/* Icon-only on narrow screens; the label stays as the accessible name. */
+.search-submit-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.search-examples { display: flex; flex-direction: column; gap: 10px; }
+.search-examples-label { font-weight: 700; }
+.search-status { display: flex; flex-direction: column; }
+.search-status:empty { display: none; }
+.search-status > .page-state { margin-top: 0; }
+.search-loading { display: grid; gap: 8px; color: var(--color-text); font-size: 15px; font-weight: 600; }
+.search-loading .reading-bar > span { background: var(--color-primary); }
+.search-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0; }
+.search-count strong { font-size: 17px; }
+.search-count .muted { font-size: 14px; overflow-wrap: anywhere; }
+.search-note { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--color-text-muted); font-size: 14px; line-height: 1.45; }
+.search-note .icon { flex: none; margin-top: 1px; }
+.search-result { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.search-result-head { display: flex; align-items: center; gap: 12px; }
+.search-result .animal-avatar { width: 40px; height: 40px; border-radius: 13px; font-size: 18px; }
+.search-result-meta { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.search-result-animal { margin: 0; font-family: var(--font-body); font-size: 16px; font-weight: 700; letter-spacing: 0; line-height: 1.3; }
+.search-result-meta .muted { font-size: 14px; }
+.search-fragment { margin: 0; padding: 12px 14px; border-radius: 16px; background: var(--color-neutral); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-line; }
+.search-result-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.search-result-page { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-muted); font-size: 14px; }
+@media (min-width: 768px) {
+  .search-field { min-height: 72px; padding: 0 8px 0 22px; border-radius: 26px; }
+  .search-submit { min-height: 56px; padding: 0 22px; border-radius: 18px; }
+  .search-submit-label { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .search-result { padding: 20px; }
+}
+
 /* Motion. All keyframes live here; the reduced-motion block below switches every animation off. */
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes tabIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }

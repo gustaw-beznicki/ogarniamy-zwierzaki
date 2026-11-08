@@ -12,14 +12,18 @@ Azure App Service (Linux)               services/api  ASP.NET Core 10
    +------------------------------------+------------------------------------+
    v                                    v                                    v
 Azure Database for PostgreSQL           Azure Blob Storage                   Azure Document Intelligence
-Flexible Server 17, Entra-only auth     private `originals` container,       S0, `prebuilt-read`, Entra-only
-                                        no keys or SAS                       (OCR for the background reader)
+Flexible Server 17, Entra-only auth,    private `originals` container,       S0, `prebuilt-read`, Entra-only
+pgvector                                no keys or SAS                       (OCR for the background reader)
+
+                                                                             Azure OpenAI (`swedencentral`)
+                                                                             `text-embedding-3-large`, regional
+                                                                             Standard, Entra-only (embeddings)
 ```
 
 - The page and `/api/*` share one origin, so there is no CORS configuration. The App Service accepts traffic only through the Static Web App.
 - The API never stores a database password or storage key in Azure: it signs in to both with its managed identity. Locally and in tests it uses a password connection string for PostgreSQL and an Azurite connection string for Blob Storage.
 - Background reading (text extraction and OCR) runs inside the API process; see [Document reading](#document-reading). Original retrieval does not depend on it, and `/api/health` checks only the database.
-- Planned additions: pgvector semantic search over the read text. It does not exist yet.
+- Background embedding of the read text and semantic search over it also run inside the API; see [Semantic search](#semantic-search). Search never decides whether an original is available.
 
 ## Accounts and sessions
 
@@ -34,7 +38,7 @@ An animal has a name (trimmed, 1–100 characters; duplicates allowed), an `isAc
 - Both `PUT` routes require `If-Match` with exactly one strong entity tag: the quoted `version` from the latest response (`If-Match: "<uuid>"`). A missing header answers 428 `version_required`; a malformed header (weak, `*`, unquoted, not a UUID) 400 `invalid_version`; a malformed activity body 400 `invalid_activity`; a malformed rename body 400 `name_required`; invalid names 400 `name_required` or `name_too_long`. Ownership is checked first, so another account's or a missing animal answers 404 whatever the version. A version that is no longer current answers 412 `animal_changed` and changes nothing, even when the request would be a no-op. A successful change returns the animal with a new version; a no-op with the current version keeps it. Edits are serialized by a row lock (`SELECT … FOR UPDATE`, compare, write): the first changing edit gets a new version and later edits sent with the old version answer 412.
 - The web app never replays a rejected edit; an edit whose session now belongs to another account (signed in from another tab) shows an account-changed message instead of sending again: on 412 the profile keeps the typed draft, explains that another tab or device changed the animal, and requires an explicit Refresh, which loads the current name, status and version, before the owner saves again. A lost create response offers a refresh of Animals before another explicit submission; creation is not exactly-once.
 
-Activity limits only new captures. Capture defaults (`GET /api/capture-defaults`) offer active animals only: the account's last-used animal while it is active, otherwise the earliest-created active animal. Creating a fresh upload operation locks the animal row and rechecks activity in the same transaction as the insert, and marking an animal inactive takes the same lock, so whichever commits first decides: an inactive owned animal answers 409 `animal_inactive`, while an operation accepted before the inactivation stays retryable, uploadable and completable. Completion may record an inactive animal as last used; defaults ignore it. History, document detail and original routes, and `/api/me`'s `hasAnimals` flag, ignore activity: an account whose animals are all inactive is not sent back to onboarding, sees create/reactivate guidance on Animals and Add, and keeps every archive. Future processing and search are expected to keep including inactive animals' documents.
+Activity limits only new captures. Capture defaults (`GET /api/capture-defaults`) offer active animals only: the account's last-used animal while it is active, otherwise the earliest-created active animal. Creating a fresh upload operation locks the animal row and rechecks activity in the same transaction as the insert, and marking an animal inactive takes the same lock, so whichever commits first decides: an inactive owned animal answers 409 `animal_inactive`, while an operation accepted before the inactivation stays retryable, uploadable and completable. Completion may record an inactive animal as last used; defaults ignore it. History, document detail and original routes, and `/api/me`'s `hasAnimals` flag, ignore activity: an account whose animals are all inactive is not sent back to onboarding, sees create/reactivate guidance on Animals and Add, and keeps every archive. Reading and search include inactive animals' documents.
 
 The `/animal-documents/?animalId=<id>` page (`/en/animal-documents/` in English) is the animal's profile: name, status, rename and mark inactive/active actions, Add document preselected to the animal while it is active, and the paginated document history. History is ordered by the owner-entered event date, then upload time and ID, newest first; it is a list of stored documents, not a guaranteed medical chronology.
 
@@ -75,7 +79,30 @@ Owner routes (session required, 401 otherwise; another account's, missing and `U
 - `GET /api/documents/{documentId}/reading` returns `state` (`queued`, `reading`, `read` or `failed`), `failureCode` (only when failed), `canRetry`, `retryAfter` and `completedAt`. The document view polls it every five seconds while the content is queued or being read, for at most ten minutes.
 - `POST /api/documents/{documentId}/reading/retry` (antiforgery token required) queues a failed job again in a new run generation. Repeated clicks coalesce, and at most three retries per document per hour are accepted; more answer 429 `retry_limited` with `retryAfter`.
 
-"Read" means the text was extracted and stored, not that the document is searchable. Reading is configured with the `DocumentReading` settings ([local development](local-development.md#configuration)). Misconfiguration turns reading off with a startup warning instead of stopping the API, and `DocumentReading:WorkerEnabled` switches the worker on and off separately. Reading logs carry document, file and run-file IDs, states, failure codes and timings, never extracted text, file names, provider payloads or tokens.
+"Read" means the text was extracted and stored; the document becomes searchable once its text is embedded ([Semantic search](#semantic-search)). Reading is configured with the `DocumentReading` settings ([local development](local-development.md#configuration)). Misconfiguration turns reading off with a startup warning instead of stopping the API, and `DocumentReading:WorkerEnabled` switches the worker on and off separately. Reading logs carry document, file and run-file IDs, states, failure codes and timings, never extracted text, file names, provider payloads or tokens.
+
+## Semantic search
+
+Owners search their own documents by meaning. Read text is cut into chunks, each chunk is embedded with Azure OpenAI and stored with its vector in PostgreSQL (pgvector), and a search compares the embedded query with the owner's chunks. Search returns source documents and the fragment that matched, never a generated answer.
+
+**Embedding pipeline.** A second `BackgroundService` (`DocumentEmbeddingWorker`) keeps one job per read document in `document_embedding_jobs`, built like the reading queue.
+
+- **Queueing.** Publishing a reading revision queues (or re-queues) the document's embedding job in the same transaction; renaming an animal re-queues that animal's read documents in the same transaction as the rename (a rename to the same name queues nothing). The migration that introduced embedding queued every document that was already read. Both events wake the worker at once.
+- **Chunks.** Each non-blank page is cut into chunks of about 1,200 characters with a 180-character overlap, breaking on line boundaries (falling back to whitespace) and never crossing pages. Every chunk in `document_chunks` keeps its source file, file position, page number, character offsets within the page text, the reading run generation and an `embedding_version` (chunker version, deployment, dimensions and input scheme).
+- **Provider input.** Each chunk is embedded as the animal's current name, a blank line and the chunk text, so a query that names the animal matches its documents. Vectors have 1,536 dimensions (`text-embedding-3-large` with `dimensions=1536`). Requests go to the Azure OpenAI v1 embeddings endpoint with the API's managed identity; each request carries at most 16,000 estimated tokens, and the worker paces itself to 40,000 estimated tokens per minute, below the deployment's 50K limit.
+- **Publication and fencing.** The worker claims a job with `FOR UPDATE SKIP LOCKED` and a 10-minute lease. It replaces the document's chunks and marks the job `embedded` in one transaction, and only if the reading revision and the animal name it embedded are still current; otherwise it discards the result and queues the job again.
+- **Retries.** Transient and configuration failures (throttling, provider outages, a missing role, a wrong endpoint) are retried after 30 seconds, 2, 10 and 30 minutes (a longer provider `Retry-After` wins); the fifth failure, or a terminal one, stops the job with a sanitized failure code. There is no owner Retry for embedding; operators requeue failed jobs ([Operate semantic search](sop/operate-semantic-search.md)).
+- **F1 hosting.** Like reading, the worker waits 60 seconds after startup, polls while idle with backoff, and waits while the app sleeps.
+
+**Search.** `POST /api/search` takes `{query}` (session and antiforgery token required; a POST, so the query never lands in URLs or access logs). The trimmed query must be 1–500 characters (400 `invalid_query`). It is embedded once, as typed, without retry. One exact cosine query (no approximate index) takes each owned document's best chunk of its published reading revision, keeps documents whose similarity reaches `Search:MinSimilarity`, orders them by similarity and returns at most 20. Each result carries the document, its animal (name and activity), event date, file, page, the fragment and the original's URL; no score. `notSearchableCount` counts the owner's stored documents whose text is still being read or whose embedding is not current (failed readings are excluded; the document page shows them). Nothing above the threshold is a 200 with no items. If embedding is unavailable or the provider fails, the route answers 503 `search_unavailable`, never partial or substitute results. One account may search 30 times per minute (`Search:MaxRequestsPerMinute`); more answer 429 `search_rate_limited`.
+
+**Owner isolation.** Both search statements reach chunks only through `Stored` documents of animals the signed-in user owns (an `animal_members` row with the owner role), whatever the animal's activity, so inactive animals' documents are found and another account's text never is. Results link to the same owner-checked original route as the rest of the app.
+
+**Search screen.** `/search/` (`/en/search/`) has a search form with example queries, a persistent loading status, one card per result (animal avatar and name, event date, page label, fragment, "Open original" in a new tab and a link to the document details), an empty state, a note when some documents are not searchable yet, and a "search unavailable" notice with Retry for any failed search; it never shows substitute results.
+
+**Privacy.** Document text and search queries leave the product only for embedding, in the regional Standard deployment in `swedencentral`, so processing stays in Sweden and is not used for training. Azure abuse monitoring may store prompts in the resource's geography; the PRD privacy requirement records this exception. Embedding and search logs carry document IDs, counts, states, failure codes and timings, never chunk text, fragments, queries, animal names or provider payloads.
+
+Embedding is configured with the `Embedding` settings and search with the `Search` settings ([local development](local-development.md#configuration)). Misconfiguration turns embedding off with a startup warning instead of stopping the API; `Embedding:WorkerEnabled` switches the worker separately. Deployment and operations: [Rolling out semantic search](deployment.md#rolling-out-semantic-search).
 
 ## Repository layout
 
@@ -83,13 +110,14 @@ Owner routes (session required, 401 otherwise; another account's, missing and `U
 apps/web/            Astro frontend (strict TypeScript)
 services/api/        ASP.NET Core API; EF Core model and migrations in Data/, capture and originals in
                      Documents/, the Blob Storage adapter in Storage/, background reading and its routes
-                     in DocumentReading/
+                     in DocumentReading/, background embedding in DocumentEmbedding/, the search route
+                     in Search/
 services/api.Tests/  xUnit integration tests (WebApplicationFactory + Testcontainers)
 infra/               Bicep templates and deploy.sh (lint / what-if / apply)
-  bootstrap/         One-time, hand-applied setup: CI identities, resource group, budget, API storage and
-                     Document Intelligence access
+  bootstrap/         One-time, hand-applied setup: CI identities, resource group, budget, API storage,
+                     Document Intelligence and Azure OpenAI access
 scripts/smoke.sh     End-to-end, read-only check of a deployed environment
-compose.yaml         Local PostgreSQL and Azurite
+compose.yaml         Local PostgreSQL (pgvector image) and Azurite
 docs/                Developer documentation (this folder)
 context/             Product and planning documents (PRD, stack, roadmap, change plans)
 .github/workflows/   ci.yml (pull requests), deploy.yml (main)

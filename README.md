@@ -18,15 +18,16 @@ The project is in early development. What runs today:
 - First-animal onboarding and animal profiles isolated by owner. On Animals, owners add more name-only animals and see each one's number of stored documents; an animal's profile shows its document history, and owners can rename it or mark it inactive and active again. Inactive animals are grouped in a collapsed section and keep their full history and originals, but new documents can only be added to active animals. Animals and documents cannot be deleted.
 - Document capture on the Add page: take a photo or choose one PDF or 1–10 JPEG/PNG photos (each at most 10 MiB, 10,485,760 bytes), reorder the photos, pick an active animal and the date of the veterinary event (today or earlier), and save. The animal defaults to the one used in the account's last saved capture while it is active, otherwise to the earliest-created active animal. An upload that was already accepted still finishes if its animal is marked inactive meanwhile.
 - Originals are stored byte for byte in a private Blob Storage container and are never public: an animal's document history and a document view open them only through the signed-in owner's session. The history is ordered by the event date the owner entered, which is shown separately from the upload time; it is a list of stored documents, not a verified medical timeline.
-- Background reading of stored documents: PDFs with a usable text layer are read locally, and scanned pages and photos go to Azure Document Intelligence OCR. The text is kept with its source file and page for later search; the original is never changed. The document view shows whether the content is queued, being read, read or failed, with Retry after a failure, and the originals stay openable whatever the reading status. On the free App Service plan, reading waits while the app is asleep and resumes on the next visit.
-- A Polish and English interface, with bottom navigation on phones and a sidebar on desktop. Search is a placeholder.
+- Background reading of stored documents: PDFs with a usable text layer are read locally, and scanned pages and photos go to Azure Document Intelligence OCR. The text is kept with its source file and page; the original is never changed. The document view shows whether the content is queued, being read, read or failed, with Retry after a failure, and the originals stay openable whatever the reading status. On the free App Service plan, reading waits while the app is asleep and resumes on the next visit.
+- Semantic search across all of an owner's animals: type a question in ordinary words and get back your own documents related in meaning, each with its animal, event date, page, the fragment that matched, a link that opens the original and a link to the document. Read text is embedded in the background with Azure OpenAI (processed only in Sweden) and stored with pgvector in PostgreSQL; a document becomes searchable once its text is embedded, and the search screen says how many documents are not searchable yet. Results never include another account's documents, and when search is unavailable the screen says so instead of showing other results.
+- A Polish and English interface, with bottom navigation on phones and a sidebar on desktop.
 - An integration test suite that runs against real PostgreSQL and Azurite (Blob Storage emulator) containers.
 
 Everything else in the MVP is planned, not built yet:
 
 - Password reset, email verification and additional sign-in methods.
 - Editing or deleting documents after they are saved, and HEIC/HEIF photos.
-- Semantic search across document content, optionally filtered by animal, showing the matching fragment and opening the original. Read documents are not searchable yet.
+- Narrowing search results to one animal.
 
 The requirements, guardrails and non-goals are in the [PRD](context/foundation/prd.md); the delivery order is in the [roadmap](context/foundation/roadmap.md).
 

@@ -53,6 +53,14 @@ Azure is the best fit for the .NET-first stack, the required continuously runnin
 
 - **Azure OpenAI quota (checked 2026-11-08)**: `swedencentral` shows `OpenAI.Standard.text-embedding-3-large` limit 350 (thousands of tokens per minute), used 0, on the Free Trial subscription. The planned deployment (capacity 50) fits. The model list confirms version `1` with the `Standard` SKU (also GlobalStandard and DataZoneStandard) is available there.
 
+### Decisions recorded while implementing S-04 (semantic-search-with-fragments, 2026-11-08)
+
+- **Embedding resource**: Azure OpenAI account `oai-ogarniamy-<uniqueString(resourceGroup().id)>` (`infra/modules/embeddings.bicep`), kind `OpenAI`, sku S0, in `swedencentral`; custom subdomain, local (key) authentication disabled, public network access with Entra ID only, like Document Intelligence. One deployment, `text-embedding-3-large` version `1`, sku `Standard` (regional, so processing stays in Sweden; Global and DataZone SKUs are not used), capacity 50 (50K tokens per minute). The API's managed identity and the owner hold Cognitive Services OpenAI User through the owner-run `infra/bootstrap/embedding-access.bicep`; CI never grants it.
+- **Vector storage**: pgvector in the existing PostgreSQL Flexible Server (`azure.extensions` allowlists `VECTOR`; the startup migration creates the extension). No new database resource and no approximate index: search is an exact, owner-scoped cosine scan.
+- **Embedding cost**: pay per token, no standing charge for a Standard deployment. The Azure Retail Prices API (queried 2026-11-08, `swedencentral`) lists the meter `text-embedding-3-large-regional Tokens` at **USD 0.000158 per 1K tokens** (USD 0.158 per 1M tokens); the global meter, not used here, is USD 0.00013 per 1K. Each document is embedded once per reading revision or animal rename, and each search embeds the query once, so at the expected volume (several dozen documents, a handful of searches a day) the monthly charge is expected to be well under USD 1. This is an estimate from the listed price, not measured spend; confirm it on the Cost Management page after the backfill and record the measured figure here.
+- **Hosting stays on F1**: the embedding worker runs inside the API like the reading worker and waits while the app sleeps. The B1 triggers above are unchanged; the cold-start search latency measured after activation decides trigger (2).
+- **Worker pacing**: the worker sends at most 40,000 estimated tokens per minute (`Embedding:WorkerTokensPerMinute`), below the deployment's 50K, so searches keep headroom during a backfill. Change it together with the deployment capacity.
+
 ## Research Constraints
 
 - Persistent server-side processes are required for OCR and embedding work.

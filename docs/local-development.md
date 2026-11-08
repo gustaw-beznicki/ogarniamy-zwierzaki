@@ -127,6 +127,8 @@ dotnet run --project services/api
 
 The startup log says whether embedding is available and whether the worker runs. Every document that is already read (and every one read or renamed later) is queued for embedding, so use a separate local database if your existing one holds documents you do not want sent to Azure. Use only synthetic or your own non-sensitive files. Remove `Embedding:WorkerEnabled` (or set it to `false`) and restart to stop; jobs and stored vectors stay in the database.
 
+The search screen (`/search/`) needs only `Embedding:Auth` and `Embedding:Endpoint`: each query is embedded with the same deployment, whether or not the worker runs, and only already embedded documents can match. With embedding `Disabled` (the default), every search answers 503 `search_unavailable` and the screen shows its "search unavailable" notice; the rest of the app works.
+
 ## Database migrations
 
 The API applies pending migrations at startup and will not start without a reachable database. After changing the EF Core model, add a migration:

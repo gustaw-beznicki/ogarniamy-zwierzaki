@@ -141,10 +141,10 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
           value: string(embeddingDimensions)
         }
         {
-          // Off on the first deploy; set to 'true' in a separate release once the owner has granted the role
-          // (see docs/deployment.md, "Rolling out semantic search").
+          // Background embedding is on. To pause it, set this back to 'false' and deploy; jobs and stored chunks stay
+          // in the database and stay searchable (see docs/sop/operate-semantic-search.md).
           name: 'Embedding__WorkerEnabled'
-          value: 'false'
+          value: 'true'
         }
         {
           name: 'Search__MinSimilarity'

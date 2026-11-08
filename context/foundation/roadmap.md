@@ -3,7 +3,7 @@ project: "Ogarniamy zwierzaki"
 version: 1
 status: draft                    # draft | active | locked
 created: 2026-09-25
-updated: 2026-10-19
+updated: 2026-11-08
 prd_version: 1
 main_goal: learn
 top_blocker: time
@@ -245,6 +245,7 @@ Mirrored in Linear project "Ogarniamy zwierzaki" (milestone "M-1: First searchab
 - **Notifications and reminders** — Why parked: PRD §Non-Goals (non-functional).
 - **Offline operation** — Why parked: PRD §Non-Goals (non-functional).
 - **Voice parsing, medication stock tracking, extraction-review queues with confidence scores** — Why parked: PRD §Non-Goals, carried over from the seed note.
+- **Azure OpenAI modified abuse monitoring** — Why parked: excluded from S-04 (`context/changes/semantic-search-with-fragments/plan.md`, What We're NOT Doing). With default abuse monitoring, Azure may store embedding inputs (document text and search queries) in the resource's geography for review by EEA-based reviewers; the owner accepted this on 2026-10-19 and the PRD privacy requirement records it. Applying to Microsoft for modified abuse monitoring would remove that storage. Revisit before other people's documents are stored, or if the owner withdraws the acceptance. Suggested Change ID `modified-abuse-monitoring`.
 - **Keyword (exact-word) search, including as a fallback** — Why parked: PRD FR-010 / FR-012 resolution; the MVP is purely semantic.
 - **Event-date-range filter** — Why parked: PRD FR-011 resolution; it would rest on unreliable dates.
 

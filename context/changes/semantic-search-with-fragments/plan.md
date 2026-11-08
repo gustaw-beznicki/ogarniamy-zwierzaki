@@ -579,7 +579,7 @@ change re-queue documents.
 #### Automated
 
 - [ ] 5.1 Deploy workflow and smoke checks pass on main
-- [ ] 5.2 All tests and frontend checks pass
+- [x] 5.2 All tests and frontend checks pass
 
 #### Manual
 

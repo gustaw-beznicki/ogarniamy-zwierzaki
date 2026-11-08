@@ -515,13 +515,13 @@ change re-queue documents.
 
 #### Automated
 
-- [x] 1.1 Bicep lints: `infra/deploy.sh lint` — 3d3e804
-- [x] 1.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` — 3d3e804
+- [x] 1.1 Bicep lints: `infra/deploy.sh lint` — 63d1f84
+- [x] 1.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj` — 63d1f84
 
 #### Manual
 
-- [ ] 1.3 `infra/deploy.sh what-if` shows only the new OpenAI account and deployment, the `azure.extensions` configuration and new app settings
-- [ ] 1.4 PRD amendment reads correctly and states the EU-only scope and the abuse-monitoring exception
+- [x] 1.3 `infra/deploy.sh what-if` shows only the new OpenAI account and deployment, the `azure.extensions` configuration and new app settings — 63d1f84
+- [x] 1.4 PRD amendment reads correctly and states the EU-only scope and the abuse-monitoring exception — 63d1f84
 
 ### Phase 2: Vector storage and embedding pipeline
 

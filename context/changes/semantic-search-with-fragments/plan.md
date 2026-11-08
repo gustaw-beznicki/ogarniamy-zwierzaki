@@ -550,15 +550,15 @@ change re-queue documents.
 
 #### Automated
 
-- [x] 4.1 Type check passes: `npm run check --prefix apps/web`
-- [x] 4.2 Build passes: `npm run build --prefix apps/web`
-- [x] 4.3 Every new message key exists in both catalogues
-- [x] 4.4 No Polish outside `pl.ts` in changed files
+- [x] 4.1 Type check passes: `npm run check --prefix apps/web` — 7fb6e78
+- [x] 4.2 Build passes: `npm run build --prefix apps/web` — 7fb6e78
+- [x] 4.3 Every new message key exists in both catalogues — 7fb6e78
+- [x] 4.4 No Polish outside `pl.ts` in changed files — 7fb6e78
 
 #### Manual
 
-- [x] 4.5 Search screen states (idle, loading, results, empty, error) at 390 px and 1280 px, keyboard and screen-reader announcements
-- [x] 4.6 "Open original" opens the right file; details link opens the document page
+- [x] 4.5 Search screen states (idle, loading, results, empty, error) at 390 px and 1280 px, keyboard and screen-reader announcements — 7fb6e78
+- [x] 4.6 "Open original" opens the right file; details link opens the document page — 7fb6e78
 
 ### Phase 5: Deployment, backfill, calibration and documentation
 

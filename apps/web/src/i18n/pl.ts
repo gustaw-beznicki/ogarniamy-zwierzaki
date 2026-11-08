@@ -203,5 +203,5 @@ export const messages = {
   notSearchableCount_one: '{count} dokument jest jeszcze przetwarzany, więc nie ma go w wynikach.',
   notSearchableCount_few: '{count} dokumenty są jeszcze przetwarzane, więc nie ma ich w wynikach.',
   notSearchableCount_many: '{count} dokumentów jest jeszcze przetwarzanych, więc nie ma ich w wynikach.',
-  notSearchableCount_other: '{count} dokumentu jest jeszcze przetwarzane, więc nie ma ich w wynikach.',
+  notSearchableCount_other: '{count} dokumentu jest jeszcze przetwarzanych, więc nie ma ich w wynikach.',
 } satisfies Messages;

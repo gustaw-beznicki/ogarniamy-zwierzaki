@@ -109,6 +109,7 @@ export interface SearchResult {
   documentId: string;
   animalId: string;
   animalName: string;
+  animalIsActive: boolean;
   eventDate: string;
   fileId: string;
   filePosition: number;

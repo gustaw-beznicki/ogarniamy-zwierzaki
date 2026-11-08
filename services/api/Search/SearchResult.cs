@@ -6,6 +6,7 @@ public sealed record SearchResult(
     Guid DocumentId,
     Guid AnimalId,
     string AnimalName,
+    bool AnimalIsActive,
     DateOnly EventDate,
     Guid FileId,
     int FilePosition,

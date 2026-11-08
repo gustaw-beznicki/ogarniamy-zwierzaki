@@ -27,6 +27,9 @@ public sealed class FakeEmbeddingProvider : IEmbeddingClient
     // Called with the inputs and the call's 1-based index before any vector is produced.
     public Func<IReadOnlyList<string>, int, Task>? OnEmbed { get; set; }
 
+    // Replaces the answer, for example to return the wrong number of vectors.
+    public Func<IReadOnlyList<string>, IReadOnlyList<float[]>>? Answer { get; set; }
+
     public async Task<IReadOnlyList<float[]>> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken)
     {
         int index;
@@ -41,7 +44,7 @@ public sealed class FakeEmbeddingProvider : IEmbeddingClient
             await hook(inputs, index);
         }
 
-        return inputs.Select(Embed).ToList();
+        return Answer is { } answer ? answer(inputs) : inputs.Select(Embed).ToList();
     }
 
     // Each lowercase word (letters and digits) adds one to a stable hash bucket; the vector is L2-normalised, so the dot

@@ -177,7 +177,7 @@ public sealed class DocumentEmbeddingTests(ApiFactory factory) : IClassFixture<A
     }
 
     [Fact]
-    public async Task Renaming_requeues_only_that_animals_read_documents()
+    public async Task Renaming_requeues_only_that_animals_documents_with_published_text()
     {
         await ParkAllJobsAsync();
         var userId = await factory.CreateUserAsync();
@@ -189,6 +189,13 @@ public sealed class DocumentEmbeddingTests(ApiFactory factory) : IClassFixture<A
         await EmbedAllAsync(new FakeEmbeddingProvider());
         // Stored but not read yet: nothing to embed, so a rename must not invent a job for it.
         var unread = (await factory.AddStoredAsync(userId, renamed, EventDate)).Id;
+        // Being read again (a Retry): its published text is still searchable, so the rename must re-embed it too.
+        await ExecuteAsync($"""
+            UPDATE document_reading_jobs
+            SET state = 'queued', run_generation = run_generation + 1, completed_at = NULL,
+                due_at = now() + interval '100 years'
+            WHERE document_id = '{second}'
+            """);
 
         // A rename to the same name changes nothing and queues nothing.
         await RenameAsync(userId, renamed, "Czarek");

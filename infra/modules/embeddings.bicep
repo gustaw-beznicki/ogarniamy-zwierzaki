@@ -35,7 +35,8 @@ resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2
   // Standard (regional) keeps processing inside the account's region; Global and DataZone SKUs are not used.
   sku: {
     name: 'Standard'
-    // Thousands of tokens per minute; small on purpose, raise it only if throttling shows up.
+    // Thousands of tokens per minute; small on purpose, raise it only if throttling shows up. The API's
+    // Embedding:WorkerTokensPerMinute (40,000 in appsettings.json) assumes this value; change both together.
     capacity: 50
   }
   properties: {

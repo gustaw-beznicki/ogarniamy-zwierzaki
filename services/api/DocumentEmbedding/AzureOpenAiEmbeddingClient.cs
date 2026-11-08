@@ -21,7 +21,8 @@ public sealed class AzureOpenAiEmbeddingClient(
     public const int MaxTokensPerRequest = 300_000;
 
     // Tokens are estimated, not counted: one token per two characters is pessimistic for prose in any European
-    // language, and the budget leaves headroom below the provider's cap.
+    // language, and the hard budget leaves headroom below the provider's cap. Requests are normally much smaller:
+    // EmbeddingOptions.MaxEstimatedTokensPerRequest keeps each one inside the deployment's per-minute limit.
     public const int CharactersPerEstimatedToken = 2;
 
     public const int EstimatedTokenBudget = 250_000;
@@ -34,7 +35,7 @@ public sealed class AzureOpenAiEmbeddingClient(
         ArgumentNullException.ThrowIfNull(inputs);
 
         var vectors = new List<float[]>(inputs.Count);
-        foreach (var batch in Batches(inputs))
+        foreach (var batch in Batches(inputs, options.MaxEstimatedTokensPerRequest))
         {
             vectors.AddRange(await EmbedBatchAsync(batch, cancellationToken));
         }
@@ -42,10 +43,13 @@ public sealed class AzureOpenAiEmbeddingClient(
         return vectors;
     }
 
-    // Consecutive slices of the inputs, each within the input-count limit and the estimated token budget. A single
-    // input over the budget travels alone (the provider rejects it if it is really too long).
-    public static IEnumerable<IReadOnlyList<string>> Batches(IReadOnlyList<string> inputs)
+    // Consecutive slices of the inputs, each within the input-count limit and the estimated token budget (the smaller
+    // of maxEstimatedTokens and EstimatedTokenBudget). A single input over the budget travels alone (the provider
+    // rejects it if it is really too long).
+    public static IEnumerable<IReadOnlyList<string>> Batches(IReadOnlyList<string> inputs, int maxEstimatedTokens)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxEstimatedTokens, 1);
+        var budget = Math.Min(maxEstimatedTokens, EstimatedTokenBudget);
         var start = 0;
         while (start < inputs.Count)
         {
@@ -54,7 +58,7 @@ public sealed class AzureOpenAiEmbeddingClient(
             while (start + count < inputs.Count && count < MaxInputsPerRequest)
             {
                 var estimate = EstimateTokens(inputs[start + count]);
-                if (count > 0 && tokens + estimate > EstimatedTokenBudget)
+                if (count > 0 && tokens + estimate > budget)
                 {
                     break;
                 }
@@ -223,9 +227,15 @@ public sealed class AzureOpenAiEmbeddingClient(
         }
     }
 
-    // An absolute Retry-After date is measured against the injected clock.
-    private TimeSpan? RetryAfterOf(HttpResponseMessage response) =>
-        response.Headers.RetryAfter is { } retryAfter
+    // The longest provider Retry-After honoured; a larger value (or a far-off date) must not park a job for days.
+    public static readonly TimeSpan MaxRetryAfter = TimeSpan.FromHours(1);
+
+    // An absolute Retry-After date is measured against the injected clock; the result is capped at MaxRetryAfter.
+    private TimeSpan? RetryAfterOf(HttpResponseMessage response)
+    {
+        var requested = response.Headers.RetryAfter is { } retryAfter
             ? retryAfter.Delta ?? (retryAfter.Date is { } date ? date - (time ?? TimeProvider.System).GetUtcNow() : null)
             : null;
+        return requested > MaxRetryAfter ? MaxRetryAfter : requested;
+    }
 }

@@ -405,6 +405,20 @@ document row classes.
 - Search screen states (idle, loading, results, empty, error) at 390 px and 1280 px, keyboard and screen-reader announcements
 - "Open original" opens the right file; details link opens the document page
 
+**Addendum (implementation review F3, 2026-11-08)**: the error state shipped as a first "search unavailable" notice
+instead of a bare generic error: "Search is unavailable right now", a line that no substitute results are shown and
+originals stay available on the animal profiles, Retry and "Go to animals", for every failed search except 401. The
+owner accepted it; S-05 starts from this notice (see the S-05 item in `context/foundation/roadmap.md`).
+
+**Addendum (implementation review F1, F4, 2026-11-08)**: two hardening changes on top of Phases 2–3. The worker sends at
+most `Embedding:MaxEstimatedTokensPerRequest` (16,000) estimated tokens per request and paces itself to
+`Embedding:WorkerTokensPerMinute` (40,000, below the deployment's 50K TPM) with a token bucket (`EmbeddingTokenPacer`).
+`POST /api/search` has a per-account fixed-window limit, `Search:MaxRequestsPerMinute` (30), answering 429
+`search_rate_limited`.
+
+**Addendum (implementation review F8, 2026-11-08)**: `SearchResult` also carries `animalIsActive`, so result avatars show
+inactive animals like the animal list does.
+
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual
 confirmation from the human that the manual testing was successful before proceeding to the next phase.
 

@@ -148,7 +148,7 @@ export function SearchView({ locale, messages }: { locale: Locale; messages: Mes
         return <li key={result.documentId} className="rise" style={style}>
           <article className="card search-result" aria-labelledby={`search-result-${index}`}>
             <header className="search-result-head">
-              <AnimalAvatar animal={{ id: result.animalId, name: result.animalName, isActive: true }} locale={locale} size="row" />
+              <AnimalAvatar animal={{ id: result.animalId, name: result.animalName, isActive: result.animalIsActive }} locale={locale} size="row" />
               <div className="search-result-meta">
                 <h2 id={`search-result-${index}`} className="search-result-animal">{result.animalName}</h2>
                 <span className="muted">{`${messages.eventDate}: ${date}`}</span>

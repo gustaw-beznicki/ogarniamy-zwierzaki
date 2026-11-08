@@ -166,6 +166,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Refines the north star and is sequenced after it so it cannot delay validation. The notice must not bring back any exact-word fallback (FR-012 removed keyword search on purpose).
+- **Note (2026-11-08):** S-04 already shows a first "search unavailable" notice (`apps/web/src/components/SearchView.tsx`: no substitute results, originals still available, Retry and "Go to animals") for every failed search. S-05 starts from it and only needs to tell failure types apart if FR-012 requires that.
 - **Status:** proposed
 
 ### S-06: Animal profiles and document history

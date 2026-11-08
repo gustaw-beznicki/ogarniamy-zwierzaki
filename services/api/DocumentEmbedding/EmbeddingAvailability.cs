@@ -43,7 +43,8 @@ public sealed class EmbeddingAvailability
             // An unknown enum value or an unparsable URI/timespan; the binder's message may echo the raw value.
             return Unavailable(new EmbeddingOptions(),
                 $"the {EmbeddingOptions.SectionName} section has an invalid value; check Auth " +
-                $"({string.Join(", ", Enum.GetNames<EmbeddingAuthMode>())}), Endpoint, Dimensions, WorkerEnabled and HttpTimeout.");
+                $"({string.Join(", ", Enum.GetNames<EmbeddingAuthMode>())}), Endpoint, Dimensions, WorkerEnabled, HttpTimeout, " +
+                "MaxEstimatedTokensPerRequest and WorkerTokensPerMinute.");
         }
 
         return Resolve(options, environment.IsDevelopment());
@@ -88,6 +89,17 @@ public sealed class EmbeddingAvailability
         if (options.HttpTimeout <= TimeSpan.Zero)
         {
             return Unavailable(options, "Embedding:HttpTimeout must be a positive hh:mm:ss value.");
+        }
+
+        if (options.MaxEstimatedTokensPerRequest is < 1 or > AzureOpenAiEmbeddingClient.EstimatedTokenBudget)
+        {
+            return Unavailable(options,
+                $"Embedding:MaxEstimatedTokensPerRequest must be between 1 and {AzureOpenAiEmbeddingClient.EstimatedTokenBudget}.");
+        }
+
+        if (options.WorkerTokensPerMinute < 0)
+        {
+            return Unavailable(options, "Embedding:WorkerTokensPerMinute must be 0 (no pacing) or positive.");
         }
 
         TokenCredential credential = options.Auth == EmbeddingAuthMode.AzureManagedIdentity

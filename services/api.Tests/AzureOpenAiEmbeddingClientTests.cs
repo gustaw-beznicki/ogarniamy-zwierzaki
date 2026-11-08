@@ -78,14 +78,26 @@ public sealed class AzureOpenAiEmbeddingClientTests
     {
         var handler = new ScriptedHandler(request => Vectors(request));
         var text = new string('x', 8_000);
-        var perBatch = (int)(AzureOpenAiEmbeddingClient.EstimatedTokenBudget / AzureOpenAiEmbeddingClient.EstimateTokens(text));
+        var perBatch = (int)(Options.MaxEstimatedTokensPerRequest / AzureOpenAiEmbeddingClient.EstimateTokens(text));
         var inputs = Enumerable.Repeat(text, perBatch + 3).ToList();
 
         await NewClient(handler).EmbedAsync(inputs, CancellationToken.None);
 
         Assert.Equal([perBatch, 3], handler.Requests.Select(r => InputCount(r)));
         Assert.All(handler.Requests, r =>
-            Assert.True(InputCount(r) * AzureOpenAiEmbeddingClient.EstimateTokens(text) <= AzureOpenAiEmbeddingClient.MaxTokensPerRequest));
+            Assert.True(InputCount(r) * AzureOpenAiEmbeddingClient.EstimateTokens(text) <= Options.MaxEstimatedTokensPerRequest));
+    }
+
+    [Fact]
+    public void The_configured_budget_never_exceeds_the_hard_budget()
+    {
+        var text = new string('x', 8_000);
+        var perBatch = (int)(AzureOpenAiEmbeddingClient.EstimatedTokenBudget / AzureOpenAiEmbeddingClient.EstimateTokens(text));
+        var inputs = Enumerable.Repeat(text, perBatch + 3).ToList();
+
+        var batches = AzureOpenAiEmbeddingClient.Batches(inputs, int.MaxValue).ToList();
+
+        Assert.Equal([perBatch, 3], batches.Select(b => b.Count));
     }
 
     [Theory]
@@ -124,6 +136,21 @@ public sealed class AzureOpenAiEmbeddingClientTests
 
         Assert.True(failure.IsTransient);
         Assert.Equal(TimeSpan.FromSeconds(90), failure.RetryAfter);
+    }
+
+    [Fact]
+    public async Task A_very_long_retry_after_is_capped()
+    {
+        var handler = new ScriptedHandler(_ =>
+        {
+            var response = Json(HttpStatusCode.TooManyRequests, "{}");
+            response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromDays(3));
+            return response;
+        });
+
+        var failure = await Assert.ThrowsAsync<EmbeddingFailure>(() => NewClient(handler).EmbedAsync(["a"], CancellationToken.None));
+
+        Assert.Equal(AzureOpenAiEmbeddingClient.MaxRetryAfter, failure.RetryAfter);
     }
 
     [Fact]

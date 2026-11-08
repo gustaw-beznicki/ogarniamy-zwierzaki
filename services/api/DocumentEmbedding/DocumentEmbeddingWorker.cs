@@ -43,6 +43,9 @@ public sealed class DocumentEmbeddingWorker(
     // CPU share is not starved by background work (see DocumentReadingWorker).
     public TimeSpan StartupDelay { get; init; } = TimeSpan.FromSeconds(60);
 
+    // Set only by the hosted loop, so RunOnceAsync in tests is not slowed down by pacing.
+    private EmbeddingTokenPacer? pacer;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!availability.IsAvailable || !availability.Options.WorkerEnabled)
@@ -53,6 +56,7 @@ public sealed class DocumentEmbeddingWorker(
             return;
         }
 
+        pacer = new EmbeddingTokenPacer(availability.Options.WorkerTokensPerMinute, time);
         logger.LogInformation("The embedding worker started; first claim after {StartupDelay}.", StartupDelay);
         try
         {
@@ -173,7 +177,17 @@ public sealed class DocumentEmbeddingWorker(
 
         var chunks = PageChunker.Chunk(source.Pages);
         var inputs = chunks.Select(chunk => EmbeddingInput.For(source.AnimalName, chunk.Text)).ToList();
-        var vectors = await client.EmbedAsync(inputs, cancellationToken);
+        var vectors = new List<float[]>(inputs.Count);
+        foreach (var batch in AzureOpenAiEmbeddingClient.Batches(inputs, availability.Options.MaxEstimatedTokensPerRequest))
+        {
+            var wait = pacer?.Reserve(batch.Sum(AzureOpenAiEmbeddingClient.EstimateTokens)) ?? TimeSpan.Zero;
+            if (wait > TimeSpan.Zero)
+            {
+                await Task.Delay(wait, time, cancellationToken);
+            }
+
+            vectors.AddRange(await client.EmbedAsync(batch, cancellationToken));
+        }
         if (vectors.Count != chunks.Count || vectors.Any(v => v.Length != EmbeddingOptions.StoredDimensions))
         {
             throw EmbeddingFailure.Terminal(EmbeddingFailure.ProviderProtocol);

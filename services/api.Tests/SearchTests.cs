@@ -49,7 +49,7 @@ public sealed class SearchTests(ApiFactory factory) : IClassFixture<ApiFactory>,
         Assert.Equal(
             new[]
             {
-                "animalId", "animalName", "documentId", "eventDate", "fileId", "filePageCount", "filePosition", "fragment",
+                "animalId", "animalIsActive", "animalName", "documentId", "eventDate", "fileId", "filePageCount", "filePosition", "fragment",
                 "originalUrl", "sourcePageNumber",
             },
             item.EnumerateObject().Select(p => p.Name).Order().ToArray());
@@ -223,6 +223,40 @@ public sealed class SearchTests(ApiFactory factory) : IClassFixture<ApiFactory>,
     }
 
     [Fact]
+    public async Task A_malformed_provider_answer_is_a_503_search_unavailable()
+    {
+        using var owner = await _host.SignInAsync();
+
+        foreach (var answer in new Func<IReadOnlyList<string>, IReadOnlyList<float[]>>[]
+                 {
+                     _ => [],
+                     inputs => [.. inputs.Select(FakeEmbeddingProvider.Embed), .. inputs.Select(FakeEmbeddingProvider.Embed)],
+                     _ => [new float[3]],
+                 })
+        {
+            _host.Provider.Answer = answer;
+            using var response = await SearchTestHost.SearchAsync(owner.Client, "qzx7velvet quartz discharge");
+            await response.AssertProblemAsync(HttpStatusCode.ServiceUnavailable, "search_unavailable");
+        }
+
+        _host.Provider.Answer = null;
+    }
+
+    [Theory]
+    [InlineData(1.5)]
+    [InlineData(-0.1)]
+    public async Task An_out_of_range_minimum_similarity_is_a_503_search_unavailable_and_calls_no_provider(double minSimilarity)
+    {
+        await using var misconfigured = new SearchTestHost(factory, minSimilarity: minSimilarity);
+        using var owner = await misconfigured.SignInAsync();
+
+        using var response = await SearchTestHost.SearchAsync(owner.Client, "qzx7velvet quartz discharge");
+
+        await response.AssertProblemAsync(HttpStatusCode.ServiceUnavailable, "search_unavailable");
+        Assert.Empty(misconfigured.Provider.Calls);
+    }
+
+    [Fact]
     public async Task Unavailable_embedding_is_a_503_search_unavailable_and_calls_no_provider()
     {
         await using var unavailable = new SearchTestHost(factory, embeddingAvailable: false);
@@ -232,6 +266,33 @@ public sealed class SearchTests(ApiFactory factory) : IClassFixture<ApiFactory>,
 
         await response.AssertProblemAsync(HttpStatusCode.ServiceUnavailable, "search_unavailable");
         Assert.Empty(unavailable.Provider.Calls);
+    }
+
+    [Fact]
+    public async Task Searches_beyond_the_per_account_limit_are_429_and_reach_no_provider()
+    {
+        await using var limited = new SearchTestHost(factory, maxRequestsPerMinute: 2);
+        using var owner = await limited.SignInAsync();
+        using var other = await limited.SignInAsync();
+
+        for (var i = 0; i < 2; i++)
+        {
+            using var allowed = await SearchTestHost.SearchAsync(owner.Client, "qzx7velvet quartz discharge");
+            Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        }
+
+        var callsBefore = limited.Provider.Calls.Count;
+        using (var rejected = await SearchTestHost.SearchAsync(owner.Client, "qzx7velvet quartz discharge"))
+        {
+            await rejected.AssertProblemAsync(HttpStatusCode.TooManyRequests, "search_rate_limited");
+            Assert.True(rejected.Headers.RetryAfter is not null);
+        }
+
+        Assert.Equal(callsBefore, limited.Provider.Calls.Count);
+
+        // The limit is per account: another signed-in user still searches.
+        using var otherAllowed = await SearchTestHost.SearchAsync(other.Client, "qzx7velvet quartz discharge");
+        Assert.Equal(HttpStatusCode.OK, otherAllowed.StatusCode);
     }
 
     [Fact]

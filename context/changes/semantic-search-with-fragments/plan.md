@@ -533,7 +533,7 @@ change re-queue documents.
 
 #### Manual
 
-- [ ] 2.4 Local run against `compose.yaml` with `DeveloperCredential` embeds a sample document and stores 1536-dimension vectors
+- [x] 2.4 Local run against `compose.yaml` with `DeveloperCredential` embeds a sample document and stores 1536-dimension vectors — 98af4dc
 
 ### Phase 3: Owner-scoped search API
 
@@ -544,7 +544,7 @@ change re-queue documents.
 
 #### Manual
 
-- [ ] 3.3 A local search against embedded sample documents returns the expected document with a readable fragment
+- [x] 3.3 A local search against embedded sample documents returns the expected document with a readable fragment — 3562199
 
 ### Phase 4: Search screen
 

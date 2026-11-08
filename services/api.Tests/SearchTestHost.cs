@@ -27,7 +27,8 @@ public sealed class SearchTestHost : IAsyncDisposable
 {
     private readonly ApiFactory _factory;
 
-    public SearchTestHost(ApiFactory factory, double? minSimilarity = null, bool embeddingAvailable = true)
+    public SearchTestHost(
+        ApiFactory factory, double? minSimilarity = null, bool embeddingAvailable = true, int? maxRequestsPerMinute = null)
     {
         _factory = factory;
         Host = factory.WithWebHostBuilder(builder =>
@@ -45,6 +46,11 @@ public sealed class SearchTestHost : IAsyncDisposable
                 if (minSimilarity is { } min)
                 {
                     settings["Search:MinSimilarity"] = min.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                if (maxRequestsPerMinute is { } permits)
+                {
+                    settings["Search:MaxRequestsPerMinute"] = permits.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 }
 
                 configuration.AddInMemoryCollection(settings);

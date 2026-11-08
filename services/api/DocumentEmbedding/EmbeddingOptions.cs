@@ -26,4 +26,12 @@ public sealed class EmbeddingOptions
 
     // Per HTTP call to the provider.
     public TimeSpan HttpTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
+    // The estimated tokens one provider request may carry. Keep it well below the deployment's tokens-per-minute
+    // limit: the provider rejects a request whose estimate does not fit the remaining per-minute allowance.
+    public int MaxEstimatedTokensPerRequest { get; init; } = 16_000;
+
+    // The estimated tokens per minute the background worker may send; the rest of the deployment's limit is left to
+    // search. 0 turns pacing off.
+    public int WorkerTokensPerMinute { get; init; } = 40_000;
 }

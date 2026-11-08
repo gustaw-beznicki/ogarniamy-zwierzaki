@@ -158,6 +158,10 @@ public sealed class SearchIsolationTests(ApiFactory factory) : IClassFixture<Api
             .Single(i => i.GetProperty("documentId").GetGuid() == retiredDocument);
         Assert.Equal(retiredAnimal, retired.GetProperty("animalId").GetGuid());
         Assert.Equal("Reksio", retired.GetProperty("animalName").GetString());
+        Assert.False(retired.GetProperty("animalIsActive").GetBoolean());
+        var active = ownerBody.GetProperty("items").EnumerateArray()
+            .Single(i => i.GetProperty("documentId").GetGuid() == activeDocument);
+        Assert.True(active.GetProperty("animalIsActive").GetBoolean());
         Assert.Equal([otherRetiredDocument], SearchTestHost.DocumentIds(await SearchTestHost.SearchOkAsync(other.Client, $"{SharedToken} note")));
     }
 

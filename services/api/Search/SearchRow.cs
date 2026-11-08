@@ -9,6 +9,8 @@ public sealed class SearchRow
 
     public string AnimalName { get; set; } = string.Empty;
 
+    public bool AnimalIsActive { get; set; }
+
     public DateOnly EventDate { get; set; }
 
     public Guid FileId { get; set; }

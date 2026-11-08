@@ -125,10 +125,11 @@ Operating notes:
 
 - **Pausing.** Set `Embedding__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Stored text and originals are untouched.
 - **Similarity cutoff.** `Search__MinSimilarity` (`0.30`) is provisional; calibrate it on real documents and change it in `main.bicep`.
+- **Operating procedures.** Job states, failure codes, read-only inspection queries, backfill progress, pause and resume, requeueing failed jobs and rollback are in [Operate semantic search](sop/operate-semantic-search.md).
 
 ## Smoke test
 
-`scripts/smoke.sh <swa-host> <api-host>` checks that the page is served, that `https://<swa-host>/api/health` returns `{"status":"ok"}` (retried for up to 10 minutes to cover cold starts), that `/api/me`, the capture defaults, document list, document, original, reading status and reading Retry routes answer 401 without a session, and that the API's own `*.azurewebsites.net` host refuses direct requests. It sends only anonymous requests: `GET`s and one empty `POST` to the Retry route, which is refused before any lookup. It changes no data and does not exercise storage access or reading.
+`scripts/smoke.sh <swa-host> <api-host>` checks that the page is served, that `https://<swa-host>/api/health` returns `{"status":"ok"}` (retried for up to 10 minutes to cover cold starts), that `/api/me`, the capture defaults, document list, document, original, reading status, reading Retry and search routes answer 401 without a session, and that the API's own `*.azurewebsites.net` host refuses direct requests. It sends only anonymous requests: `GET`s and empty `POST`s to the Retry and search routes, which are refused before any lookup or embedding call. It changes no data and does not exercise storage access or reading.
 
 ## Rollback
 

@@ -112,6 +112,13 @@ status="$(fetch_settled fetch_post "${url}")"
 [[ "${status}" == "401" ]] || fail "check 2d: POST ${url} returned ${status}, expected 401 without a session"
 echo "PASS: check 2d: POST ${url} returned 401 without a session"
 
+# Check 2e: search refuses anonymous requests without redirecting. An empty POST without a session or antiforgery token
+# is refused before the query is read or embedded, so it costs nothing and sends nothing to the embedding provider.
+url="https://${SWA_HOST}/api/search"
+status="$(fetch_settled fetch_post "${url}")"
+[[ "${status}" == "401" ]] || fail "check 2e: POST ${url} returned ${status}, expected 401 without a session"
+echo "PASS: check 2e: POST ${url} returned 401 without a session"
+
 # Check 3: the App Service refuses direct traffic because it is a linked backend.
 url="https://${API_HOST}/api/health"
 status="$(fetch "${url}")"

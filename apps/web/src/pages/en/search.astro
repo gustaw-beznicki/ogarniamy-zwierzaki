@@ -3,8 +3,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getMessages } from '../../i18n';
 import { SessionGate } from '../../components/SessionGate';
 import { AppShell } from '../../components/AppShell';
-import { Placeholder } from '../../components/Placeholder';
+import { SearchView } from '../../components/SearchView';
 const locale = 'en' as const;
 const messages = getMessages(locale);
 ---
-<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="protected" client:load><AppShell locale={locale} messages={messages} active="search" client:load><Placeholder title={messages.search} messages={messages} client:load /></AppShell></SessionGate></BaseLayout>
+<BaseLayout locale={locale} messages={messages}><SessionGate locale={locale} messages={messages} destination="protected" client:load><AppShell locale={locale} messages={messages} active="search" client:load><SearchView locale={locale} messages={messages} client:load /></AppShell></SessionGate></BaseLayout>

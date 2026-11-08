@@ -19,11 +19,13 @@ public static class SearchEndpoints
         app.MapPost("/api/search", SearchAsync)
             .WithName("SearchDocuments")
             .AddEndpointFilter<AntiforgeryHeaderFilter>()
-            .WithMetadata(new RequestSizeLimitAttribute(SearchRequestBytes));
+            .WithMetadata(new RequestSizeLimitAttribute(SearchRequestBytes))
+            .RequireRateLimiting(SearchRateLimit.PolicyName);
         return app;
     }
 
-    // 400 invalid_query for an empty or too long query; 503 search_unavailable when embedding is unavailable or the
+    // 429 search_rate_limited (before this handler) after too many searches in a minute; 400 invalid_query for an
+    // empty or too long query; 503 search_unavailable when embedding is unavailable or the
     // provider failed (never partial or substitute results); otherwise 200, with no items when nothing matches.
     private static async Task<Results<Ok<SearchResponse>, ProblemHttpResult>> SearchAsync(
         SearchRequest? request, ClaimsPrincipal principal, UserManager<AppUser> users, OwnedSearch search,

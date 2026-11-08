@@ -31,9 +31,10 @@ public sealed partial class DocumentEmbeddingJobs(AppDbContext db)
                 failure_code = NULL, requested_at = now(), updated_at = now()
             """, cancellationToken);
 
-    // Queues (or re-queues) the embedding of every read document of one animal, in the caller's transaction: a rename
-    // that changed the name. Documents whose reading is not read (queued, reading, failed) are not touched; publishing
-    // their text queues them with the name current at that time. Returns how many documents were queued.
+    // Queues (or re-queues) the embedding of every document of one animal that has published text, in the caller's
+    // transaction: a rename that changed the name. That includes documents being read again or whose new reading
+    // failed, because their published text is still searchable under the old name. Documents never read are not
+    // touched; publishing their text queues them with the name current at that time. Returns how many were queued.
     public static Task<int> EnqueueAnimalDocumentsAsync(
         AppDbContext db, Guid animalId, CancellationToken cancellationToken = default) =>
         db.Database.ExecuteSqlAsync($"""
@@ -41,7 +42,7 @@ public sealed partial class DocumentEmbeddingJobs(AppDbContext db)
             SELECT d.id, 'queued', now(), 0, now(), now(), now()
             FROM documents d
             JOIN document_reading_jobs r ON r.document_id = d.id
-            WHERE d.animal_id = {animalId} AND r.state = 'read'
+            WHERE d.animal_id = {animalId} AND r.published_run_generation IS NOT NULL
             ON CONFLICT (document_id) DO UPDATE
             SET state = 'queued', due_at = now(), attempt_count = 0, lease_token = NULL, lease_expires_at = NULL,
                 failure_code = NULL, requested_at = now(), updated_at = now()

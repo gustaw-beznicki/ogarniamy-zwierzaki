@@ -41,12 +41,23 @@ public sealed class OwnedSearch(
             return null;
         }
 
+        if (SearchOptions.TryRead(options, out var reason) is not { } settings)
+        {
+            logger.LogWarning("Search is unavailable: {Reason}", reason);
+            return null;
+        }
+
         Vector queryVector;
         try
         {
             // The query text goes to the provider as it is, without a prefix.
             var vectors = await embeddings.EmbedAsync([query], cancellationToken);
-            queryVector = new Vector(vectors.Single());
+            if (vectors.Count != 1 || vectors[0].Length != EmbeddingOptions.StoredDimensions)
+            {
+                throw EmbeddingFailure.Terminal(EmbeddingFailure.ProviderProtocol);
+            }
+
+            queryVector = new Vector(vectors[0]);
         }
         catch (EmbeddingFailure failure)
         {
@@ -54,7 +65,7 @@ public sealed class OwnedSearch(
             return null;
         }
 
-        var minSimilarity = options.Value.MinSimilarity;
+        var minSimilarity = settings.MinSimilarity;
         var rows = await FindBestChunksAsync(userId, queryVector, minSimilarity, cancellationToken);
         var notSearchable = await CountNotSearchableAsync(userId, cancellationToken);
 
@@ -63,7 +74,7 @@ public sealed class OwnedSearch(
             rows.Count, notSearchable);
         return new SearchResponse(
             rows.Select(r => new SearchResult(
-                r.DocumentId, r.AnimalId, r.AnimalName, r.EventDate, r.FileId, r.FilePosition, r.SourcePageNumber,
+                r.DocumentId, r.AnimalId, r.AnimalName, r.AnimalIsActive, r.EventDate, r.FileId, r.FilePosition, r.SourcePageNumber,
                 r.FilePageCount, r.Fragment, StoredDocumentFileResponse.OriginalUrlFor(r.DocumentId, r.FileId))).ToList(),
             notSearchable);
     }
@@ -99,6 +110,7 @@ public sealed class OwnedSearch(
                 b.document_id AS document_id,
                 o.animal_id AS animal_id,
                 a.name AS animal_name,
+                a.is_active AS animal_is_active,
                 o.event_date AS event_date,
                 b.document_file_id AS file_id,
                 b.file_position AS file_position,

@@ -121,11 +121,13 @@ builder.Services.AddScoped<DocumentCaptureService>();
 builder.Services.AddScoped<OwnedDocumentReading>();
 builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection(SearchOptions.SectionName));
 builder.Services.AddScoped<OwnedSearch>();
+builder.Services.AddSearchRateLimit();
 
 var app = builder.Build();
 
 app.LogDocumentReadingConfiguration();
 app.LogEmbeddingConfiguration();
+app.LogSearchConfiguration();
 
 await app.PrepareOriginalStorageAsync();
 await app.MigrateDatabaseAsync();
@@ -141,6 +143,8 @@ app.UseHttpsRedirection();
 app.UseNoStoreApiResponses();
 app.UseAuthentication();
 app.UseAuthorization();
+// After authorization, so the per-account search limit sees the signed-in user and anonymous requests are already 401.
+app.UseRateLimiter();
 app.UseAntiforgery();
 
 // Healthy only when the database is reachable; an unhealthy check returns 503.

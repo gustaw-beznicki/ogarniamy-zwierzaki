@@ -102,6 +102,29 @@ export interface DocumentReadingStatus {
   completedAt: string | null;
 }
 
+// One matching document with its best fragment, in relevance order. eventDate is yyyy-MM-dd. filePosition is the
+// zero-based position of the original holding the fragment, sourcePageNumber its one-based page within that original
+// (1 for a photo) and filePageCount the original's page count. originalUrl opens that original. There is no score.
+export interface SearchResult {
+  documentId: string;
+  animalId: string;
+  animalName: string;
+  animalIsActive: boolean;
+  eventDate: string;
+  fileId: string;
+  filePosition: number;
+  sourcePageNumber: number;
+  filePageCount: number;
+  fragment: string;
+  originalUrl: string;
+}
+
+// At most 20 items. notSearchableCount counts the owner's stored documents that cannot be found yet.
+export interface SearchResponse {
+  items: SearchResult[];
+  notSearchableCount: number;
+}
+
 interface AntiforgeryToken {
   token: string;
   headerName: string;
@@ -281,4 +304,6 @@ export const api = {
   documentReading: (id: string) => request<DocumentReadingStatus>(`/api/documents/${encodeURIComponent(id)}/reading`),
   retryDocumentReading: (id: string, accountEmail: string) =>
     ownerMutation<DocumentReadingStatus>(`/api/documents/${encodeURIComponent(id)}/reading/retry`, { method: 'POST' }, accountEmail),
+  // A read-only POST: sent once; after a rejected token the cached token is dropped, so the user's Retry uses a fresh one.
+  search: (query: string) => accountMutation<SearchResponse>('/api/search', { method: 'POST', json: { query } }),
 };

@@ -51,6 +51,8 @@ Azure is the best fit for the .NET-first stack, the required continuously runnin
 - **Database region**: the first deploy to the new subscription (2026-10-24) failed with `RegionalAllocationFailed` for PostgreSQL Burstable in `swedencentral`, twice. The server moves to **`polandcentral`** (`postgresLocation` in `infra/environments/mvp.bicepparam`); the API and the other resources stay in `swedencentral`. Data stays in the EU; the API to database round trip crosses regions. `westeurope` and `germanywestcentral` refuse PostgreSQL for this subscription.
 - **Switch closed (2026-11-08)**: the owner reports the switch finished and the new environment tested (runbook steps 5–9). The deploy after #41 is the one running production. The new account went live on 2026-10-24 (PR #39 merged), so the 30-day Free Trial ends around **2026-11-23** (the subscription itself was created slightly earlier, so check the exact date in the portal). The Free Trial ends 30 days after the subscription was created: upgrade to pay-as-you-go before then, and record the upgrade date here.
 
+- **Azure OpenAI quota (checked 2026-11-08)**: `swedencentral` shows `OpenAI.Standard.text-embedding-3-large` limit 350 (thousands of tokens per minute), used 0, on the Free Trial subscription. The planned deployment (capacity 50) fits. The model version/SKU list (runbook step 8, second command) was not run.
+
 ## Research Constraints
 
 - Persistent server-side processes are required for OCR and embedding work.

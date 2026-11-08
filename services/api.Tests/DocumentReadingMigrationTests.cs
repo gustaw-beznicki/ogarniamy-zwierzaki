@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Pgvector.EntityFrameworkCore;
 using ogarniamy_zwierzaki_api.Data;
 using ogarniamy_zwierzaki_api.DocumentReading;
 
@@ -96,7 +97,7 @@ public sealed class DocumentReadingMigrationTests(ApiFactory factory) : IClassFi
             Database = $"{prefix}_{Guid.NewGuid():N}",
         };
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connection.ConnectionString)
+            .UseNpgsql(connection.ConnectionString, npgsql => npgsql.UseVector())
             .UseSnakeCaseNamingConvention()
             .Options;
         return new AppDbContext(options);

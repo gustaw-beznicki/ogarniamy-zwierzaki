@@ -527,9 +527,9 @@ change re-queue documents.
 
 #### Automated
 
-- [ ] 2.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`
-- [ ] 2.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`
-- [ ] 2.3 Migration applies on a fresh pgvector database and on a database migrated through `DocumentReading`
+- [x] 2.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`
+- [x] 2.2 API builds: `dotnet build services/api/ogarniamy-zwierzaki-api.csproj`
+- [x] 2.3 Migration applies on a fresh pgvector database and on a database migrated through `DocumentReading`
 
 #### Manual
 

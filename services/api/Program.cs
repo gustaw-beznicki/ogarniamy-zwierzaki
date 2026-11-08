@@ -10,6 +10,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
 using ogarniamy_zwierzaki_api.Data;
+using ogarniamy_zwierzaki_api.DocumentEmbedding;
 using ogarniamy_zwierzaki_api.DocumentReading;
 using ogarniamy_zwierzaki_api.Documents;
 using ogarniamy_zwierzaki_api.Storage;
@@ -41,6 +42,9 @@ builder.Services.AddOriginalStorage();
 // Reading stored documents with Azure Document Intelligence. Off by default; misconfiguration disables reading
 // with a startup warning instead of stopping the API.
 builder.Services.AddDocumentReading();
+// Embedding read text with Azure OpenAI for semantic search. Off by default; misconfiguration disables embedding with a
+// startup warning instead of stopping the API.
+builder.Services.AddDocumentEmbedding();
 
 // Cookie encryption keys live in PostgreSQL, so sessions survive restarts in every hosting mode.
 builder.Services.AddDataProtection().PersistKeysToDbContext<AppDbContext>();
@@ -118,6 +122,7 @@ builder.Services.AddScoped<OwnedDocumentReading>();
 var app = builder.Build();
 
 app.LogDocumentReadingConfiguration();
+app.LogEmbeddingConfiguration();
 
 await app.PrepareOriginalStorageAsync();
 await app.MigrateDatabaseAsync();

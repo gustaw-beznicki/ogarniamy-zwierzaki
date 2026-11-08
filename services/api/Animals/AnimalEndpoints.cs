@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using ogarniamy_zwierzaki_api.Auth;
+using ogarniamy_zwierzaki_api.DocumentEmbedding;
 
 namespace ogarniamy_zwierzaki_api.Animals;
 
@@ -67,7 +68,7 @@ public static class AnimalEndpoints
 
     private static async Task<Results<Ok<OwnedAnimal>, NotFound, ProblemHttpResult>> RenameAsync(
         Guid id, HttpRequest http, ClaimsPrincipal principal, UserManager<AppUser> users, OwnedAnimals animals,
-        CancellationToken cancellationToken)
+        DocumentEmbeddingWakeUp embeddingWakeUp, CancellationToken cancellationToken)
     {
         var version = ReadVersion(http, out var versionProblem);
         if (versionProblem is not null)
@@ -98,6 +99,12 @@ public static class AnimalEndpoints
         }
 
         var result = await animals.RenameAsync(CurrentUser.Id(principal, users), id, version, name, cancellationToken);
+        if (result.Outcome == AnimalMutationOutcome.Updated)
+        {
+            // A changed name queued the animal's documents for re-embedding; let an idle worker look now.
+            embeddingWakeUp.Notify();
+        }
+
         return ToResponse(result);
     }
 

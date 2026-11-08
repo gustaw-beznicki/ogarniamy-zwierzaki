@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ogarniamy_zwierzaki_api.DocumentEmbedding;
 using ogarniamy_zwierzaki_api.Documents;
 using ogarniamy_zwierzaki_api.Storage;
 
@@ -25,7 +26,8 @@ public sealed class DocumentReadingWorker(
     DocumentReadingWakeUp wakeUp,
     IOriginalStorage storage,
     TimeProvider time,
-    ILogger<DocumentReadingWorker> logger) : BackgroundService
+    ILogger<DocumentReadingWorker> logger,
+    DocumentEmbeddingWakeUp? embeddingWakeUp = null) : BackgroundService
 {
     // Including the first attempt; a transient failure of the last one fails the job.
     public const int MaxAttempts = 5;
@@ -285,6 +287,8 @@ public sealed class DocumentReadingWorker(
         switch (publication)
         {
             case DocumentReadingPublication.Published:
+                // Publication queued the embedding job; let an idle embedding worker look now.
+                embeddingWakeUp?.Notify();
                 return;
             case DocumentReadingPublication.EmptyDocument:
                 throw DocumentReadFailure.Terminal(DocumentReadFailure.EmptyDocument);

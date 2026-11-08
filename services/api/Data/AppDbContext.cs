@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ogarniamy_zwierzaki_api.Animals;
 using ogarniamy_zwierzaki_api.Auth;
+using ogarniamy_zwierzaki_api.DocumentEmbedding;
 using ogarniamy_zwierzaki_api.DocumentReading;
 using ogarniamy_zwierzaki_api.Documents;
 
@@ -32,6 +33,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<DocumentTextPage> DocumentTextPages => Set<DocumentTextPage>();
 
+    // Derived embedding state and vectors. Written only by DocumentEmbeddingJobs, the trusted worker boundary (and the
+    // enqueue statements of reading publication and animal rename); owner-facing reads must go through the user's
+    // animal memberships.
+    public DbSet<DocumentEmbeddingJob> DocumentEmbeddingJobs => Set<DocumentEmbeddingJob>();
+
+    public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
+
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     // Read and written only through DatabaseTicketStore, on behalf of the session cookie handler.
@@ -40,6 +48,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // pgvector: the vector type of document_chunks.embedding. The startup migration creates the extension.
+        builder.HasPostgresExtension("vector");
 
         // Identity sets explicit AspNet* table and index names, which the snake_case convention does not rename.
         builder.Entity<AppUser>(user =>
@@ -266,6 +277,61 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .HasPrincipalKey(f => new { f.DocumentId, f.Id })
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        builder.Entity<DocumentEmbeddingJob>(job =>
+        {
+            job.ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "ck_document_embedding_jobs_state", "state IN ('queued', 'embedding', 'embedded', 'failed')");
+                table.HasCheckConstraint(
+                    "ck_document_embedding_jobs_counters",
+                    "attempt_count >= 0 AND (embedded_run_generation IS NULL OR embedded_run_generation >= 1)");
+                // A lease is all-or-nothing and held exactly while Embedding.
+                table.HasCheckConstraint(
+                    "ck_document_embedding_jobs_lease",
+                    "(lease_token IS NULL) = (lease_expires_at IS NULL) AND (state = 'embedding') = (lease_token IS NOT NULL)");
+                table.HasCheckConstraint(
+                    "ck_document_embedding_jobs_failure_code",
+                    "(state = 'failed') = (failure_code IS NOT NULL) AND (failure_code IS NULL OR failure_code ~ '^[a-z0-9_]{1,64}$')");
+                // Embedded means a result exists; a re-queued job keeps its previous one.
+                table.HasCheckConstraint(
+                    "ck_document_embedding_jobs_embedded",
+                    "state <> 'embedded' OR (embedded_run_generation IS NOT NULL AND embedded_animal_name IS NOT NULL)");
+            });
+            job.HasKey(j => j.DocumentId);
+            job.Property(j => j.DocumentId).ValueGeneratedNever();
+            job.Property(j => j.State)
+                .HasConversion(state => ToDatabase(state), value => EmbeddingStateFromDatabase(value))
+                .HasColumnType("text")
+                .IsRequired();
+            job.Property(j => j.FailureCode).HasMaxLength(DocumentEmbeddingJob.FailureCodeMaxLength);
+            job.Property(j => j.EmbeddedAnimalName).HasMaxLength(Animal.NameMaxLength);
+            // Claims: due Queued jobs, and Embedding jobs whose lease expired.
+            job.HasIndex(j => j.DueAt).HasDatabaseName("ix_document_embedding_jobs_due_queued").HasFilter("state = 'queued'");
+            job.HasIndex(j => j.LeaseExpiresAt)
+                .HasDatabaseName("ix_document_embedding_jobs_lease_embedding")
+                .HasFilter("state = 'embedding'");
+            // One job per document; the MVP never deletes documents.
+            job.HasOne<Document>().WithOne().HasForeignKey<DocumentEmbeddingJob>(j => j.DocumentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<DocumentChunk>(chunk =>
+        {
+            chunk.ToTable(table =>
+                table.HasCheckConstraint(
+                    "ck_document_chunks_provenance",
+                    "chunk_index >= 0 AND run_generation >= 1 AND source_page_number >= 1 AND file_position >= 0 " +
+                    "AND start_offset >= 0 AND end_offset > start_offset"));
+            chunk.HasKey(c => new { c.DocumentId, c.ChunkIndex });
+            chunk.Property(c => c.Text).IsRequired();
+            chunk.Property(c => c.Embedding).HasColumnType($"vector({EmbeddingOptions.StoredDimensions})").IsRequired();
+            chunk.Property(c => c.EmbeddingVersion).IsRequired();
+            // Search scans an owner's chunks exactly (no ANN index); this serves per-document replacement and lookups.
+            chunk.HasIndex(c => c.DocumentId);
+            chunk.HasOne<Document>().WithMany().HasForeignKey(c => c.DocumentId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static string ToDatabase(AnimalRole role) => role switch
@@ -310,6 +376,24 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         "read" => DocumentReadingState.Read,
         "failed" => DocumentReadingState.Failed,
         _ => throw new InvalidOperationException($"Unknown document reading state '{value}'."),
+    };
+
+    private static string ToDatabase(DocumentEmbeddingState state) => state switch
+    {
+        DocumentEmbeddingState.Queued => "queued",
+        DocumentEmbeddingState.Embedding => "embedding",
+        DocumentEmbeddingState.Embedded => "embedded",
+        DocumentEmbeddingState.Failed => "failed",
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "Unknown document embedding state."),
+    };
+
+    private static DocumentEmbeddingState EmbeddingStateFromDatabase(string value) => value switch
+    {
+        "queued" => DocumentEmbeddingState.Queued,
+        "embedding" => DocumentEmbeddingState.Embedding,
+        "embedded" => DocumentEmbeddingState.Embedded,
+        "failed" => DocumentEmbeddingState.Failed,
+        _ => throw new InvalidOperationException($"Unknown document embedding state '{value}'."),
     };
 
     private static string ToDatabase(DocumentReadingRunFileStage stage) => stage switch

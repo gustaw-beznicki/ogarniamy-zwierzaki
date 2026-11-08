@@ -125,7 +125,7 @@ Operating notes:
 
 - **Backfill and pacing.** The worker embeds one document at a time and sends at most 40,000 estimated tokens per minute, leaving the rest of the deployment's limit to searches. Like reading, it waits while F1 sleeps and resumes about a minute after the next request wakes the app. Track progress with the backfill query in the SOP.
 - **Pausing.** Set `Embedding__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Queued jobs wait; stored chunks stay searchable, and stored text and originals are untouched.
-- **Similarity cutoff.** `Search__MinSimilarity` comes from `searchMinSimilarity` in [`main.bicep`](../infra/main.bicep), currently the provisional `0.30`. Change it there after calibrating on real documents; a value set by hand lasts only until the next deployment.
+- **Similarity cutoff.** `Search__MinSimilarity` comes from `searchMinSimilarity` in [`main.bicep`](../infra/main.bicep), currently the provisional `0.70`. Change it there after calibrating on real documents; a value set by hand lasts only until the next deployment.
 - **Search latency.** Each search is one embedding call plus an exact, owner-scoped cosine query. On F1 the first request after idle time pays the cold start; cold starts that break the about-two-second search target are a trigger for moving to B1 ([infrastructure decisions](../context/foundation/infrastructure.md)).
 - **Operating procedures.** Job states, failure codes, read-only inspection queries, backfill progress, pause and resume, requeueing failed jobs and rollback are in [Operate semantic search](sop/operate-semantic-search.md).
 

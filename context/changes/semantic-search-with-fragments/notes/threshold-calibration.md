@@ -1,7 +1,7 @@
 # Threshold calibration (S-04, Phase 5)
 
-**Status**: pending. The owner has not run the calibration yet. `searchMinSimilarity` in `infra/main.bicep` stays at
-the provisional `0.30` until the Decision section below is filled in.
+**Status**: provisional. The owner set `searchMinSimilarity` in `infra/main.bicep` to `0.70` on 2026-11-09, to be
+validated later with scores from the real archive; the Decision section below is filled in after that run.
 
 ## Purpose
 
@@ -162,6 +162,51 @@ Run date: _pending_. Documents embedded at the time: _pending_. Embedding versio
 
 A false match is a returned document the owner would not expect for that query.
 
+## Preliminary run on synthetic documents (2026-11-09)
+
+The owner's Azure account held no documents after the Phase 5 deploy, so six fictional one-page PDFs (each marked as
+a test document, invented clinic and vet) were uploaded to the only animal, Czarek: echocardiography with
+hypertrophic cardiomyopathy (`echo`), vaccination certificate (`vacc`), blood count and biochemistry (`blood`),
+dental scaling and extraction (`teeth`), dermatology consult with an elimination diet (`skin`), and parasite
+prevention (`para`). All six were read and embedded within about a minute (`notSearchableCount` 0). Queries ran
+through the app's `/api/search` with the deployed threshold `0.30`; the API returns no scores, so only order and
+count were recorded. Every query answered in 207–280 ms from the browser on a warm app.
+
+| Query | Results (in order) | Top result right? | Irrelevant results returned? |
+| --- | --- | --- | --- |
+| serce Czarka | echo > vacc > teeth > skin > para > blood | yes | yes (5) |
+| kardiomiopatia | echo | yes | no |
+| szmer w sercu | echo > teeth | yes | yes (1) |
+| wścieklizna | vacc > teeth > para > blood > echo > skin | yes | yes (5) |
+| kiedy następne szczepienie | vacc > para > teeth > echo > skin > blood | yes | yes (4–5) |
+| wyniki krwi | blood > echo > skin > teeth > para > vacc | yes | yes (5) |
+| nerki kreatynina | blood > echo > teeth > para > skin > vacc | yes | yes (5) |
+| usunięcie kamienia nazębnego | teeth > para > vacc | yes | yes (2) |
+| ząb | teeth > skin > vacc > para > echo | yes | yes (4) |
+| swędzenie i łysienie | skin > para > teeth > vacc | yes | yes (2–3) |
+| dieta eliminacyjna | teeth > skin > para > blood | **no** (skin is 2nd) | yes (3) |
+| pchły i kleszcze | para > skin > vacc > teeth > echo > blood | yes | yes (4–5) |
+| odrobaczanie | para > teeth > skin > vacc > blood > echo | yes | yes (5) |
+| złamana łapa (unrelated) | teeth > echo > skin > vacc > para > blood | — | yes (6) |
+| przepis na sernik (unrelated) | teeth > skin | — | yes (2) |
+| kastracja (unrelated) | teeth > para > vacc > skin > echo > blood | — | yes (6) |
+| rentgen klatki piersiowej (unrelated) | echo > teeth > blood > vacc > para > skin | — | yes (6) |
+| USG brzucha (unrelated) | blood > echo > teeth > skin > para > vacc | — | yes (6) |
+
+Observations:
+
+- Ranking is good: the expected document is first in 12 of 13 related queries; "serce Czarka" puts the
+  cardiomyopathy document first.
+- `0.30` is far too permissive: unrelated queries (a cheesecake recipe, a broken paw) return documents, so the empty
+  state almost never appears. Queries naming the animal match everything, as expected from the animal-name prefix.
+- Each synthetic document fits in one chunk, so these numbers say nothing about fragment choice within long documents.
+- Isolation check on Azure (same day): a second account with its own animal ran eight queries (including
+  "serce Czarka", "kardiomiopatia" and "Czarek") and got 0 results each, and the owner's document details and
+  reading endpoints answered 404. Latency there was 201–248 ms, with 664 ms for the first search of the session;
+  a cold start after F1 idle time was not measured.
+- Choosing the value still needs scores (step 4 of the method). The real archive should be used for the final pick;
+  these six documents are only a sanity check and can stay as test data.
+
 ## Decision rule
 
 1. Take the highest false-match score over all queries (`F`) and the lowest expected-document score (`E`).
@@ -173,11 +218,12 @@ A false match is a returned document the owner would not expect for that query.
 
 ## Decision
 
-_Pending the owner's calibration run._
+Provisional `0.70`, set by the owner on 2026-11-09 after the synthetic-document run above showed `0.30` returns
+unrelated documents. Not yet validated with scores; the fields below are filled in after the real-archive run.
 
 - `F` (highest false-match score): _pending_
 - `E` (lowest expected score): _pending_
-- Chosen threshold: _pending_ (provisional `0.30` until then)
+- Chosen threshold: _pending_ (provisional `0.70` until then)
 - Trade-offs accepted: _pending_
 - "serce Czarka" finds the cardiomyopathy document at the chosen threshold: _pending_
 - Approved by the owner on: _pending_

@@ -539,8 +539,8 @@ change re-queue documents.
 
 #### Automated
 
-- [ ] 3.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj`
-- [ ] 3.2 Isolation tests for search pass (anonymous, other account, inactive animal)
+- [x] 3.1 API tests pass: `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj` — 3562199
+- [x] 3.2 Isolation tests for search pass (anonymous, other account, inactive animal) — 3562199
 
 #### Manual
 

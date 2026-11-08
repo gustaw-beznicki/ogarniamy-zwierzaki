@@ -824,8 +824,8 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Manual
 
-- [ ] 1.5 Every existing screen still renders and works in the new palette and fonts at 390 px and 1280 px
-- [ ] 1.6 Polish diacritics render in Bricolage and Figtree
+- [x] 1.5 Every existing screen still renders and works in the new palette and fonts at 390 px and 1280 px
+- [x] 1.6 Polish diacritics render in Bricolage and Figtree
 
 ### Phase 2: Shell, language switch, sign-in, onboarding, gate and placeholder
 
@@ -839,12 +839,12 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Manual
 
-- [ ] 2.6 Floating bottom bar at 390 px and dark green sidebar at 1280 px
-- [ ] 2.7 Language switch keeps behaviour and query string on every screen, 44 px links
-- [ ] 2.8 Sign-in and registration: sliding tabs, field-level and form-level errors
-- [ ] 2.9 Onboarding: empty-name error under the field, linked by aria-describedby
-- [ ] 2.10 Sign-out failure Alert next to the sign-out control
-- [ ] 2.11 Keyboard order and visible focus on light and green backgrounds
+- [x] 2.6 Floating bottom bar at 390 px and dark green sidebar at 1280 px
+- [x] 2.7 Language switch keeps behaviour and query string on every screen, 44 px links
+- [x] 2.8 Sign-in and registration: sliding tabs, field-level and form-level errors
+- [x] 2.9 Onboarding: empty-name error under the field, linked by aria-describedby
+- [x] 2.10 Sign-out failure Alert next to the sign-out control
+- [x] 2.11 Keyboard order and visible focus on light and green backgrounds
 
 ### Phase 3: Animal list and profile with history timeline
 
@@ -856,11 +856,11 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Manual
 
-- [ ] 3.4 Animals rows at 390 px, card grid at 1280 px, inactive section, stable avatar colours
-- [ ] 3.5 Profile rename success, focus return, and conflict warning with kept draft
-- [ ] 3.6 Inactive hero and warning Alert with Mark as active; focus after activation
-- [ ] 3.7 History month grouping with one heading per month after Show more
-- [ ] 3.8 Unavailable profile shows the page-level state with a back link
+- [x] 3.4 Animals rows at 390 px, card grid at 1280 px, inactive section, stable avatar colours
+- [x] 3.5 Profile rename success, focus return, and conflict warning with kept draft
+- [x] 3.6 Inactive hero and warning Alert with Mark as active; focus after activation
+- [x] 3.7 History month grouping with one heading per month after Show more
+- [x] 3.8 Unavailable profile shows the page-level state with a back link
 
 ### Phase 4: Add document
 
@@ -872,12 +872,12 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Manual
 
-- [ ] 4.4 Field errors appear in the files, animal and date zones and are linked to their inputs
-- [ ] 4.5 Duplicate photo shows a warning and keeps the selection
-- [ ] 4.6 Reorder and remove work with 44 px buttons
-- [ ] 4.7 Progress shimmer, saved check and redirect; static with reduced motion
-- [ ] 4.8 PDF-over-photos replace prompt works as before
-- [ ] 4.9 Layout works at 390 px and 1280 px
+- [x] 4.4 Field errors appear in the files, animal and date zones and are linked to their inputs
+- [x] 4.5 Duplicate photo shows a warning and keeps the selection
+- [x] 4.6 Reorder and remove work with 44 px buttons
+- [x] 4.7 Progress shimmer, saved check and redirect; static with reduced motion
+- [x] 4.8 PDF-over-photos replace prompt works as before
+- [x] 4.9 Layout works at 390 px and 1280 px
 
 ### Phase 5: Document details, reading status and originals viewer
 
@@ -889,11 +889,11 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Manual
 
-- [ ] 5.4 Every reading state shows its own tile and copy; scan line only while reading; retry works
-- [ ] 5.5 Thumbnail viewer switches pages with marked selection and keyboard support
-- [ ] 5.6 Single photo shows no strip; PDF shows the file card
-- [ ] 5.7 Two columns at 1280 px, stacked at 390 px, originals reachable when status is unavailable
-- [ ] 5.8 Reduced motion stops pulse, scan and shake and shows the drawn check
+- [x] 5.4 Every reading state shows its own tile and copy; scan line only while reading; retry works
+- [x] 5.5 Thumbnail viewer switches pages with marked selection and keyboard support
+- [x] 5.6 Single photo shows no strip; PDF shows the file card
+- [x] 5.7 Two columns at 1280 px, stacked at 390 px, originals reachable when status is unavailable
+- [x] 5.8 Reduced motion stops pulse, scan and shake and shows the drawn check
 
 ### Phase 6: Cleanup, documentation and full review
 
@@ -909,7 +909,7 @@ None. There is no data change. The two new font packages are the only dependency
 
 #### Manual
 
-- [ ] 6.8 Every screen reviewed in PL and EN at 390 px and 1280 px against the design
-- [ ] 6.9 Keyboard-only pass on every screen with 44 px targets
-- [ ] 6.10 No screen animates with OS reduced motion enabled
-- [ ] 6.11 Owner approves the new PL strings
+- [x] 6.8 Every screen reviewed in PL and EN at 390 px and 1280 px against the design
+- [x] 6.9 Keyboard-only pass on every screen with 44 px targets
+- [x] 6.10 No screen animates with OS reduced motion enabled
+- [x] 6.11 Owner approves the new PL strings

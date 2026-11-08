@@ -1,9 +1,9 @@
 ---
 change_id: ui-redesign
 title: UI redesign
-status: implementing
+status: implemented
 created: 2026-10-12
-updated: 2026-10-13
+updated: 2026-11-08
 archived_at: null
 ---
 

@@ -16,5 +16,9 @@ public sealed record StoredDocumentFileResponse(
         file.OriginalName,
         file.ContentType,
         file.ByteLength,
-        $"/api/documents/{documentId:D}/files/{file.Id:D}/original");
+        OriginalUrlFor(documentId, file.Id));
+
+    // The one place the authenticated original route is spelled; search results use it too.
+    public static string OriginalUrlFor(Guid documentId, Guid fileId) =>
+        $"/api/documents/{documentId:D}/files/{fileId:D}/original";
 }

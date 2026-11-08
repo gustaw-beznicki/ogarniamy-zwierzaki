@@ -13,6 +13,7 @@ using ogarniamy_zwierzaki_api.Data;
 using ogarniamy_zwierzaki_api.DocumentEmbedding;
 using ogarniamy_zwierzaki_api.DocumentReading;
 using ogarniamy_zwierzaki_api.Documents;
+using ogarniamy_zwierzaki_api.Search;
 using ogarniamy_zwierzaki_api.Storage;
 
 // The local PDF parser child process (see PdfTextReader): reads a PDF from standard input, writes JSON, and exits,
@@ -118,6 +119,8 @@ builder.Services.AddScoped<OwnedAnimals>();
 builder.Services.AddScoped<OwnedDocuments>();
 builder.Services.AddScoped<DocumentCaptureService>();
 builder.Services.AddScoped<OwnedDocumentReading>();
+builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection(SearchOptions.SectionName));
+builder.Services.AddScoped<OwnedSearch>();
 
 var app = builder.Build();
 
@@ -159,5 +162,6 @@ app.MapAnimalEndpoints();
 app.MapAntiforgeryEndpoints();
 app.MapDocumentEndpoints();
 app.MapDocumentReadingEndpoints();
+app.MapSearchEndpoints();
 
 app.Run();

@@ -248,6 +248,19 @@ Findings:
   (0.001–0.05), so a relative cut on top of the absolute one would separate them better. A relative cut is excluded from
   S-04 ("What We're NOT Doing"); it is a candidate follow-up.
 
+## Deployed check at 0.37 (2026-11-09)
+
+After the release with `0.37` (PR #47), the same 18 queries ran in the app as the owner. "serce Czarka" returns the
+cardiomyopathy document first (with the other five behind it, as expected from the animal-name prefix);
+"kardiomiopatia" and "szmer w sercu" return only that document; "usunięcie kamienia nazębnego", "ząb" and
+"swędzenie i łysienie" return only their document; "przepis na sernik" shows the empty state. "dieta eliminacyjna"
+returns the teeth and skin documents (the app's extracted text scores slightly differently from `pdftotext`).
+Generic queries ("złamana łapa", "pchły i kleszcze", "kiedy następne szczepienie") still return most documents.
+
+Latency: the first API call after the deploy restarted the app took 5.6 s (cold start), the first search after it
+0.8 s, warm searches 0.24–1.0 s. The cold path is above the about-two-second target, which is B1 trigger (2) in
+`context/foundation/infrastructure.md`; a cold start after F1 idle time was not measured separately.
+
 ## Decision rule
 
 1. Take the highest false-match score over all queries (`F`) and the lowest expected-document score (`E`).
@@ -267,6 +280,6 @@ decision rule prefers.
 - Chosen threshold: `0.37`
 - Trade-offs accepted: "dieta eliminacyjna" loses its document (0.364); generic or unrelated medical queries
   ("złamana łapa", "kastracja", "rentgen klatki piersiowej") still return documents; "przepis na sernik" returns none.
-- "serce Czarka" finds the cardiomyopathy document at the chosen threshold: yes by score (0.472, first); to be
-  confirmed in the deployed app after the release that carries `0.37`
+- "serce Czarka" finds the cardiomyopathy document at the chosen threshold: yes, first (score 0.472; confirmed in the
+  deployed app on 2026-11-09)
 - Approved by the owner on: 2026-11-09

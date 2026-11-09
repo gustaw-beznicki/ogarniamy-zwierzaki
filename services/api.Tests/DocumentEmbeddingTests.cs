@@ -270,6 +270,26 @@ public sealed class DocumentEmbeddingTests(ApiFactory factory) : IClassFixture<A
     }
 
     [Fact]
+    public async Task A_paced_document_gets_more_time_than_one_attempt_deadline()
+    {
+        await ParkAllJobsAsync();
+        var userId = await factory.CreateUserAsync();
+        var animalId = await factory.AddAnimalAsync(userId, "Czarek");
+        var documentId = await ReadAsync(userId, animalId, "Synthetic pacing page with a short line of text.");
+        // A drained bucket of 600 tokens per minute: this document's 29 estimated tokens wait about three seconds, longer
+        // than the one-second attempt deadline.
+        var pacer = new EmbeddingTokenPacer(600, TimeProvider.System);
+        pacer.Reserve(600);
+        var provider = new FakeEmbeddingProvider();
+
+        Assert.True(await Worker(provider, pacer, TimeSpan.FromSeconds(1)).RunOnceAsync(CancellationToken.None));
+
+        var job = await JobAsync(documentId);
+        Assert.Equal((DocumentEmbeddingState.Embedded, 1, (string?)null), (job.State, job.AttemptCount, job.FailureCode));
+        Assert.Single(provider.Calls);
+    }
+
+    [Fact]
     public async Task The_documents_of_an_inactive_animal_are_embedded_like_any_other()
     {
         await ParkAllJobsAsync();
@@ -622,7 +642,8 @@ public sealed class DocumentEmbeddingTests(ApiFactory factory) : IClassFixture<A
         Text = text,
     };
 
-    private DocumentEmbeddingWorker Worker(FakeEmbeddingProvider provider)
+    private DocumentEmbeddingWorker Worker(
+        FakeEmbeddingProvider provider, EmbeddingTokenPacer? pacer = null, TimeSpan? attemptDeadline = null)
     {
         var loggers = LoggerFactory.Create(builder => builder.AddProvider(_logs).SetMinimumLevel(LogLevel.Information));
         return new DocumentEmbeddingWorker(
@@ -631,7 +652,11 @@ public sealed class DocumentEmbeddingTests(ApiFactory factory) : IClassFixture<A
             provider,
             new DocumentEmbeddingWakeUp(),
             TimeProvider.System,
-            loggers.CreateLogger<DocumentEmbeddingWorker>());
+            loggers.CreateLogger<DocumentEmbeddingWorker>())
+        {
+            Pacer = pacer,
+            AttemptDeadline = attemptDeadline ?? TimeSpan.FromMinutes(5), // the worker's default
+        };
     }
 
     // Runs the worker until no job is due.

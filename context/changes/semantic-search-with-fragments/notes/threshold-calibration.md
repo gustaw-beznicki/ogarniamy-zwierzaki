@@ -1,7 +1,7 @@
 # Threshold calibration (S-04, Phase 5)
 
-**Status**: provisional. The owner set `searchMinSimilarity` in `infra/main.bicep` to `0.70` on 2026-11-09, to be
-validated later with scores from the real archive; the Decision section below is filled in after that run.
+**Status**: decided for the MVP on synthetic documents. The owner set `searchMinSimilarity` in `infra/main.bicep` to
+`0.37` on 2026-11-09 from the scored run below; repeat the scored run on the real archive once it is on Azure.
 
 ## Purpose
 
@@ -207,6 +207,47 @@ Observations:
 - Choosing the value still needs scores (step 4 of the method). The real archive should be used for the final pick;
   these six documents are only a sanity check and can stay as test data.
 
+## Scored run on synthetic documents (2026-11-09)
+
+The provisional `0.70` (deployed with PR #46) returned no result for any of the 18 queries above, including
+"kardiomiopatia" and "serce Czarka". Scores were then computed outside the database: the same six documents' text
+(`pdftotext`, blank lines removed, prefixed with `Czarek` and a blank line as the API does) and the 18 queries were
+embedded with the deployed `text-embedding-3-large` deployment at 1536 dimensions, using the owner's own Entra token,
+and compared by cosine similarity. Only synthetic text was sent. Each document is one chunk, so these are the scores
+search compares with the threshold (the app's text extraction may differ slightly in whitespace).
+
+| Query | Kind | Scores, highest first |
+| --- | --- | --- |
+| serce Czarka | synonym + animal name | echo 0.472, vacc 0.409, teeth 0.396, para 0.389, blood 0.387, skin 0.380 |
+| kardiomiopatia | exact term | echo 0.377, blood 0.281, teeth 0.247, skin 0.246, vacc 0.233, para 0.220 |
+| szmer w sercu | synonym | echo 0.400, teeth 0.299, blood 0.284, skin 0.278, para 0.271, vacc 0.269 |
+| wścieklizna | exact term | vacc 0.403, teeth 0.358, para 0.342, blood 0.335, echo 0.327, skin 0.303 |
+| kiedy następne szczepienie | question | vacc 0.492, para 0.451, echo 0.389, teeth 0.381, blood 0.367, skin 0.367 |
+| wyniki krwi | synonym | blood 0.533, echo 0.404, para 0.384, skin 0.375, teeth 0.367, vacc 0.362 |
+| nerki kreatynina | exact term | blood 0.479, echo 0.384, para 0.342, teeth 0.342, vacc 0.333, skin 0.323 |
+| usunięcie kamienia nazębnego | exact phrase | teeth 0.507, para 0.338, vacc 0.303, echo 0.292, skin 0.292, blood 0.286 |
+| ząb | synonym | teeth 0.429, skin 0.341, para 0.327, vacc 0.326, echo 0.323, blood 0.310 |
+| swędzenie i łysienie | synonym | skin 0.472, para 0.352, teeth 0.322, vacc 0.313, echo 0.308, blood 0.300 |
+| dieta eliminacyjna | exact phrase | skin 0.364, teeth 0.353, para 0.321, blood 0.317, echo 0.288, vacc 0.281 |
+| pchły i kleszcze | exact phrase | para 0.457, skin 0.420, vacc 0.391, echo 0.388, teeth 0.382, blood 0.373 |
+| odrobaczanie | exact term | para 0.457, teeth 0.409, skin 0.390, vacc 0.384, blood 0.380, echo 0.373 |
+| złamana łapa | unrelated | echo 0.448, teeth 0.447, para 0.413, skin 0.412, vacc 0.406, blood 0.395 |
+| przepis na sernik | unrelated | teeth 0.306, skin 0.289, para 0.277, echo 0.275, vacc 0.271, blood 0.256 |
+| kastracja | unrelated | teeth 0.420, para 0.379, echo 0.371, vacc 0.365, skin 0.363, blood 0.351 |
+| rentgen klatki piersiowej | unrelated | echo 0.461, teeth 0.412, blood 0.402, vacc 0.397, para 0.381, skin 0.368 |
+| USG brzucha | unrelated | blood 0.391, echo 0.380, teeth 0.355, skin 0.351, para 0.337, vacc 0.317 |
+
+Findings:
+
+- The expected document scores 0.364–0.533 (`E` = 0.364, "dieta eliminacyjna"); unrelated queries reach 0.461
+  (`F`, "rentgen klatki piersiowej"). The ranges overlap, so no absolute threshold removes every false match without
+  losing true ones: the decision rule's step 3 applies.
+- The animal-name prefix lifts every document by a similar amount, which is why queries naming the animal, and
+  generic medical queries, match most documents.
+- The gap between the first and second document is large for specific queries (0.06–0.17) and small for unrelated ones
+  (0.001–0.05), so a relative cut on top of the absolute one would separate them better. A relative cut is excluded from
+  S-04 ("What We're NOT Doing"); it is a candidate follow-up.
+
 ## Decision rule
 
 1. Take the highest false-match score over all queries (`F`) and the lowest expected-document score (`E`).
@@ -218,12 +259,14 @@ Observations:
 
 ## Decision
 
-Provisional `0.70`, set by the owner on 2026-11-09 after the synthetic-document run above showed `0.30` returns
-unrelated documents. Not yet validated with scores; the fields below are filled in after the real-archive run.
+`0.37`, chosen by the owner on 2026-11-09 from the scored synthetic run, keeping vocabulary-mismatch matches as the
+decision rule prefers.
 
-- `F` (highest false-match score): _pending_
-- `E` (lowest expected score): _pending_
-- Chosen threshold: _pending_ (provisional `0.70` until then)
-- Trade-offs accepted: _pending_
-- "serce Czarka" finds the cardiomyopathy document at the chosen threshold: _pending_
-- Approved by the owner on: _pending_
+- `F` (highest false-match score): 0.461 ("rentgen klatki piersiowej")
+- `E` (lowest expected score): 0.364 ("dieta eliminacyjna")
+- Chosen threshold: `0.37`
+- Trade-offs accepted: "dieta eliminacyjna" loses its document (0.364); generic or unrelated medical queries
+  ("złamana łapa", "kastracja", "rentgen klatki piersiowej") still return documents; "przepis na sernik" returns none.
+- "serce Czarka" finds the cardiomyopathy document at the chosen threshold: yes by score (0.472, first); to be
+  confirmed in the deployed app after the release that carries `0.37`
+- Approved by the owner on: 2026-11-09

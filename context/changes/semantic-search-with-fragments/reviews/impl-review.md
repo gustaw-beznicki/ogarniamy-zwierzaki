@@ -2,191 +2,128 @@
 # Implementation Review: Semantic Search with Fragments (S-04)
 
 - **Plan**: context/changes/semantic-search-with-fragments/plan.md
-- **Scope**: Full plan (completed phases only; Phase 5 not implemented)
-- **Reviewed phases**: 1, 2, 3, 4
-- **Date**: 2026-11-08
+- **Scope**: Full plan (phases 1–4 were reviewed in depth on 2026-11-08, whose ten findings were fixed in 60fbee7; this run re-checks those fixes and reviews Phase 5)
+- **Reviewed phases**: 1, 2, 3, 4, 5
+- **Date**: 2026-11-09
 - **Verdict**: NEEDS ATTENTION
-- **Findings**: 0 critical, 5 warnings, 5 observations
+- **Findings**: 0 critical, 3 warnings, 6 observations
+
+The previous report (phases 1–4, all findings resolved) is in git history at commit 60fbee7.
 
 ## Verdicts
 
 | Dimension | Verdict |
 |-----------|---------|
 | Plan Adherence | WARNING |
-| Scope Discipline | WARNING |
+| Scope Discipline | PASS |
 | Safety & Quality | WARNING |
 | Architecture | PASS |
 | Pattern Consistency | WARNING |
-| Success Criteria | PASS |
+| Success Criteria | WARNING |
 
-Success criteria evidence (2026-11-08): `dotnet test services/api.Tests/ogarniamy-zwierzaki-api.Tests.csproj` 273/273;
-`dotnet build services/api/ogarniamy-zwierzaki-api.csproj` 0 errors; `infra/deploy.sh lint` clean;
-`npm run check --prefix apps/web` 0 errors / 0 warnings; `npm run build --prefix apps/web` passes; i18n catalogues have
-203 keys each; no Polish outside `pl.ts`. Manual rows 1.3, 1.4, 2.4, 3.3, 4.5, 4.6 were confirmed by the owner in this
-session (what-if output, local DeveloperCredential run, Chrome walkthrough).
-
-Account isolation in `services/api/Search/OwnedSearch.cs` is sound. Both the result query and `notSearchableCount` go
-through the `EXISTS (animal_members … role = 'owner')` predicate with a parameterised user id. `EXISTS` is a semi-join
-and the job tables join 1:1, so no row can be duplicated or leak in through another member row. The vector, threshold
-and limit are parameters, the column lists are explicit, and the isolation tests cover search rows, the count,
-another account's original (404) and inactive animals.
+Automated criteria re-run on 2026-11-09: `infra/deploy.sh lint` pass; `dotnet build` 0 errors; `dotnet test` 287/287; `npm run check` 0 errors; `npm run build` pass. Deploy of PR #45 and its smoke checks passed on main.
 
 ## Findings
 
-### F1 — Embedding batch budget exceeds the deployment's rate limit
+### F1 — Long documents can never finish embedding
 
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🔬 HIGH — architectural stakes; think carefully before deciding
 - **Dimension**: Safety & Quality
-- **Location**: services/api/DocumentEmbedding/AzureOpenAiEmbeddingClient.cs:26, infra/modules/embeddings.bicep:39
-- **Detail**: One request may carry up to 250,000 estimated tokens (and 2,048 inputs). The deployment has capacity 50,
-  that is 50K tokens per minute. If Azure OpenAI rejects a request whose estimated tokens exceed the per-minute
-  allowance, a long document gets a 429 on every attempt and ends `failed` after about 43 minutes. The Phase 5 backfill
-  queues every read document at once. Search uses the same deployment and does not retry, so user searches can turn
-  into 503 `search_unavailable` during the backfill.
-- **Fix A ⭐ Recommended**: Make the per-request token budget configurable (`Embedding:MaxEstimatedTokensPerRequest`,
-  default well below the TPM, for example 16K) and pace the worker between batches.
-  - Strength: Keeps every request inside the quota whatever the document size; small, local change in the client.
-  - Tradeoff: More requests per long document; the backfill takes longer.
-  - Confidence: MED — not verified that Azure rejects a single over-budget request; it is documented to count
-    estimated tokens per request against TPM.
-  - Blind spot: Actual token counts of real OCR text; measured during the Phase 5 backfill.
-- **Fix B**: Raise the deployment capacity (the quota allows 350K TPM) and keep the client unchanged.
-  - Strength: A Bicep parameter change only; also gives search more headroom during the backfill.
-  - Tradeoff: A single huge document can still exceed any capacity; it costs nothing while idle (Standard is
-    pay-per-token), but it moves the problem rather than removing it.
-  - Confidence: MED — depends on how many tokens the largest real document produces.
-  - Blind spot: Whether the Free Trial subscription allows increasing capacity without a quota request.
-- **Decision**: FIXED (Fix A) — `Embedding:MaxEstimatedTokensPerRequest` (16,000) and `Embedding:WorkerTokensPerMinute` (40,000) with validation, a token-bucket `EmbeddingTokenPacer` used by the hosted worker per batch, docs and tests (282/282; break-check: pacer tests went red when the wait was removed).
+- **Location**: services/api/DocumentEmbedding/DocumentEmbeddingWorker.cs:136, :186 (with :40); services/api/DocumentEmbedding/EmbeddingTokenPacer.cs:42
+- **Detail**: Every batch of one job, including the pacer's `Task.Delay`, runs under a single 5-minute `AttemptDeadline`. At 40,000 tokens per minute one attempt can send roughly 200–240K estimated tokens (about 130 dense pages), while reading accepts up to 2,000 pages. A larger document re-sends every batch from zero on each attempt (paid tokens), hits `attempt_deadline_exceeded`, and is `failed` after five attempts; reserved tokens stay owed and delay the next jobs. The SOP requeue includes `attempt_deadline_exceeded`, so a requeue repeats the loop. Contradicts the F1 (previous review) fix's "whatever the document size".
+- **Fix A ⭐ Recommended**: Scale the attempt deadline (and lease) to the work: `AttemptDeadline + estimatedTokens / WorkerTokensPerMinute`, with a fake-clock test for a document larger than one deadline's worth of tokens.
+  - Strength: Every readable document becomes searchable; keeps the pacing guarantee.
+  - Tradeoff: Long leases for very large documents; lease and heartbeat logic must stay consistent.
+  - Confidence: MED — worker already computes estimates per batch; lease interplay needs care.
+  - Blind spot: Not checked how the lease heartbeat behaves across a long paced attempt.
+- **Fix B**: Fail fast with a terminal `text_too_long` code when estimated tokens / TPM exceed the deadline, and drop `attempt_deadline_exceeded` from the SOP requeue.
+  - Strength: Small change; no wasted paid tokens; clear operator signal.
+  - Tradeoff: Very long documents stay unsearchable by design (counted as not searchable).
+  - Confidence: HIGH — a pre-check before the first batch.
+  - Blind spot: Product acceptance of an unsearchable class of documents.
+- **Decision**: FIXED (Fix A) — `EmbeddingTokenPacer.EstimateWait`; the worker extends the lease (`DocumentEmbeddingJobs.ExtendLeaseAsync`) and the attempt deadline by the expected pacing wait before the first batch; SOP and architecture updated; tests for the estimate and a paced document with a one-second deadline (break-check: the worker test went red without the deadline extension).
 
-### F2 — Failed embedding jobs are never re-queued
+### F2 — Provisional 0.70 threshold is untested, yet 5.4 is ticked
 
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
-- **Dimension**: Safety & Quality
-- **Location**: services/api/DocumentEmbedding/DocumentEmbeddingJobs.cs:214-239, docs/deployment.md ("Operating notes")
-- **Detail**: Once a job is `failed` (for example after the accepted 401/403/404 retries during a misconfigured
-  rollout, or after F1), only a new reading publish or an animal rename re-queues it. There is no Retry, no requeue
-  on startup and no documented operator step. Such documents stay out of search and are counted forever as
-  "still being processed" (`OwnedSearch.cs:131-133`).
-- **Fix**: Document an owner runbook step that re-queues failed jobs (an `UPDATE document_embedding_jobs SET
-  state = 'queued', due_at = now(), attempt_count = 0, failure_code = NULL WHERE state = 'failed'` with explicit
-  columns) in a new `docs/sop/operate-semantic-search.md`, linked from `docs/deployment.md`, as part of Phase 5.
-  - Strength: Matches how document reading is operated (`docs/sop/operate-document-reading.md`); no code change.
-  - Tradeoff: Recovery stays manual.
-  - Confidence: HIGH — the job row has all fields needed for a clean requeue.
-  - Blind spot: Whether the "still being processed" wording should exclude failed embeddings; not decided here.
-- **Decision**: FIXED — new `docs/sop/operate-semantic-search.md` (states, failure codes, read-only queries, backfill progress, pause/resume, approved requeue UPDATE with explicit columns, rollback note), linked from `docs/deployment.md` and the README SOP index; SQL checked against a local pgvector database.
+- **Dimension**: Success Criteria
+- **Location**: infra/main.bicep:56; context/changes/semantic-search-with-fragments/plan.md (Progress 5.4); notes/threshold-calibration.md (Decision)
+- **Detail**: All recorded queries ran at 0.30 and the API returns no scores. "serce Czarka" finding the cardiomyopathy document is confirmed only at 0.30; the note's Decision field says `_pending_`. For text-embedding-3-large, relevant short-query/chunk pairs often score well below 0.7 (general model behaviour, not measured here), so search may silently show the empty state for most queries once PR #46 deploys.
+- **Fix**: After PR #46 deploys, rerun "kardiomiopatia", "serce Czarka" and one unrelated query on Azure; lower the value if the expected documents disappear; until then mark 5.4 as provisional (untick or annotate).
+  - Strength: Cheap, direct evidence on the deployed value.
+  - Tradeoff: Another deploy if the value changes.
+  - Confidence: HIGH — the browser checks already exist from this session.
+  - Blind spot: Order-only checks still do not give `F`/`E`; the scoring query does.
+- **Decision**: FIXED — Progress 5.4 unticked until 0.70 is checked on Azure after PR #46 deploys; queued in follow-ups/review-fixes.md.
 
-### F3 — Error state goes beyond the planned generic error
-
-- **Severity**: ⚠️ WARNING
-- **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
-- **Dimension**: Scope Discipline
-- **Location**: apps/web/src/components/SearchView.tsx:107-118, apps/web/src/i18n/en.ts (`searchUnavailable*`, `searchGoToAnimals`)
-- **Detail**: The plan asks for a "generic `Alert` with Retry" and defers the dedicated "search unavailable" notice to
-  S-05. The implementation shows "Search is unavailable right now. No substitute results are shown. All documents and
-  originals remain available on the animal profiles." with Retry and "Go to animals", for every non-401 error
-  (also 400 `invalid_query`).
-- **Fix A ⭐ Recommended**: Accept it and record it as an addendum note in the plan's Phase 4 block and in the S-05 roadmap
-  item, so S-05 starts from this notice.
-  - Strength: The copy is accurate (originals stay available) and was confirmed in the Chrome walkthrough; no rework.
-  - Tradeoff: S-05 scope shrinks implicitly; the plan becomes a slightly moving target.
-  - Confidence: HIGH — the text makes no false promise and shows no substitute results.
-  - Blind spot: S-05's notice may need different wording per failure type.
-- **Fix B**: Reduce it to a generic error ("Something went wrong") with Retry only.
-  - Strength: Keeps the S-04/S-05 split exactly as planned.
-  - Tradeoff: Throws away accurate, already-tested copy; S-05 re-adds it.
-  - Confidence: MED — a matter of scope preference.
-  - Blind spot: None significant.
-- **Decision**: FIXED (Fix A) — accepted; addendum added under Phase 4 in `plan.md` and a note on the S-05 item in `context/foundation/roadmap.md`.
-
-### F4 — No rate limit on POST /api/search
-
-- **Severity**: ⚠️ WARNING
-- **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
-- **Dimension**: Safety & Quality
-- **Location**: services/api/Search/SearchEndpoints.cs:19, services/api/Program.cs
-- **Detail**: Every authenticated search makes one paid Azure OpenAI call and one exact vector scan. Nothing limits
-  requests per user. One signed-in account, or a script holding its session, can use up the shared 50K TPM and
-  starve the worker and other users (see F1).
-- **Fix**: Add a per-user fixed-window limiter (ASP.NET Core `AddRateLimiter`, for example 30 requests per minute keyed
-  by user id) on `/api/search`, returning 429 ProblemDetails with a sanitized code; record it as a plan addendum or a
-  follow-up change.
-  - Strength: The built-in middleware is a few lines; it also bounds cost on the Free Trial credit.
-  - Tradeoff: A new error code the UI must show (the generic error already covers it).
-  - Confidence: MED — not planned; may be better as a separate small change.
-  - Blind spot: Whether the API has other paid endpoints that should share the policy (reading Retry).
-- **Decision**: FIXED — `SearchRateLimit` (per-account fixed window, `Search:MaxRequestsPerMinute` = 30, 429 `search_rate_limited` with Retry-After), `UseRateLimiter` after authorization, test (283/283; break-check: the test went red without `RequireRateLimiting`), docs and a plan addendum.
-
-### F5 — Configuration table in local-development.md is split
+### F3 — Cold-start latency not measured, yet 5.5 is ticked
 
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
-- **Dimension**: Pattern Consistency
-- **Location**: docs/local-development.md:74
-- **Detail**: A blank line between the `DocumentReading:WorkerEnabled` row and the new `Embedding:*` rows ends the
-  table; the `Embedding:*` and `Search:MinSimilarity` rows render as plain text.
-- **Fix**: Remove the blank line.
-- **Decision**: FIXED — blank line removed; the table is continuous again.
+- **Dimension**: Success Criteria
+- **Location**: context/changes/semantic-search-with-fragments/plan.md (Progress 5.5); context/foundation/infrastructure.md:61
+- **Detail**: Row 5.5 requires the cold-start time noted against the B1 trigger, and infrastructure.md says the cold-start search latency decides trigger (2). Only warm latency was recorded (201–280 ms; 664 ms first search of a session); the note says the cold start was not measured.
+- **Fix**: Measure one search after F1 idle time (about 20 minutes) and record it in the calibration note and infrastructure.md.
+- **Decision**: FIXED — Progress 5.5 unticked until a cold-start search is measured and recorded; queued in follow-ups/review-fixes.md.
 
-### F6 — Bad similarity setting or malformed provider result returns 500
+### F4 — "Stored chunks stay searchable" is overstated
 
-- **Severity**: 💡 OBSERVATION
-- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
-- **Dimension**: Safety & Quality
-- **Location**: services/api/Search/SearchOptions.cs:8, services/api/Search/OwnedSearch.cs:49
-- **Detail**: `Search:MinSimilarity` is bound without validation: an unparsable value makes every search 500, and a
-  value outside 0–1 silently returns nothing or everything. `vectors.Single()` throws (500 instead of 503) if a client
-  returns no vector. Embedding settings, by contrast, are validated and degrade with a logged reason.
-- **Fix**: Validate `MinSimilarity` in [0, 1] at startup (`ValidateOnStart`) and map a vector-count mismatch to the
-  existing 503 `search_unavailable` path.
-- **Decision**: FIXED (degrade variant, owner choice) — `SearchOptions.TryRead` validates the section; invalid values make search answer 503 `search_unavailable` with a startup warning (`SearchSetup.LogSearchConfiguration`) instead of stopping the API; a wrong vector count or size is 503 too. Tests 286/286; break-check: 3 tests went red with the checks removed.
-
-### F7 — Rename skips documents that are being re-read
-
-- **Severity**: 💡 OBSERVATION
+- **Severity**: 💬 OBSERVATION
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Plan Adherence
-- **Location**: services/api/DocumentEmbedding/DocumentEmbeddingJobs.cs (`EnqueueAnimalDocumentsAsync`)
-- **Detail**: The rename enqueue selects only documents whose reading job is `state = 'read'`. A document with a
-  published, embedded generation whose reading job is currently `reading` or `failed` after a Retry keeps old-name
-  chunks until a later publish.
-- **Fix**: Select documents by an existing published generation (or an existing embedding job) instead of the current
-  reading state.
-- **Decision**: FIXED — rename enqueue now selects documents with `published_run_generation IS NOT NULL`; the rename test covers a document being read again (286/286; break-check: the test went red with the old predicate).
+- **Location**: docs/deployment.md:127; docs/sop/operate-semantic-search.md:109, :128; infra/modules/app-service.bicep:145
+- **Detail**: Search matches only chunks whose `run_generation` equals the document's current `published_run_generation` (services/api/Search/OwnedSearch.cs:105). A document re-read while the worker is paused, or whose re-embedding failed after a re-read, drops out of search until embedded again. Rename-only requeues do stay searchable.
+- **Fix**: Reword to "chunks of documents whose text has not changed stay searchable; a re-read document is searchable again once embedded".
+- **Decision**: FIXED — deployment.md, the SOP and the app-service.bicep comment now say a re-read document drops out of search until re-embedded; rename-only requeues stay searchable.
 
-### F8 — Result avatars always look active
+### F5 — Token rate can exceed 40K per minute
 
-- **Severity**: 💡 OBSERVATION
-- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
-- **Dimension**: Pattern Consistency
-- **Location**: apps/web/src/components/SearchView.tsx:147
-- **Detail**: `AnimalAvatar` gets a hard-coded `isActive: true`, so documents of inactive animals show the active colour,
-  unlike `AnimalDocuments`.
-- **Fix**: Add `animalIsActive` to `SearchResult` (API record, SQL column list, `api.ts`) and pass it through.
-- **Decision**: FIXED — `animalIsActive` added to `SearchResult`/`SearchRow`/SQL/`api.ts` and passed to the avatar; contract and isolation tests updated (286/286; break-check: the isolation test went red when the column was faked); plan addendum.
-
-### F9 — Polish "other" plural form is ungrammatical
-
-- **Severity**: 💡 OBSERVATION
-- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
-- **Dimension**: Pattern Consistency
-- **Location**: apps/web/src/i18n/pl.ts:206
-- **Detail**: `notSearchableCount_other` reads "{count} dokumentu jest jeszcze przetwarzane, więc nie ma ich w wynikach."
-  Integer counts never select this form, so users do not see it.
-- **Fix**: Change it to "{count} dokumentu jest jeszcze przetwarzanych, więc nie ma ich w wynikach." in line with the
-  other `_other` forms in `pl.ts`.
-- **Decision**: FIXED — `notSearchableCount_other` corrected in `pl.ts`.
-
-### F10 — Hardening odds and ends
-
-- **Severity**: 💡 OBSERVATION
+- **Severity**: 💬 OBSERVATION
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Safety & Quality
-- **Location**: scripts/smoke.sh, services/api/DocumentEmbedding/AzureOpenAiEmbeddingClient.cs:227-230, services/api/Data/Migrations/20261108142419_DocumentEmbedding.cs:22-44
-- **Detail**: (a) The smoke test checks 401 for every other protected route but not anonymous `POST /api/search`.
-  (b) A provider `Retry-After` is honoured without an upper bound. (c) `document_chunks.document_file_id` has no
-  foreign key to `document_files`, and `ix_document_chunks_document_id` duplicates the primary key's leading column.
-- **Fix**: Add the smoke check in Phase 5; cap `Retry-After` at one hour; leave (c) for a later migration.
-- **Decision**: FIXED (a, b); (c) deferred — smoke check 2e (anonymous `POST /api/search` → 401) and docs; `Retry-After` capped at one hour with a test (287/287; break-check: the test went red without the cap). The chunk-file foreign key and the redundant index are left for a later migration.
+- **Location**: services/api/DocumentEmbedding/EmbeddingTokenPacer.cs:21; docs/architecture.md:92; docs/deployment.md:126; docs/local-development.md:78; context/foundation/infrastructure.md:62
+- **Detail**: The bucket starts full and refills continuously, so up to about 80K estimated tokens can go out in the first minute after startup (deployment limit 50K). During a deploy the old and new containers also run side by side with separate in-memory pacers and search limiters, doubling both limits for that window. Retries absorb the resulting 429s, but the docs say "at most 40,000 per minute".
+- **Fix**: Start the bucket empty (or document the burst) and add one sentence on deploy overlap to the SOP pacing paragraph.
+- **Decision**: FIXED (docs) — 40,000 described as the sustained rate with a one-minute startup burst; deploy overlap noted in the SOP and deployment.md.
+
+### F6 — Stale or incomplete doc claims
+
+- **Severity**: 💬 OBSERVATION
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Plan Adherence
+- **Location**: docs/architecture.md:90, :97; docs/testing.md:24-26; README.md:73, :75, :79; docs/deployment.md:136-140
+- **Detail**: (a) Rename "re-queues that animal's read documents" — the code selects `published_run_generation IS NOT NULL`, including documents being re-read. (b) 503 also follows invalid `Search:*` settings, not only provider failure. (c) The query is trimmed, not embedded "as typed". (d) testing.md omits `EmbeddingTokenPacerTests` and `EmbeddingAvailabilityTests`. (e) README's test sentence omits embedding and search isolation; its smoke description omits anonymous `POST /api/search`. (f) README and deployment.md rollback sections do not mention embedding tables or point to the SOP rollback note.
+- **Fix**: Correct each line against the code.
+- **Decision**: FIXED — rename wording, 503 on invalid Search settings, trimmed query, new tests in testing.md, README test/smoke/rollback lines and a deployment.md rollback paragraph.
+
+### F7 — SOP backfill query disagrees with the in-app count
+
+- **Severity**: 💬 OBSERVATION
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Plan Adherence
+- **Location**: docs/sop/operate-semantic-search.md:97-103 vs services/api/Search/OwnedSearch.cs:132-146
+- **Detail**: "Backfill progress" filters on `r.state = 'read'` and ignores `storage_state`; `notSearchableCount` uses `published_run_generation` over stored documents. A document being re-read with a stale embedding appears in the app count but not in the SOP query, so the calibration prerequisite "returns 0" can pass while owners still see documents being processed.
+- **Fix**: Align the SOP predicate with `CountNotSearchableAsync` (without the owner filter).
+- **Decision**: FIXED — SOP backfill query aligned with CountNotSearchableAsync (stored documents, published generation); checked against a local pgvector database.
+
+### F8 — Retry-After cap applied only to embedding
+
+- **Severity**: 💬 OBSERVATION
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Pattern Consistency
+- **Location**: services/api/DocumentReading/AzureDocumentTextReader.cs:338 vs services/api/DocumentEmbedding/AzureOpenAiEmbeddingClient.cs:230-240
+- **Detail**: The one-hour cap was added for embedding only; the reading client still honours an unbounded provider `Retry-After`, the same parking risk the previous review fixed for embedding. Outside this change's files.
+- **Fix**: Apply the same cap in the reading client in a follow-up change.
+- **Decision**: DEFERRED — queued in follow-ups/review-fixes.md (outside this change's files).
+
+### F9 — New-environment rollout no longer staged
+
+- **Severity**: 💬 OBSERVATION
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Plan Adherence
+- **Location**: docs/deployment.md:118-122; infra/modules/app-service.bicep:146-147
+- **Detail**: With `Embedding__WorkerEnabled=true` in Bicep, a new environment deployed before the role grant fails embedding jobs with `provider_auth` and needs a requeue; the plan's S-03-style order (worker off → grant → enable) is replaced by "grant first or requeue". Works and is documented; recorded as accepted drift. The roadmap still shows S-04 `in-progress`, which `/10x-archive` flips.
+- **Fix**: None required; keep as documented.
+- **Decision**: ACCEPTED — grant-first-or-requeue rollout is documented in docs/deployment.md; the roadmap flips S-04 at archive.

@@ -123,9 +123,9 @@ Background embedding is on: [`app-service.bicep`](../infra/modules/app-service.b
 
 Operating notes:
 
-- **Backfill and pacing.** The worker embeds one document at a time and sends at most 40,000 estimated tokens per minute, leaving the rest of the deployment's limit to searches. Like reading, it waits while F1 sleeps and resumes about a minute after the next request wakes the app. Track progress with the backfill query in the SOP.
-- **Pausing.** Set `Embedding__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Queued jobs wait; stored chunks stay searchable, and stored text and originals are untouched.
-- **Similarity cutoff.** `Search__MinSimilarity` comes from `searchMinSimilarity` in [`main.bicep`](../infra/main.bicep), currently the provisional `0.70`. Change it there after calibrating on real documents; a value set by hand lasts only until the next deployment.
+- **Backfill and pacing.** The worker embeds one document at a time at a sustained 40,000 estimated tokens per minute, leaving the rest of the deployment's limit to searches. Its token bucket starts full, so up to about twice that can go out in the first minute after startup, and during a deployment the old and new instances briefly pace (and rate-limit searches) separately; throttled requests are retried. Like reading, it waits while F1 sleeps and resumes about a minute after the next request wakes the app. Track progress with the backfill query in the SOP.
+- **Pausing.** Set `Embedding__WorkerEnabled=false` (by hand for an emergency, which restarts the app, and in Bicep to keep it). Queued jobs wait, and stored text and originals are untouched. Search matches only chunks of a document's current published reading, so a document whose new reading is published while the worker is paused drops out of search until it is embedded again; documents queued only by an animal rename stay searchable.
+- **Similarity cutoff.** `Search__MinSimilarity` comes from `searchMinSimilarity` in [`main.bicep`](../infra/main.bicep), currently `0.37`, chosen from scored synthetic documents. Repeat the scored run on the real archive and change it there; a value set by hand lasts only until the next deployment.
 - **Search latency.** Each search is one embedding call plus an exact, owner-scoped cosine query. On F1 the first request after idle time pays the cold start; cold starts that break the about-two-second search target are a trigger for moving to B1 ([infrastructure decisions](../context/foundation/infrastructure.md)).
 - **Operating procedures.** Job states, failure codes, read-only inspection queries, backfill progress, pause and resume, requeueing failed jobs and rollback are in [Operate semantic search](sop/operate-semantic-search.md).
 
@@ -138,6 +138,8 @@ Operating notes:
 Revert the offending commit on `main` and approve the resulting deploy, or re-run an earlier successful `deploy` run. This rolls back code only; the database keeps its current schema, which is why migrations must stay backward compatible. Keep the document tables, the storage account, the API's storage role and every original blob: an older release may be unable to show newer documents, but their bytes and records stay intact for the next corrected release. Never delete originals or incomplete uploads to make a rollback work.
 
 The same applies to reading: keep the reading jobs, run files (they hold pending provider deletions), read text, the Document Intelligence account and its role. To stop reading without a code rollback, pause the worker. A release from before document reading ignores the reading tables. Documents it stores get no reading job, so before reading is switched on again, queue them by re-running the conflict-safe backfill from the `DocumentReading` migration as an approved database change.
+
+The same applies to semantic search: keep `document_embedding_jobs`, `document_chunks`, the `vector` extension, the Azure OpenAI account and its role, and never run the `DocumentEmbedding` migration's `Down`. To stop embedding without a code rollback, pause the worker with `Embedding__WorkerEnabled=false` (see "Pausing" above). See the rollback note in [Operate semantic search](sop/operate-semantic-search.md#rollback).
 
 ## Originals recovery
 

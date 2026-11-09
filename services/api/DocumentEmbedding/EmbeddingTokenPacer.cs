@@ -32,14 +32,33 @@ public sealed class EmbeddingTokenPacer
             return TimeSpan.Zero;
         }
 
+        Refill();
+        available -= estimatedTokens;
+        return available >= 0 ? TimeSpan.Zero : TimeSpan.FromMinutes(-available / tokensPerMinute);
+    }
+
+    // How long sending this many tokens from now would wait in total, without reserving them. The worker uses it to give
+    // a long document's attempt enough time for its pacing waits.
+    public TimeSpan EstimateWait(long estimatedTokens)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(estimatedTokens);
+        if (tokensPerMinute == 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        Refill();
+        var remaining = available - estimatedTokens;
+        return remaining >= 0 ? TimeSpan.Zero : TimeSpan.FromMinutes(-remaining / tokensPerMinute);
+    }
+
+    private void Refill()
+    {
         var now = time.GetUtcNow();
         if (now > refilledAt)
         {
             available = Math.Min(tokensPerMinute, available + (now - refilledAt).TotalMinutes * tokensPerMinute);
             refilledAt = now;
         }
-
-        available -= estimatedTokens;
-        return available >= 0 ? TimeSpan.Zero : TimeSpan.FromMinutes(-available / tokensPerMinute);
     }
 }

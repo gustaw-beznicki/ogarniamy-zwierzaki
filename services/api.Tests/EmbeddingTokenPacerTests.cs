@@ -43,10 +43,22 @@ public sealed class EmbeddingTokenPacerTests
     }
 
     [Fact]
+    public void Estimating_a_wait_reserves_nothing()
+    {
+        var pacer = new EmbeddingTokenPacer(40_000, new FixedTimeProvider(Start));
+        pacer.Reserve(30_000);
+
+        Assert.Equal(TimeSpan.Zero, pacer.EstimateWait(10_000));
+        Assert.Equal(TimeSpan.FromSeconds(30), pacer.EstimateWait(30_000));
+        Assert.Equal(TimeSpan.FromSeconds(30), pacer.Reserve(30_000));
+    }
+
+    [Fact]
     public void Zero_tokens_per_minute_turns_pacing_off()
     {
         var pacer = new EmbeddingTokenPacer(0, new FixedTimeProvider(Start));
 
         Assert.Equal(TimeSpan.Zero, pacer.Reserve(1_000_000));
+        Assert.Equal(TimeSpan.Zero, pacer.EstimateWait(1_000_000));
     }
 }

@@ -12,7 +12,7 @@ Queued from the full implementation review of 2026-11-09 (`reviews/impl-review.m
 
 ## Open Phase 5 checks (F2, F3)
 
-- **5.4**: After PR #46 deploys, run "kardiomiopatia", "serce Czarka" and one unrelated query on Azure at `0.70`;
+- **5.4**: After PR #46 deploys, run "kardiomiopatia", "serce Czarka" and one unrelated query on Azure at `0.37` (`0.70` returned nothing for every query);
   lower `searchMinSimilarity` if the expected documents disappear; record the result in `notes/threshold-calibration.md`.
 - **5.5**: Measure one search after about 20 minutes of F1 idle time and record the cold-start latency in the
   calibration note and `context/foundation/infrastructure.md` (B1 trigger 2).

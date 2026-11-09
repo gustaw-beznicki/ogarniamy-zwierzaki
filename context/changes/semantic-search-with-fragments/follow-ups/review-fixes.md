@@ -10,7 +10,7 @@ Queued from the full implementation review of 2026-11-09 (`reviews/impl-review.m
   reading job for days.
 - **Why later**: Outside this change's files; belongs to the document-reading area.
 
-## Open Phase 5 checks (F2, F3)
+## Phase 5 checks (F2, F3) — done 2026-11-09
 
 - **5.4**: After PR #46 deploys, run "kardiomiopatia", "serce Czarka" and one unrelated query on Azure at `0.37` (`0.70` returned nothing for every query);
   lower `searchMinSimilarity` if the expected documents disappear; record the result in `notes/threshold-calibration.md`.

@@ -584,6 +584,6 @@ change re-queue documents.
 #### Manual
 
 - [x] 5.3 Backfill completes: every read document has an `embedded` job for its published generation — 911b1a2
-- [x] 5.4 Calibration note recorded and threshold committed; "serce Czarka" finds the cardiomyopathy document
-- [x] 5.5 Search answers within about 2 seconds on a warm app (cold-start time noted against the B1 trigger)
+- [x] 5.4 Calibration note recorded and threshold committed; "serce Czarka" finds the cardiomyopathy document — 10eb504
+- [x] 5.5 Search answers within about 2 seconds on a warm app (cold-start time noted against the B1 trigger) — 10eb504
 - [x] 5.6 A second test account sees none of the owner's results on Azure — 911b1a2

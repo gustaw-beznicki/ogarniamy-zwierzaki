@@ -1,10 +1,10 @@
 ---
 change_id: semantic-search-with-fragments
 title: Semantic search with fragments
-status: impl_reviewed
+status: archived
 created: 2026-10-19
 updated: 2026-11-09
-archived_at: null
+archived_at: 2026-11-09T16:52:12Z
 ---
 
 ## Notes

@@ -212,6 +212,21 @@ public sealed partial class DocumentEmbeddingJobs(AppDbContext db)
         return true;
     }
 
+    // Moves the claim's lease expiry to leaseDuration from now, for an attempt that needs longer than the lease it was
+    // claimed with. False when the lease is no longer current.
+    public async Task<bool> ExtendLeaseAsync(
+        DocumentEmbeddingClaim claim, TimeSpan leaseDuration, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(leaseDuration, TimeSpan.Zero);
+        var updated = await db.Database.ExecuteSqlAsync($"""
+            UPDATE document_embedding_jobs
+            SET lease_expires_at = now() + {leaseDuration}, updated_at = now()
+            WHERE document_id = {claim.DocumentId} AND state = 'embedding' AND lease_token = {claim.LeaseToken}
+                AND lease_expires_at > clock_timestamp()
+            """, cancellationToken);
+        return updated == 1;
+    }
+
     // A terminal failure: the job becomes Failed with a sanitized code (lowercase letters, digits and underscores, at
     // most 64; never a provider message). Stored chunks of an earlier result are kept. Only a new enqueue queues the job
     // again. False when the lease is no longer current.

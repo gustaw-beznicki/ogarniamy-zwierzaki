@@ -142,7 +142,8 @@ resource api 'Microsoft.Web/sites@2024-04-01' = {
         }
         {
           // Background embedding is on. To pause it, set this back to 'false' and deploy; jobs and stored chunks stay
-          // in the database and stay searchable (see docs/sop/operate-semantic-search.md).
+          // in the database. A document whose new reading is published while paused drops out of search until it is
+          // embedded again (see docs/sop/operate-semantic-search.md).
           name: 'Embedding__WorkerEnabled'
           value: 'true'
         }

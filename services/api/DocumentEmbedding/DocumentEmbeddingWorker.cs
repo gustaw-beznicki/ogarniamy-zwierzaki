@@ -33,18 +33,25 @@ public sealed class DocumentEmbeddingWorker(
 
     public TimeSpan MaxPollInterval { get; init; } = TimeSpan.FromSeconds(60);
 
-    // Longer than AttemptDeadline, so an attempt is cancelled before its lease can expire.
+    // Longer than AttemptDeadline, so an attempt is cancelled before its lease can expire. A paced attempt extends both by
+    // its expected pacing wait.
     public TimeSpan LeaseDuration { get; init; } = TimeSpan.FromMinutes(10);
 
-    // One processing attempt may take this long; running out counts as a transient failure.
+    // One processing attempt may take this long, plus the pacing wait its document needs; running out counts as a
+    // transient failure.
     public TimeSpan AttemptDeadline { get; init; } = TimeSpan.FromMinutes(5);
 
     // The hosted loop waits this long after the app starts before its first claim, so a deploy or restart on a small
     // CPU share is not starved by background work (see DocumentReadingWorker).
     public TimeSpan StartupDelay { get; init; } = TimeSpan.FromSeconds(60);
 
-    // Set only by the hosted loop, so RunOnceAsync in tests is not slowed down by pacing.
+    // Created by the hosted loop from Embedding:WorkerTokensPerMinute; RunOnceAsync paces only when a test sets one.
     private EmbeddingTokenPacer? pacer;
+
+    public EmbeddingTokenPacer? Pacer
+    {
+        init => pacer = value;
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -56,7 +63,7 @@ public sealed class DocumentEmbeddingWorker(
             return;
         }
 
-        pacer = new EmbeddingTokenPacer(availability.Options.WorkerTokensPerMinute, time);
+        pacer ??= new EmbeddingTokenPacer(availability.Options.WorkerTokensPerMinute, time);
         logger.LogInformation("The embedding worker started; first claim after {StartupDelay}.", StartupDelay);
         try
         {
@@ -137,7 +144,7 @@ public sealed class DocumentEmbeddingWorker(
         using var processing = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         try
         {
-            await ProcessAsync(claim, started, processing.Token);
+            await ProcessAsync(claim, started, deadline, processing.Token);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -170,15 +177,37 @@ public sealed class DocumentEmbeddingWorker(
         return true;
     }
 
-    private async Task ProcessAsync(DocumentEmbeddingClaim claim, long started, CancellationToken cancellationToken)
+    private async Task ProcessAsync(
+        DocumentEmbeddingClaim claim, long started, CancellationTokenSource deadline, CancellationToken cancellationToken)
     {
         var source = await UseJobsAsync(jobs => jobs.LoadSourceAsync(claim.DocumentId, cancellationToken))
             ?? throw EmbeddingFailure.Terminal(EmbeddingFailure.TextUnavailable);
 
         var chunks = PageChunker.Chunk(source.Pages);
         var inputs = chunks.Select(chunk => EmbeddingInput.For(source.AnimalName, chunk.Text)).ToList();
+        var batches = AzureOpenAiEmbeddingClient.Batches(inputs, availability.Options.MaxEstimatedTokensPerRequest).ToList();
+
+        // A document whose tokens do not fit the pacer's allowance waits between batches. Give this attempt (and its
+        // lease) that much more time, so a long document finishes instead of timing out on every attempt.
+        var pacing = pacer?.EstimateWait(batches.Sum(b => b.Sum(AzureOpenAiEmbeddingClient.EstimateTokens))) ?? TimeSpan.Zero;
+        if (pacing > TimeSpan.Zero)
+        {
+            if (!await UseJobsAsync(jobs => jobs.ExtendLeaseAsync(claim, LeaseDuration + pacing, cancellationToken)))
+            {
+                logger.LogWarning(
+                    "Lost the lease on document {DocumentId} before embedding; stopped without calling the provider.",
+                    claim.DocumentId);
+                return;
+            }
+
+            deadline.CancelAfter(AttemptDeadline + pacing);
+            logger.LogInformation(
+                "Document {DocumentId} needs about {PacingWait} of pacing; the attempt deadline is extended to match.",
+                claim.DocumentId, pacing);
+        }
+
         var vectors = new List<float[]>(inputs.Count);
-        foreach (var batch in AzureOpenAiEmbeddingClient.Batches(inputs, availability.Options.MaxEstimatedTokensPerRequest))
+        foreach (var batch in batches)
         {
             var wait = pacer?.Reserve(batch.Sum(AzureOpenAiEmbeddingClient.EstimateTokens)) ?? TimeSpan.Zero;
             if (wait > TimeSpan.Zero)

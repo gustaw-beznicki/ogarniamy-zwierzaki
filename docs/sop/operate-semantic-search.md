@@ -23,9 +23,12 @@ settings, deployments, database rows or role assignments) needs the owner's expl
   resolves to a working setup **and** `Embedding:WorkerEnabled` is `true`; otherwise it logs one line at startup.
 - Embedding uses the Azure OpenAI deployment `text-embedding-3-large` (regional Standard, `swedencentral`, capacity 50 =
   50K tokens per minute) with the API's managed identity and the Cognitive Services OpenAI User role.
-- The worker sends at most `Embedding:MaxEstimatedTokensPerRequest` (16,000) estimated tokens per request and at most
-  `Embedding:WorkerTokensPerMinute` (40,000) per minute, leaving the rest of the deployment's limit to searches. Change
-  `WorkerTokensPerMinute` together with the deployment capacity in `infra/modules/embeddings.bicep`.
+- The worker sends at most `Embedding:MaxEstimatedTokensPerRequest` (16,000) estimated tokens per request and a
+  sustained `Embedding:WorkerTokensPerMinute` (40,000) per minute, leaving the rest of the deployment's limit to searches.
+  Its in-memory token bucket starts full, so up to about twice that can go out in the first minute after startup. During
+  a deployment the old and new instances briefly run side by side with separate pacers and search rate limiters, which
+  doubles both limits for that window; throttled (429) requests are retried. Change `WorkerTokensPerMinute` together
+  with the deployment capacity in `infra/modules/embeddings.bicep`.
 - Each search embeds the query once (no retry) and runs one exact, owner-scoped cosine query. One account may send
   `Search:MaxRequestsPerMinute` (30) searches per minute; more answer 429 `search_rate_limited`, which the search screen
   shows as its "search unavailable" notice.
@@ -37,7 +40,7 @@ One row per read document in `document_embedding_jobs` (primary key `document_id
 | State | Meaning | Leaves it when |
 | --- | --- | --- |
 | `queued` | Waiting, due at `due_at`. A reading publish, an animal rename and the migration backfill put jobs here. | A worker claims it (`embedding`). |
-| `embedding` | Claimed with a lease (`lease_token`, `lease_expires_at`, 10 minutes). | Embedded, failed, requeued after a transient or stale result, or reclaimed after the lease expired. |
+| `embedding` | Claimed with a lease (`lease_token`, `lease_expires_at`, 10 minutes, extended by the expected pacing wait for a long document). | Embedded, failed, requeued after a transient or stale result, or reclaimed after the lease expired. |
 | `embedded` | The document's chunks match `embedded_run_generation` and `embedded_animal_name`. | A new reading publish or a rename of the animal queues it again. |
 | `failed` | Stopped with a sanitized `failure_code`. | Only a new reading publish, a rename, or the approved operator requeue below. There is no owner Retry for embedding. |
 
@@ -50,7 +53,7 @@ is embedded.
 | Code | Class | Meaning | What to do |
 | --- | --- | --- | --- |
 | `provider_unavailable` | transient | Throttling (429), provider 5xx, network error or timeout. | Nothing for single jobs. Many of them during a backfill: lower `Embedding__WorkerTokensPerMinute` or raise the capacity. |
-| `attempt_deadline_exceeded` | transient | One attempt ran longer than 5 minutes. | Nothing for one occurrence; repeated for one document points at a very long text. |
+| `attempt_deadline_exceeded` | transient | One attempt ran longer than 5 minutes plus the pacing wait its document needs. | Nothing for one occurrence; repeated for one document points at provider slowness. |
 | `unexpected_error` | transient | An unclassified exception; only its type is logged. | Look up the type in the log; repeated occurrences are a bug. |
 | `provider_auth` | configuration | No token, or 401/403: missing Cognitive Services OpenAI User role or wrong identity. | Check the role ([deployment guide](../deployment.md), "Rolling out semantic search"), then requeue. |
 | `provider_config` | configuration | 404 or similar: wrong endpoint or deployment name. | Check `Embedding__Endpoint` and `Embedding__Deployment`, then requeue. |
@@ -92,21 +95,29 @@ GROUP BY failure_code
 ORDER BY jobs DESC;
 ```
 
-Backfill progress (read documents without an embedding for their published text):
+Backfill progress (stored documents not yet searchable, across all owners: the same rule as search's "still being
+processed" count; failed readings are excluded):
 
 ```sql
-SELECT count(*) AS not_embedded
-FROM document_reading_jobs r
-LEFT JOIN document_embedding_jobs e ON e.document_id = r.document_id
-WHERE r.state = 'read'
-  AND (e.document_id IS NULL OR e.state <> 'embedded' OR e.embedded_run_generation <> r.published_run_generation);
+SELECT count(*) AS not_searchable
+FROM documents d
+JOIN document_reading_jobs r ON r.document_id = d.id
+LEFT JOIN document_embedding_jobs e ON e.document_id = d.id
+WHERE d.storage_state = 'stored'
+  AND r.state <> 'failed'
+  AND (r.state IN ('queued', 'reading')
+    OR e.document_id IS NULL
+    OR e.state <> 'embedded'
+    OR e.embedded_run_generation IS DISTINCT FROM r.published_run_generation);
 ```
 
 ## Pausing and resuming
 
 **Pause**: `az webapp config appsettings set --resource-group rg-ogarniamy-mvp --name <api app> --settings
 Embedding__WorkerEnabled=false` (restarts the app; the current job is handed back), and commit `'false'` in
-`infra/modules/app-service.bicep` to keep it. Queued jobs wait; stored chunks stay searchable.
+`infra/modules/app-service.bicep` to keep it. Queued jobs wait. Search matches only chunks of a document's current
+published reading: a document whose new reading is published while paused drops out of search until it is embedded
+again, while documents queued only by an animal rename stay searchable under the previous name.
 
 **Resume**: set `Embedding__WorkerEnabled=true` through the approved release (Bicep). The worker waits 60 seconds after
 startup, then claims due jobs one at a time at the paced rate.
@@ -125,8 +136,9 @@ WHERE state = 'failed'
   AND failure_code IN ('provider_auth', 'provider_config', 'provider_unavailable', 'attempt_deadline_exceeded');
 ```
 
-The previous chunks of each document stay searchable until its new embedding replaces them. Watch the overview query
-until the requeued jobs are `embedded`.
+A requeued document stays searchable only if its stored chunks belong to its current published reading (for example
+after a failed rename re-embedding). A document whose re-embedding failed after a new reading is out of search until
+the requeued job is `embedded`. Watch the overview query until the requeued jobs are `embedded`.
 
 ## Rollback
 
